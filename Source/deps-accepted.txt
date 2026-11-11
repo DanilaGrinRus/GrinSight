@@ -1,0 +1,19 @@
+# Reviewed RustSec advisories (package_check.py deps --advisory-db ...).
+# Format:  RUSTSEC-ID crate version | why it is accepted for THIS build
+# An entry covers exactly that version. A new advisory, or another version of
+# the crate, fails the check until it is reviewed and listed here.
+# Upgrading needs new vendored crates (and API changes in vendored grin /
+# arti), so these are tracked here instead of silently ignored.
+#
+# FIXED, not listed: RUSTSEC-2026-0459 libsqlite3-sys (SQLite 3.54.1 through
+# tor/patches/libsqlite3-sys; checked by the unity-tor test
+# bundled_sqlite_has_the_cve_fix). A crate replaced by a local patch is not
+# matched against advisories here: each such patch carries its own test.
+
+RUSTSEC-2024-0344 curve25519-dalek 3.2.0 | only path: grin-wallet libwallet -> age 0.8 -> x25519-dalek 1.1 (slatepack encryption). X25519 uses Scalar::from_bits and the Montgomery ladder / basepoint table, never Scalar::sub (the function with the timing variability; checked in curve25519-dalek 3.2.0 montgomery.rs and x25519-dalek 1.1.1 x25519.rs). Fix needs grin-wallet on age >= 0.10 (dalek 4).
+RUSTSEC-2026-0367 zip 0.5.13 | dependency of grin_util for txhashset ZIP archives of a full node; Unity never extracts ZIP files (PIBD segments only; no zip use in Unity code).
+RUSTSEC-2026-0368 zip 0.5.13 | as RUSTSEC-2026-0367: ZipArchive::extract is never called by Unity.
+RUSTSEC-2026-0369 zip 0.5.13 | as RUSTSEC-2026-0367: ZipArchive::extract is never called by Unity.
+RUSTSEC-2026-0429 zip 0.5.13 | as RUSTSEC-2026-0367: ZipArchive::extract is never called by Unity.
+RUSTSEC-2023-0071 rsa 0.9.10 | arti (Tor client): RSA is used only to VERIFY public relay / directory signatures; no RSA private key exists in the client or the v3 onion service (ed25519), so the Marvin private-key timing attack has no target.
+RUSTSEC-2026-0387 crypto-bigint 0.5.5 | listed in tor/Cargo.lock (via elliptic-curve of ssh-key-fork-arti) but NOT compiled into unity-tor: cargo tree -p unity-tor -i crypto-bigint --target x86_64-pc-windows-msvc prints nothing.

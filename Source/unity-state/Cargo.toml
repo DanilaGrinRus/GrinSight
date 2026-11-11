@@ -1,0 +1,25 @@
+[package]
+name = "unity-state"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Unity light wallet core without networking: header chain verification, header MMR, checkpoints and signed releases, chain choice (RESEARCH / NOT VERIFIED)"
+
+[features]
+# Synthetic chains for tests and fixtures (unity-ffi C test). Never in a release.
+testkit = []
+
+[dependencies]
+grin_core = { path = "../vendor/grin-5.5.2/core" }
+grin_chain = { path = "../vendor/grin-5.5.2/chain" }
+grin_util = { path = "../vendor/grin-5.5.2/util" }
+ed25519-dalek = "2"
+sha2 = "0.10"
+chrono = "0.4"
+blake2 = { package = "blake2-rfc", version = "0.2" }
+croaring = "1.1"
+grin_keychain = { path = "../vendor/grin-5.5.2/keychain" }
+grin_wallet_libwallet = { path = "../vendor/grin-wallet/libwallet" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+hkdf = "0.12"

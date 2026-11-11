@@ -1,0 +1,20 @@
+[package]
+name = "unity-tor"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Unity wallet: automatic slatepack exchange over Tor (grin-wallet foreign API) and GrinMessenger envelopes, with an address book"
+
+[dependencies]
+flint-tor-arti = { path = "../grinmessenger/crates/flint-tor-arti" }
+flint-messenger = { path = "../grinmessenger/crates/flint-messenger" }
+flint-messenger-wallet = { path = "../grinmessenger/crates/flint-messenger-wallet" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+zeroize = "1"
+data-encoding = "2"
+
+[dev-dependencies]
+# only to check the version of the bundled SQLite the Tor client links
+libsqlite3-sys = "0.37"

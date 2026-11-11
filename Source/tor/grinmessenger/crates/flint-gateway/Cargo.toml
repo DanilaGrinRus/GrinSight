@@ -1,0 +1,21 @@
+[package]
+name = "flint-gateway"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+license.workspace = true
+description = "Standalone store-and-forward relay for opaque flint-messenger envelopes (no wallet)"
+
+[dependencies]
+flint-messenger = { path = "../flint-messenger" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Message ids are UUIDs; the relay validates them before any store operation.
+uuid = { version = "1", features = ["v4"] }
+# Hex encoding for signed fetch proofs (recipient proves mailbox ownership).
+data-encoding = "2"
+
+[[bin]]
+name = "flint-relay"
+path = "src/bin/flint-relay.rs"

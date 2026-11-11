@@ -1,0 +1,26 @@
+[package]
+name = "unity-ffi"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "C ABI of the Unity core (stage 2): headers, UTXO state, blocks (RESEARCH / NOT VERIFIED)"
+
+[lib]
+name = "unity_state_ffi"
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[features]
+# The fixture generator for the C test (synthetic chain). Never in a release.
+testkit = ["unity-state/testkit"]
+
+[dependencies]
+unity-state = { path = "../unity-state" }
+grin_core = { path = "../vendor/grin-5.5.2/core" }
+grin_util = { path = "../vendor/grin-5.5.2/util" }
+grin_chain = { path = "../vendor/grin-5.5.2/chain" }
+chrono = "0.4"
+
+[[bin]]
+name = "us-fixture"
+path = "src/bin/us_fixture.rs"
+required-features = ["testkit"]

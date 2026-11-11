@@ -1,0 +1,11 @@
+[package]
+name = "unity-state-verify"
+version = "0.1.0"
+edition = "2021"
+publish = false
+[dependencies]
+grin_core = { path = "../vendor/grin-5.5.2/core" }
+grin_chain = { path = "../vendor/grin-5.5.2/chain" }
+grin_util = { path = "../vendor/grin-5.5.2/util" }
+sha2 = "0.10"
+serde_json = "1"

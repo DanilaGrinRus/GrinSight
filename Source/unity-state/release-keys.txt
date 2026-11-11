@@ -1,0 +1,3 @@
+# Release checkpoint signing keys compiled into the client: "KEY_ID PUBKEY_HEX".
+# Add the key printed by  --release-keygen  (the seed itself stays off this folder).
+1 d0e3f7828a1508b4d8bff31911d7f80ae76c609852a7b4186f19f8289226a217

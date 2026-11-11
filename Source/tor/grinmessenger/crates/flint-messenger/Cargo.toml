@@ -1,0 +1,36 @@
+[package]
+name = "flint-messenger"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+license.workspace = true
+description = "Signed, encrypted envelope protocol over an abstract transport"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+uuid = { version = "1", features = ["v4", "serde"] }
+bech32 = "0.7"
+sha2 = "0.10"
+sha3 = "0.10"
+data-encoding = "2"
+ed25519-dalek = "2"
+x25519-dalek = { version = "2", features = ["static_secrets"] }
+curve25519-dalek = "4"
+chacha20poly1305 = "0.9"
+chacha20 = "0.8"
+# History-key wrapper v2: Argon2id (see docs/PROTOCOL.md).
+argon2 = { version = "0.5", default-features = false, features = ["alloc"] }
+hkdf = "0.12"
+getrandom = "0.2"
+base64 = "0.13"
+zeroize = "1"
+ring = "0.17"
+# Nostr transport: BIP-340 signatures, x-only ECDH for NIP-44.
+secp256k1 = { version = "0.33", features = ["rand"] }
+hmac = "0.12"
+tungstenite = { version = "0.30", features = ["rustls-tls-webpki-roots"] }
+url = "2"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
