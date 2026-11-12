@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="GrinSight 0.2.0 — лёгкий кошелёк Grin, который сам проверяет цепочку. Windows, Android и Linux. Первый запуск — 10–20 минут, дальше — секунды.">
+<link rel="icon" href="app-mark.png">
+<link rel="canonical" href="https://danilagrinrus.github.io/GrinSight/">
+<link rel="alternate" hreflang="ru" href="https://danilagrinrus.github.io/GrinSight/">
+<link rel="alternate" hreflang="en" href="https://danilagrinrus.github.io/GrinSight/en/">
+<meta name="theme-color" content="#070c0e">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="GrinSight">
+<meta property="og:title" content="GrinSight 0.2.0 — лёгкий кошелёк Grin">
+<meta property="og:description" content="Windows, Android и Linux. Первый запуск — 10–20 минут, дальше — секунды. Кошелёк сам проверяет заголовки, PoW и состояние выходов.">
+<meta property="og:url" content="https://danilagrinrus.github.io/GrinSight/">
+<meta property="og:image" content="https://danilagrinrus.github.io/GrinSight/app-wallet.png">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<title>GrinSight 0.2.0 — лёгкий кошелёк Grin, который всё проверяет сам</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top">
+      <img src="app-mark.png" alt="GrinSight">
+      <span>GrinSight<small>light wallet · grin</small></span>
+    </a>
+    <div class="nav-links">
+      <a href="#time">Время</a>
+      <a href="#features">Возможности</a>
+      <a href="#verify">Как проверяет</a>
+      <a href="#download">Скачать</a>
+      <a href="#docs">Документы</a>
+    </div>
+    <div class="nav-right">
+      <span class="pill"><i class="dot"></i> v0.2.0</span>
+      <div class="dl-links" aria-label="Скачать GrinSight 0.2.0">
+        <a class="dl-link win" href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-windows-x64-setup.exe" title="Windows 10/11 x64 — установщик">Windows</a>
+        <a class="dl-link" href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-android-arm64.apk" title="Android 7+ — APK">Android</a>
+        <a class="dl-link" href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-linux-amd64.deb" title="Debian/Ubuntu amd64 — .deb">Linux</a>
+      </div>
+      <a class="icon-btn" href="en/index.html" aria-label="English version" title="English">EN</a>
+    </div>
+  </div>
+</nav>
+
+<main id="top">
+  <div class="wrap hero">
+    <div>
+      <div class="hero-tag">Revelio for your coins · v0.2.0</div>
+      <div class="eyebrow">Лёгкий кошелёк Grin</div>
+      <h1>Баланс, которому<br>не нужно верить<br><em>на слово.</em></h1>
+      <p class="lead">GrinSight сам скачивает заголовки у публичных пиров, проверяет PoW, состояние непотраченных выходов и каждый блок. Показывает баланс только после доказательства. Без своей ноды и без доверенного сервера.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#download">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12m0 0 5-5m-5 5-5-5M4 21h16"/></svg>
+          Скачать GrinSight 0.2.0
+        </a>
+        <a class="btn btn-ghost" href="#verify">Как это проверяется</a>
+      </div>
+      <div class="cta-note">
+        <span>Windows 10/11 · Android 7+ · Debian/Ubuntu</span>
+        <span class="hash">SHA-256 — <b>в SHA256SUMS.txt</b></span>
+      </div>
+      <div class="chips">
+        <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 4 7v5c0 5 3.4 8.4 8 9 4.6-.6 8-4 8-9V7l-8-4Z"/><path d="m9 12 2 2 4-4"/></svg> Проверка цепочки</span>
+        <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> Ключи на устройстве</span>
+        <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16M6 16l4-4 3 3 5-6"/></svg> Подписанный чекпоинт</span>
+      </div>
+      <div class="hero-time">
+        <div class="ht-cell first"><span>Первый запуск</span><b>10–20 мин</b></div>
+        <div class="ht-arrow">→</div>
+        <div class="ht-cell next"><span>Каждый следующий</span><b>секунды</b></div>
+      </div>
+    </div>
+    <div class="visual">
+      <div class="glow"></div>
+      <div class="window">
+        <div class="window-bar"><i></i><i></i><i></i><span>GrinSight · wallet</span></div>
+        <img src="app-wallet.png" alt="GrinSight — баланс и доказательство">
+      </div>
+      <div class="badge-float"><span class="dot"></span> Баланс доказан · 4 независимых пира</div>
+    </div>
+  </div>
+
+  <section class="section" id="time">
+    <div class="wrap">
+      <div class="sec-head">
+        <div><div class="kicker">Время до работы</div><h2>Первый запуск — один раз.<br>Дальше — секунды.</h2></div>
+        <p>Единственный долгий шаг — первая проверка mainnet: около 670 МБ и 10–20 минут. После неё rolling-контрольная точка делает каждый следующий запуск коротким.</p>
+      </div>
+      <div class="time-grid">
+        <div class="time-main">
+          <div class="time-label">Первый запуск · mainnet</div>
+          <div class="time-big">10–20 <small>мин</small></div>
+          <p>Пока проверяется цепочка и строится состояние выходов, кошелёк честно показывает прогресс. Это единственный долгий запуск — дальше состояние уже на диске.</p>
+          <div class="time-bar"><i></i></div>
+          <div class="time-meta"><span>670 МБ загрузки</span><span>·</span><span>зависит от канала и диска</span></div>
+        </div>
+        <div class="time-side">
+          <div class="time-card"><div class="time-k">Старт приложения</div><b>~5 сек</b><span>Запуск приложения и сервиса, без ожидания сети.</span></div>
+          <div class="time-card"><div class="time-k">Каждый следующий раз</div><b>секунды</b><span class="sub">Открыть → пароль → короткое обновление по rolling-точке → работать.</span></div>
+        </div>
+      </div>
+      <div class="time-steps">
+        <div class="time-step"><span class="t">0:00</span><b>Запуск</b><span>Приложение и локальный сервис.</span></div>
+        <div class="time-step"><span class="t">0:05</span><b>Пароль</b><span>Ключи расшифровываются только в памяти.</span></div>
+        <div class="time-step"><span class="t">0:10–20:00</span><b>Проверка</b><span>670 МБ, заголовки, состояние выходов, баланс.</span></div>
+        <div class="time-step"><span class="t">ready</span><b>Можно работать</b><span>Баланс доказан; дальше — только короткие обновления.</span></div>
+      </div>
+    </div>
+  </section>
+
+
+  <div class="stats">
+    <div class="wrap stats-in">
+      <div class="stat"><b>4 100 860</b><span>подтверждённый блок mainnet</span></div>
+      <div class="stat"><b>0</b><span>своих нод и доверенных серверов</span></div>
+      <div class="stat"><b>24 слова</b><span>ключи не покидают устройство</span></div>
+      <div class="stat"><b>MIT</b><span>код открыт · документация CC BY 4.0</span></div>
+    </div>
+  </div>
+
+  <section class="section" id="features">
+    <div class="wrap">
+      <div class="sec-head">
+        <div><div class="kicker">Что внутри</div><h2>Кошелёк, который проверяет,<br>а не просит доверия</h2></div>
+        <p>GrinSight не заменяет ноду — он проверяет то, что получил от публичных пиров. Каждый слой можно проследить до математики.</p>
+      </div>
+      <div class="features">
+        <div class="feature"><span class="num">01</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 18V7l8-4 8 4v11"/><path d="M8 21V10m4 11V7m4 14V10"/></svg><h3>Заголовки и PoW</h3><p>Несколько публичных пиров, проверка proof of work, сложности и связности. Выбирается самая тяжёлая цепочка, подтверждённая пирами из разных сетей.</p></div>
+        <div class="feature"><span class="num">02</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg><h3>Состояние выходов</h3><p>Непотраченное состояние собирается из PIBD-сегментов и сверяется с <code>output_root</code> из проверенного заголовка.</p></div>
+        <div class="feature"><span class="num">03</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12h8M12 8v8"/></svg><h3>Каждый новый блок</h3><p>Блоки до вершины проверяются по <code>output_root</code> / <code>kernel_root</code>; подтверждение платежа — по kernel в блоке проверенной цепи, с проверкой reorg.</p></div>
+        <div class="feature"><span class="num">04</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><h3>Ключи не уходят</h3><p>Фраза шифруется паролем (scrypt + ChaCha20-Poly1305) и передаётся ядру только в памяти. Приложение не хранит её в открытом виде.</p></div>
+        <div class="feature"><span class="num">05</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg><h3>Баланс по частям</h3><p>Доступно, зарезервировано, входит и созревает — видно, что можно тратить прямо сейчас, а что ещё ждёт подтверждения.</p></div>
+        <div class="feature"><span class="num">06</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v11H8l-4 4V5Z"/><path d="M8 9h8m-8 3h5"/></svg><h3>GlauxNet и Tor</h3><p>На Windows собственный шифрованный ящик работает, пока открыт кошелёк: локальный store-and-forward gateway как onion. Tor-обмен платежами и счетами работает и в Linux-сборке.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="download" style="padding-top:8px">
+    <div class="wrap">
+      <div class="sec-head">
+        <div><div class="kicker">Release 0.2.0</div><h2>Скачать и проверить</h2></div>
+        <p>Три платформы, один кошелёк. Подписанная контрольная точка mainnet уже внутри; первое обновление — 10–20 минут.</p>
+      </div>
+
+      <div class="dl-grid">
+        <div class="dl-item primary">
+          <div class="dl-os">Windows 10/11 x64</div>
+          <h3>Установщик</h3>
+          <p class="sub">Установщик без прав администратора; подписанная контрольная точка внутри. Данные кошельков — в <code>%APPDATA%\GrinSight</code>.</p>
+          <a class="btn btn-primary" href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-windows-x64-setup.exe">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12m0 0 5-5m-5 5-5-5M4 21h16"/></svg>
+            Скачать для Windows
+          </a>
+          <div class="file-meta"><span>19,9 МБ</span><span class="hash">sha256 519c8a43…b681f4</span></div>
+        </div>
+
+        <div class="dl-item">
+          <div class="dl-os">Android 7+</div>
+          <h3>APK · preview</h3>
+          <p class="sub">Разрешите установку из этого источника. QR и камера — в приложении; Tor-доставка есть не в каждой сборке, slatepack можно передавать текстом.</p>
+          <a class="btn btn-ghost" href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-android-arm64.apk">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12m0 0 5-5m-5 5-5-5M4 21h16"/></svg>
+            Скачать APK
+          </a>
+          <div class="file-meta"><span>45,5 МБ</span><span class="hash">sha256 6c0c4e9b…f2ca5</span></div>
+        </div>
+
+        <div class="dl-item">
+          <div class="dl-os">Debian / Ubuntu · amd64</div>
+          <h3>.deb-пакет</h3>
+          <p class="sub">Установка: <code>sudo apt install ./GrinSight-0.2.0-linux-amd64.deb</code>. Внутри — ядро, подписанный чекпоинт и Tor; ярлык и иконка ставятся в меню.</p>
+          <a class="btn btn-ghost" href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-linux-amd64.deb">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12m0 0 5-5m-5 5-5-5M4 21h16"/></svg>
+            Скачать .deb
+          </a>
+          <div class="file-meta"><span>17,3 МБ</span><span class="hash">sha256 d6f02b07…aab99a</span></div>
+        </div>
+      </div>
+
+      <div class="dl-foot">
+        <a href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/SHA256SUMS.txt">SHA256SUMS.txt — хеши всех файлов</a>
+        <a href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-source.zip">Исходники (zip)</a>
+        <a href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-CHECKPOINT.txt">Чекпоинт 4 098 960</a>
+      </div>
+
+      <div style="margin-top:16px" class="steps">
+        <div class="step"><h3>Сверьте SHA-256</h3><p>Скачайте <code>SHA256SUMS.txt</code> и сравните: Windows — <code>Get-FileHash</code>, Linux — <code>sha256sum</code>. Хеш должен совпасть со строкой вашего файла.</p></div>
+        <div class="step"><h3>Установите</h3><p>Windows — запустите <code>setup.exe</code>; Linux — <code>sudo apt install ./GrinSight-0.2.0-linux-amd64.deb</code>; Android — установите APK, разрешив источник.</p></div>
+        <div class="step"><h3>Постройте состояние</h3><p>Первое «Обновить» скачает около 670 МБ и проверит цепочку за 10–20 минут. Дальше обновления — секунды.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="verify" style="padding-top:22px">
+    <div class="wrap">
+      <div class="sec-head">
+        <div><div class="kicker">Доверие без лозунгов</div><h2>Что именно проверяется</h2></div>
+        <p>Коротко: заголовки → состояние выходов → баланс. Полная математика — в документах.</p>
+      </div>
+      <div class="callout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 3 8v5c0 5 4 8 9 9 5-1 9-4 9-9V8l-9-5Z"/><path d="M12 8v5m0 3h.01"/></svg>
+        <div><b>Честно об ограничениях</b><p>Нет независимого аудита безопасности. Видимая цепочка — та, что дали пиры: несколько сетей уменьшают, но не исключают изоляцию. Поставочная точка не старше 90 дней; если она старше ~300 дней, кошелёк предложит построить свою («Проверить сам»).</p></div>
+      </div>
+      <div class="docs" id="docs" style="margin-top:12px">
+        <a class="doc" href="https://github.com/DanilaGrinRus/GrinSight/blob/GrinSight/Documents/HOW_IT_WORKS_RU.md"><div>Как это работает<span>пошагово, без магии</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+        <a class="doc" href="https://github.com/DanilaGrinRus/GrinSight/blob/GrinSight/Documents/MATHEMATICS_RU.md"><div>Математика и границы доверия<span>что доказывает цепочка</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+        <a class="doc" href="https://github.com/DanilaGrinRus/GrinSight/releases/tag/v0.2.0"><div>Release notes 0.2.0<span>изменения и проверки</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <div><b>GrinSight 0.2.0</b> · «Revelio for your coins» · by DanilaBear<br>Код — MIT · документация и схемы — CC BY 4.0 · сторонние компоненты — NOTICE.md</div>
+    <div class="links"><a href="https://github.com/DanilaGrinRus/GrinSight">GitHub</a><a href="https://github.com/DanilaGrinRus/GrinSight/releases/tag/v0.2.0">Release</a><a href="#top">Наверх ↑</a></div>
+  </div>
+</footer>
+</body>
+</html>

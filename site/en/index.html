@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="GrinSight 0.2.0 — a light Grin wallet that verifies the chain itself. Windows, Android and Linux. First launch 10–20 minutes, then seconds.">
+<link rel="icon" href="../app-mark.png">
+<link rel="canonical" href="https://danilagrinrus.github.io/GrinSight/en/">
+<link rel="alternate" hreflang="ru" href="https://danilagrinrus.github.io/GrinSight/">
+<link rel="alternate" hreflang="en" href="https://danilagrinrus.github.io/GrinSight/en/">
+<meta name="theme-color" content="#070c0e">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="GrinSight">
+<meta property="og:title" content="GrinSight 0.2.0 — a light Grin wallet">
+<meta property="og:description" content="Windows, Android and Linux. First launch takes 10–20 minutes. After that — seconds. The wallet verifies headers, PoW and the unspent-output state itself.">
+<meta property="og:url" content="https://danilagrinrus.github.io/GrinSight/en/">
+<meta property="og:image" content="https://danilagrinrus.github.io/GrinSight/app-wallet.png">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ru_RU">
+<meta name="twitter:card" content="summary_large_image">
+<title>GrinSight 0.2.0 — a light Grin wallet that checks everything itself</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top">
+      <img src="../app-mark.png" alt="GrinSight">
+      <span>GrinSight<small>light wallet · grin</small></span>
+    </a>
+    <div class="nav-links">
+      <a href="#time">Time</a>
+      <a href="#features">Features</a>
+      <a href="#verify">How it verifies</a>
+      <a href="#download">Download</a>
+      <a href="#docs">Docs</a>
+    </div>
+    <div class="nav-right">
+      <span class="pill"><i class="dot"></i> v0.2.0</span>
+      <div class="dl-links" aria-label="Download GrinSight 0.2.0">
+        <a class="dl-link win" href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-windows-x64-setup.exe" title="Windows 10/11 x64 — installer">Windows</a>
+        <a class="dl-link" href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-android-arm64.apk" title="Android 7+ — APK">Android</a>
+        <a class="dl-link" href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-linux-amd64.deb" title="Debian/Ubuntu amd64 — .deb">Linux</a>
+      </div>
+      <a class="icon-btn" href="../index.html" aria-label="Русская версия" title="Русский">RU</a>
+    </div>
+  </div>
+</nav>
+
+<main id="top">
+  <div class="wrap hero">
+    <div>
+      <div class="hero-tag">Revelio for your coins · v0.2.0</div>
+      <div class="eyebrow">A light Grin wallet</div>
+      <h1>A balance you<br>don't have to<br>take <em>on faith.</em></h1>
+      <p class="lead">GrinSight downloads headers from public peers, verifies proof of work, the unspent-output state and every new block. It shows a balance only after proving it. No node, no trusted server.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#download">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12m0 0 5-5m-5 5-5-5M4 21h16"/></svg>
+          Download GrinSight 0.2.0
+        </a>
+        <a class="btn btn-ghost" href="#verify">How it verifies</a>
+      </div>
+      <div class="cta-note">
+        <span>Windows 10/11 · Android 7+ · Debian/Ubuntu</span>
+        <span class="hash">SHA-256 — <b>in SHA256SUMS.txt</b></span>
+      </div>
+      <div class="chips">
+        <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 4 7v5c0 5 3.4 8.4 8 9 4.6-.6 8-4 8-9V7l-8-4Z"/><path d="m9 12 2 2 4-4"/></svg> Chain verification</span>
+        <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> Keys stay local</span>
+        <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16M6 16l4-4 3 3 5-6"/></svg> Signed checkpoint</span>
+      </div>
+      <div class="hero-time">
+        <div class="ht-cell first"><span>First launch</span><b>10–20 min</b></div>
+        <div class="ht-arrow">→</div>
+        <div class="ht-cell next"><span>Every next launch</span><b>seconds</b></div>
+      </div>
+    </div>
+    <div class="visual">
+      <div class="glow"></div>
+      <div class="window">
+        <div class="window-bar"><i></i><i></i><i></i><span>GrinSight · wallet</span></div>
+        <img src="../app-wallet.png" alt="GrinSight — balance and proof">
+      </div>
+      <div class="badge-float"><span class="dot"></span> Balance proven · 4 independent peers</div>
+    </div>
+  </div>
+
+  <section class="section" id="time">
+    <div class="wrap">
+      <div class="sec-head">
+        <div><div class="kicker">Time to ready</div><h2>First launch once.<br>Then it's seconds.</h2></div>
+        <p>The only long step is the first mainnet verification: about 670 MB and 10–20 minutes. After that, the rolling checkpoint keeps every next launch short.</p>
+      </div>
+      <div class="time-grid">
+        <div class="time-main">
+          <div class="time-label">First launch · mainnet</div>
+          <div class="time-big">10–20 <small>min</small></div>
+          <p>While the chain and the unspent-output state are verified, the wallet shows honest progress. This is the only long run — the proven state stays on disk afterwards.</p>
+          <div class="time-bar"><i></i></div>
+          <div class="time-meta"><span>670 MB download</span><span>·</span><span>depends on your link and disk</span></div>
+        </div>
+        <div class="time-side">
+          <div class="time-card"><div class="time-k">App start</div><b>~5 sec</b><span>The app and local service start without waiting for the network.</span></div>
+          <div class="time-card"><div class="time-k">Every next launch</div><b>seconds</b><span class="sub">Open → password → short update from the rolling checkpoint → ready.</span></div>
+        </div>
+      </div>
+      <div class="time-steps">
+        <div class="time-step"><span class="t">0:00</span><b>Launch</b><span>The app and the local service.</span></div>
+        <div class="time-step"><span class="t">0:05</span><b>Unlock</b><span>Keys are decrypted in memory only.</span></div>
+        <div class="time-step"><span class="t">0:10–20:00</span><b>Verify</b><span>670 MB, headers, UTXO state, balance.</span></div>
+        <div class="time-step"><span class="t">ready</span><b>Ready to work</b><span>Balance proven; only short updates from now on.</span></div>
+      </div>
+    </div>
+  </section>
+
+
+  <div class="stats">
+    <div class="wrap stats-in">
+      <div class="stat"><b>4,100,860</b><span>verified mainnet block</span></div>
+      <div class="stat"><b>0</b><span>own nodes or trusted servers</span></div>
+      <div class="stat"><b>24 words</b><span>keys never leave the device</span></div>
+      <div class="stat"><b>MIT</b><span>open code · docs CC BY 4.0</span></div>
+    </div>
+  </div>
+
+  <section class="section" id="features">
+    <div class="wrap">
+      <div class="sec-head">
+        <div><div class="kicker">What's inside</div><h2>A wallet that verifies,<br>not asks for trust</h2></div>
+        <p>GrinSight doesn't replace a node — it verifies what it receives from public peers. Every layer traces back to the math.</p>
+      </div>
+      <div class="features">
+        <div class="feature"><span class="num">01</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 18V7l8-4 8 4v11"/><path d="M8 21V10m4 11V7m4 14V10"/></svg><h3>Headers and PoW</h3><p>Several public peers, proof-of-work, difficulty and link checks. The heaviest chain is chosen and confirmed by peers from different networks.</p></div>
+        <div class="feature"><span class="num">02</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg><h3>UTXO state</h3><p>The unspent state is rebuilt from PIBD segments and checked against <code>output_root</code> from a verified header.</p></div>
+        <div class="feature"><span class="num">03</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12h8M12 8v8"/></svg><h3>Every new block</h3><p>Blocks up to the tip are checked against <code>output_root</code> / <code>kernel_root</code>; payment confirmation is by kernel in a block of the verified chain, with a reorg check.</p></div>
+        <div class="feature"><span class="num">04</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><h3>Keys never leave</h3><p>The phrase is encrypted with your password (scrypt + ChaCha20-Poly1305) and passed to the core only in memory. The app never stores it in the clear.</p></div>
+        <div class="feature"><span class="num">05</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg><h3>Balance breakdown</h3><p>Available, reserved, incoming and immature — you can see what is spendable now and what is still waiting for confirmation.</p></div>
+        <div class="feature"><span class="num">06</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v11H8l-4 4V5Z"/><path d="M8 9h8m-8 3h5"/></svg><h3>GlauxNet and Tor</h3><p>On Windows, your own encrypted mailbox runs while the wallet is open: a local store-and-forward gateway published as your onion. Tor payments and invoices also work in the Linux build.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="download" style="padding-top:8px">
+    <div class="wrap">
+      <div class="sec-head">
+        <div><div class="kicker">Release 0.2.0</div><h2>Download and verify</h2></div>
+        <p>Three platforms, one wallet. The signed mainnet checkpoint is included; the first update takes 10–20 minutes.</p>
+      </div>
+
+      <div class="dl-grid">
+        <div class="dl-item primary">
+          <div class="dl-os">Windows 10/11 x64</div>
+          <h3>Installer</h3>
+          <p class="sub">Installer without administrator rights; the signed checkpoint is inside. Wallet data lives in <code>%APPDATA%\GrinSight</code>.</p>
+          <a class="btn btn-primary" href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-windows-x64-setup.exe">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12m0 0 5-5m-5 5-5-5M4 21h16"/></svg>
+            Download for Windows
+          </a>
+          <div class="file-meta"><span>19.9 MB</span><span class="hash">sha256 519c8a43…b681f4</span></div>
+        </div>
+
+        <div class="dl-item">
+          <div class="dl-os">Android 7+</div>
+          <h3>APK · preview</h3>
+          <p class="sub">Allow installs from this source. Camera and QR are in the app; Tor delivery is not in every build, slatepacks can be exchanged as text.</p>
+          <a class="btn btn-ghost" href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-android-arm64.apk">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12m0 0 5-5m-5 5-5-5M4 21h16"/></svg>
+            Download APK
+          </a>
+          <div class="file-meta"><span>45.5 MB</span><span class="hash">sha256 6c0c4e9b…f2ca5</span></div>
+        </div>
+
+        <div class="dl-item">
+          <div class="dl-os">Debian / Ubuntu · amd64</div>
+          <h3>.deb package</h3>
+          <p class="sub">Install: <code>sudo apt install ./GrinSight-0.2.0-linux-amd64.deb</code>. The core, the signed checkpoint and Tor are inside; a launcher and icon are added to the menu.</p>
+          <a class="btn btn-ghost" href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-linux-amd64.deb">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12m0 0 5-5m-5 5-5-5M4 21h16"/></svg>
+            Download .deb
+          </a>
+          <div class="file-meta"><span>17.3 MB</span><span class="hash">sha256 d6f02b07…aab99a</span></div>
+        </div>
+      </div>
+
+      <div class="dl-foot">
+        <a href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/SHA256SUMS.txt">SHA256SUMS.txt — hashes of every file</a>
+        <a href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-source.zip">Source code (zip)</a>
+        <a href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-CHECKPOINT.txt">Checkpoint 4,098,960</a>
+      </div>
+
+      <div style="margin-top:16px" class="steps">
+        <div class="step"><h3>Verify the SHA-256</h3><p>Download <code>SHA256SUMS.txt</code> and compare: Windows — <code>Get-FileHash</code>, Linux — <code>sha256sum</code>. The hash must match the line for your file.</p></div>
+        <div class="step"><h3>Install</h3><p>Windows — run <code>setup.exe</code>; Linux — <code>sudo apt install ./GrinSight-0.2.0-linux-amd64.deb</code>; Android — install the APK and allow the source.</p></div>
+        <div class="step"><h3>Build the state</h3><p>The first “Update” downloads about 670 MB and verifies the chain in 10–20 minutes. Later updates take seconds.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="verify" style="padding-top:22px">
+    <div class="wrap">
+      <div class="sec-head">
+        <div><div class="kicker">Trust without slogans</div><h2>What exactly is verified</h2></div>
+        <p>In short: headers → UTXO state → balance. Full math is in the docs.</p>
+      </div>
+      <div class="callout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 3 8v5c0 5 4 8 9 9 5-1 9-4 9-9V8l-9-5Z"/><path d="M12 8v5m0 3h.01"/></svg>
+        <div><b>Honest about limits</b><p>No independent security audit yet. The chain you see is the one your peers gave you: several networks reduce, but do not exclude, isolation by dishonest peers. The shipped checkpoint is at most 90 days old; if it is older than ~300 days, the wallet offers to build its own (“Check myself”).</p></div>
+      </div>
+      <div class="docs" id="docs" style="margin-top:12px">
+        <a class="doc" href="https://github.com/DanilaGrinRus/GrinSight/blob/GrinSight/Documents/HOW_IT_WORKS_EN.md"><div>How it works<span>step by step, no magic</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+        <a class="doc" href="https://github.com/DanilaGrinRus/GrinSight/blob/GrinSight/Documents/MATHEMATICS_EN.md"><div>Mathematics and trust boundaries<span>what the chain proves</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+        <a class="doc" href="https://github.com/DanilaGrinRus/GrinSight/releases/tag/v0.2.0"><div>Release notes 0.2.0<span>changes and tests</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <div><b>GrinSight 0.2.0</b> · “Revelio for your coins” · by DanilaBear<br>Code — MIT · documentation and diagrams — CC BY 4.0 · third-party components — NOTICE.md</div>
+    <div class="links"><a href="https://github.com/DanilaGrinRus/GrinSight">GitHub</a><a href="https://github.com/DanilaGrinRus/GrinSight/releases/tag/v0.2.0">Release</a><a href="#top">Back to top ↑</a></div>
+  </div>
+</footer>
+</body>
+</html>
