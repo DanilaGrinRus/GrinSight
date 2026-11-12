@@ -1,0 +1,16 @@
+GrinMessenger
+Copyright (c) 2026 DanilaGrinRus
+
+This product contains source code and documentation extracted from the Flint
+project (https://github.com/DanilaGrinRus/Flint, commit
+20efa26a953f83a36ec0fe248e390d0031d01a95), which was published under
+GPL-3.0-only. The copyright holder relicensed the extracted and adapted
+portions under MIT OR Apache-2.0 as part of this standalone extraction.
+
+It also contains portions adapted from grin-wallet
+(https://github.com/mimblewimble/grin-wallet), licensed under
+Apache License 2.0, and depends on third-party crates listed in Cargo.lock.
+The landing page is adapted from the Flint project's own site (relicensed by
+the copyright holder under the same MIT OR Apache-2.0 terms).
+
+See PROVENANCE.md and THIRD_PARTY_NOTICES.md for details.

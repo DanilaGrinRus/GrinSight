@@ -1,0 +1,18 @@
+[package]
+name = "grinsight-gateway"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Untrusted WSS-facing data gateway for GrinSight (no keys, no verification)"
+
+[dependencies]
+grinsight-state = { path = "../grinsight-state", default-features = false, features = ["web"] }
+serde_json = "1"
+grin_core = { path = "../vendor/grin-5.5.2/core" }
+grin_util = { path = "../vendor/grin-5.5.2/util" }
+grin_chain = { path = "../vendor/grin-5.5.2/chain" }
+grin_p2p = { path = "../vendor/grin-5.5.2/p2p" }
+chrono = "0.4"
+
+
+

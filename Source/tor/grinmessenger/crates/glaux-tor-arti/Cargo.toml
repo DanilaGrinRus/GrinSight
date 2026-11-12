@@ -1,0 +1,46 @@
+[package]
+name = "glaux-tor-arti"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+license.workspace = true
+description = "In-process Tor (Arti) layer: onion v3 service from an ed25519 seed and HTTP requests over Tor"
+
+# TLS to Tor relays: one of the two (Arti's TLS features are not additive).
+#   native-tls (default): the platform TLS, OpenSSL built from source where the
+#     platform has none (needs perl + make); used for the Windows build.
+#   rustls: pure Rust (ring), no OpenSSL; used for the Android build, so it
+#     cross-compiles with the NDK alone.
+[features]
+default = ["native-tls"]
+native-tls = ["arti-client/native-tls", "arti-client/static", "tor-rtcompat/native-tls", "tor-rtcompat/static"]
+rustls = ["arti-client/rustls", "arti-client/static-sqlite", "tor-rtcompat/rustls", "dep:rustls"]
+
+[dependencies]
+arti-client = { version = "0.43.0", default-features = false, features = ["tokio", "compression", "pt-client", "onion-service-service", "onion-service-client"] }
+tor-rtcompat = { version = "0.43.0", features = ["tokio"] }
+# With the rustls feature the application must pick rustls' crypto provider
+# (Arti panics with "CryptoProvider not installed" otherwise): ring, which Arti
+# already links, so no aws-lc (cmake/nasm) is needed.
+rustls = { version = "0.23.21", optional = true, default-features = false, features = ["ring", "std", "logging", "tls12"] }
+tor-hsservice = "0.43.0"
+tor-hsrproxy = "0.43.0"
+tor-keymgr = "0.43.0"
+tor-llcrypto = "0.43.0"
+tor-hscrypto = "0.43.0"
+fs-mistrust = "0.14.2"
+fslock-guard = "0.8"
+bech32 = "0.7"
+sha3 = "0.10"
+data-encoding = "2"
+ed25519-dalek = { version = "2", features = ["hazmat"] }
+sha2 = "0.10"
+hyper = { version = "1", features = ["http1", "client"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+http-body-util = "0.1"
+bytes = "1"
+futures = "0.3"
+tokio = { version = "1", features = ["rt-multi-thread", "time", "macros", "sync"] }
+log = "0.4"
+thiserror = "2"

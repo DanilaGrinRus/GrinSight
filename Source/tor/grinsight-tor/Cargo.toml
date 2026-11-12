@@ -1,0 +1,27 @@
+[package]
+name = "grinsight-tor"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "GrinSight wallet: automatic slatepack exchange over Tor (grin-wallet foreign API) and GrinMessenger envelopes, with an address book"
+
+# Windows: default (native-tls). Android: --no-default-features --features rustls
+# (no OpenSSL, builds with the NDK alone; see make_android.ps1).
+[features]
+default = ["native-tls"]
+native-tls = ["glaux-tor-arti/native-tls", "glaux-messenger-wallet/native-tls"]
+rustls = ["glaux-tor-arti/rustls", "glaux-messenger-wallet/rustls"]
+
+[dependencies]
+glaux-tor-arti = { path = "../grinmessenger/crates/glaux-tor-arti", default-features = false }
+glaux-messenger = { path = "../grinmessenger/crates/glaux-messenger" }
+glaux-messenger-wallet = { path = "../grinmessenger/crates/glaux-messenger-wallet", default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+zeroize = "1"
+data-encoding = "2"
+
+[dev-dependencies]
+# only to check the version of the bundled SQLite the Tor client links
+libsqlite3-sys = "0.37"

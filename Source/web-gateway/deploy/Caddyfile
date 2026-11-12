@@ -1,0 +1,21 @@
+# Caddyfile for production WSS termination in front of grinsight-gateway.
+# The gateway stays on loopback (plain WS); Caddy terminates TLS.
+#
+# 1. Point DNS at the host.
+# 2. Run: grinsight-gateway --bind 127.0.0.1:8787 --release-dir ..\checkpoints\floonet
+# 3. Run: caddy run --config Caddyfile
+# 4. Browser uses wss://gateway.example.org/ (Caddy upgrades/proxies websockets).
+
+gateway.example.org {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:8787
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "no-referrer"
+    }
+    log {
+        output file C:\logs\grinsight-gateway-access.log
+        format json
+    }
+}

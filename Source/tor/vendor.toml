@@ -1,0 +1,4 @@
+# Passed with  cargo --config tor/vendor.toml ...  (grinsight-tor builds from the
+# GrinMessenger/Arti offline vendor on this machine).
+[source.vendored-sources]
+directory = "C:/DHW/vendor"
