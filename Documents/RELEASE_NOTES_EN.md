@@ -8,6 +8,7 @@
 |---|---|
 | `GrinSight-0.2.0-windows-x64-setup.exe` | **installer** for Windows 10/11 x64, the signed mainnet checkpoint inside; no administrator rights needed |
 | `GrinSight-0.2.0-android-arm64.apk` | Android 7+ (preview build), the same signed checkpoint inside |
+| `GrinSight-0.2.0-linux-amd64.deb` | **Debian/Ubuntu** amd64 package (.deb), the same signed checkpoint inside; the app, launcher and Tor are included |
 | `GrinSight-0.2.0-CHECKPOINT.txt` | which signed mainnet checkpoint is inside every package of this version (height, hash, SHA-256) |
 | `GrinSight-0.2.0-source.zip` | source code: core, Tor/GlauxNet, C API, Flutter app, build scripts (no user data or secrets) |
 | `SHA256SUMS.txt` | checksums of every file above |
@@ -24,6 +25,7 @@ The hash must equal the line for that file in `SHA256SUMS.txt`.
 
 ## What's new in this version
 
+- **Linux build:** a `.deb` package for Debian/Ubuntu amd64 with the same verifying core, signed checkpoint and Tor.
 - **Check the checkpoint yourself — before signing in.** "Check myself" downloads every
   header from the first block from independent nodes, checks each one, builds a fresh
   checkpoint and checks that the shipped one is on the same chain. Wallets switch to it
@@ -85,6 +87,9 @@ The hash must equal the line for that file in `SHA256SUMS.txt`.
   later updates take seconds.
 - **Android (preview build):** install the APK (allow installs from this source). Use Wi-Fi
   for the first update.
+- **Linux (Debian/Ubuntu):** `sudo apt install ./GrinSight-0.2.0-linux-amd64.deb`,
+  then GrinSight from the applications menu. Wallet data: `~/.grinsight`. The first
+  "Update" is the same 10–20 minutes; later updates take seconds.
 
 ## Known limitations
 
