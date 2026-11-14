@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>PayloadContent</key><array><dict>
+<key>PayloadCertificateFileName</key><string>grinsight-local-ca.cer</string>
+<key>PayloadContent</key><data>LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURLekNDQWhPZ0F3SUJBZ0lVYldPZThuRVpuYXA4djFTeE9jejRLUzRjZHpZd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0hURWJNQmtHQTFVRUF3d1NSM0pwYmxOcFoyaDBJRXh2WTJGc0lFTkJNQjRYRFRJMk1URXhNekEyTWpjeQpNbG9YRFRNMk1URXhNREEyTWpjeU1sb3dIVEViTUJrR0ExVUVBd3dTUjNKcGJsTnBaMmgwSUV4dlkyRnNJRU5CCk1JSUJJakFOQmdrcWhraUc5dzBCQVFFRkFBT0NBUThBTUlJQkNnS0NBUUVBbU5qZ2xVd25JVTlqdHNIQWdLRXgKZ1Ava1hHZ2lCY1U4WngybFhDYXc2ZjdHV3FJRHRxVG1GSUZFWUFSSzFIQnh5NGVGTHJ0VWxTcFdrd1RFT09QWQp2a3dQU3FoWjEyUTAxcDVxNUhtT3hCa2dLSjhUUDdENytnS1FzVUV6c2I5ak00L0R5cC9NMVUxM3lmeVZ3dGRvCk5TLzh5VFpBbmxpaVBrVjVPT3VVTER2RHN0MHA3TEZVdC94NWtYTjBiMXhZQ2pwYVVuQStNa2RZTUdJcjdEUmUKMnZIUkd1ckEzeERMOEtJWDJWRHJBM1d1SHViSFRaN0VUUzlONytEU3U0c0piSU8zbmdhSWlmODRKSCtxQ3FxZwpmc0NRNEcvWE5QQ0JPekF0anpHMWlGZVgvcnRUY2w0b0NzaEFzc1Bqb1lBcjRNMzd5VjljR1ZzYmxrV280czYrCml3SURBUUFCbzJNd1lUQWRCZ05WSFE0RUZnUVVQM2plRWtHUnpNSHEyazB0eVBmOW0zSGJuU2d3SHdZRFZSMGoKQkJnd0ZvQVVQM2plRWtHUnpNSHEyazB0eVBmOW0zSGJuU2d3RHdZRFZSMFRBUUgvQkFVd0F3RUIvekFPQmdOVgpIUThCQWY4RUJBTUNBUVl3RFFZSktvWklodmNOQVFFTEJRQURnZ0VCQUR1dVdpVFdnT1ozaExINWx2MUdObWl0CkJCeVd3c0o3ZGxkZE1Ibm5rQ0ZKUE9yMkh1OGdLTnVNT2tybEdzWno4QlZpWnlVMmorWS9Qbit0aUVCNEh0U04KT0dGWjFLQ3MwWWg2ZEdyVUVSM0tjRXpkU00vRFFMOUJXS21PYk1IQUN5MythMjd4eS9vc3VPYldPV1ZSS2JhUApqdmdQeUJHd0I0UElsckQ1RHhocGdXUzZYVE85RW1uOElQeTJyeTVHeGsrdGMwTGVucytZa0FISysvcTQwaDVFCitnd1kxc0FBMW9jQURDb1hWcmd3Q0dDREZzVVBhRXdMN1hRdE9FdUlzbVFjVTkwVDdXZ3hiQXhPZDVZUVdySUsKdnl0ZXdoQjBlc3RtWmF5RWVEcGx1VFFoSHY5R3RBWFRCeXZaaTJQbWxBdWNiS1FvYXI5Y2lXVTVFdjl4ajBNPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==</data>
+<key>PayloadDescription</key><string>GrinSight local HTTPS root CA</string>
+<key>PayloadDisplayName</key><string>GrinSight Local CA</string>
+<key>PayloadIdentifier</key><string>live.grinsight.localca.7975e7c4-e581-4873-8372-81e20f5c2659</string>
+<key>PayloadType</key><string>com.apple.security.root</string>
+<key>PayloadUUID</key><string>f963f238-4f3c-47c1-a4f2-da925467b703</string>
+<key>PayloadVersion</key><integer>1</integer>
+</dict></array>
+<key>PayloadDisplayName</key><string>GrinSight Local CA</string>
+<key>PayloadIdentifier</key><string>live.grinsight.profile.bc7f78d0-9222-4c5d-a33c-c0d5a5956cda</string>
+<key>PayloadRemovalDisallowed</key><false/>
+<key>PayloadType</key><string>Configuration</string>
+<key>PayloadUUID</key><string>a326cc56-9f81-429f-ba6e-a01f67b9ea62</string>
+<key>PayloadVersion</key><integer>1</integer>
+</dict></plist>
