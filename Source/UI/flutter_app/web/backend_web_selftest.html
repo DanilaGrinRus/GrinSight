@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GrinSight web backend selftest</title>
+<style>body{background:#07101c;color:#e8f3ff;font:14px/1.5 monospace;padding:24px}pre{white-space:pre-wrap}.ok{color:#5cf2b4}.bad{color:#ff8b8b}</style>
+</head>
+<body>
+<h3>GrinSight web backend selftest</h3>
+<pre id="out">running…</pre>
+<script type="module">
+const out = document.getElementById('out');
+const log = (s) => { out.textContent += '\n' + s; };
+try {
+  const bridge = (await import('./backend_web_bridge.mjs')).default;
+  const phrase = await bridge.newPhrase(12);
+  if (!phrase || phrase.split(' ').length !== 12) throw new Error('phrase generation failed');
+  log('PHRASE_OK=12');
+  await bridge.checkPhrase(phrase);
+  log('CHECK_OK=1');
+  const created = await bridge.create({ login: 'webtest_' + Date.now(), phrase, password: 'testpass123', network: 'floonet' });
+  if (!created.address) throw new Error('no address after create');
+  log('CREATE_OK address=' + created.address.slice(0, 12) + '…');
+  const list = await bridge.list();
+  log('LIST_OK=' + list.length);
+  const unlocked = await bridge.unlock({ login: created.login, password: 'testpass123', network: 'floonet' });
+  if (unlocked.address !== created.address) throw new Error('address mismatch after unlock');
+  log('UNLOCK_OK=1');
+  const again = await bridge.showPhrase({ login: created.login, password: 'testpass123' });
+  if (again !== phrase) throw new Error('phrase roundtrip mismatch');
+  log('PHRASE_ROUNDTRIP_OK=1');
+  log('SELFTEST=PASS');
+  out.className = 'ok';
+} catch (e) {
+  log('SELFTEST=FAIL ' + e);
+  out.className = 'bad';
+}
+</script>
+</body>
+</html>

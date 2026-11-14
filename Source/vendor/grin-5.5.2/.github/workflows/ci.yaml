@@ -1,0 +1,50 @@
+name: Continuous Integration
+on: [push, pull_request]
+
+jobs:
+  linux-tests:
+    name: Linux Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        job_args: [servers, chain, core, keychain, pool, p2p, src, api, util, store]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Test ${{ matrix.job_args }}
+        working-directory: ${{ matrix.job_args }}
+        run: cargo test --release
+
+  macos-tests:
+    name: macOS Tests
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Tests
+        run: cargo test --release --all
+
+  windows-tests:
+    name: Windows Tests
+    runs-on: windows-2022
+    env:
+      ROARING_ARCH: x86-64-v2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Tests
+        run: cargo test --release --all
+
+  telegram-notify:
+    name: Telegram Notification
+    needs: [linux-tests, macos-tests, windows-tests]
+    if: always() && github.event_name == 'push'
+    uses: ./.github/workflows/telegram.yaml
+    secrets: inherit
+    with:
+      title: Grin CI
+      status: ${{ contains(join(needs.*.result, ','), 'failure') && 'failed' || contains(join(needs.*.result, ','), 'cancelled') && 'cancelled' || 'success' }}
+      details: |
+        <b>Linux:</b> ${{ needs.linux-tests.result }}
+        <b>macOS:</b> ${{ needs.macos-tests.result }}
+        <b>Windows:</b> ${{ needs.windows-tests.result }}
+      commit_message: ${{ github.event.head_commit.message }}
