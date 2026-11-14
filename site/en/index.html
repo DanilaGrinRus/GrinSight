@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="gs-version" content="0.2.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="GrinSight 0.2.0 — a research light Grin wallet that verifies the chain on your device. Windows, Linux and Android. First launch 10–20 minutes, then seconds.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../favicon.ico" sizes="48x48">
+<link rel="canonical" href="https://danilagrinrus.github.io/GrinSight/en/">
+<link rel="alternate" hreflang="ru" href="https://danilagrinrus.github.io/GrinSight/">
+<link rel="alternate" hreflang="en" href="https://danilagrinrus.github.io/GrinSight/en/">
+<meta name="theme-color" content="#0B0F14">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="GrinSight">
+<meta property="og:title" content="GrinSight 0.2.0 — a light Grin wallet">
+<meta property="og:description" content="First launch 10–20 minutes, then seconds. Headers, proof of work and the coin state are verified on your device.">
+<meta property="og:url" content="https://danilagrinrus.github.io/GrinSight/en/">
+<meta property="og:image" content="https://danilagrinrus.github.io/GrinSight/app-wallet.png">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ru_RU">
+<meta name="twitter:card" content="summary_large_image">
+<title>GrinSight 0.2.0 — a light Grin wallet that checks the balance before showing it</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@300;600;700;800&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav">
+  <nav class="wrap nav-in" aria-label="Main">
+    <a class="brand" href="#top" aria-label="GrinSight"><img src="../favicon.svg" alt=""><span class="wm">Grin<span>Sight</span></span></a>
+    <div class="nav-links"><a href="#checks">How it checks</a><a href="#tested">Tested</a><a href="#download">Download</a><a href="#limits">Limits</a><a href="#docs">Docs</a></div>
+    <div class="nav-end">
+      <a class="chip" href="../" hreflang="ru" aria-label="Русская версия">RU</a>
+      <a class="chip" href="https://github.com/DanilaGrinRus/GrinSight">GitHub</a>
+    </div>
+  </nav>
+</header>
+<main id="main">
+<div id="top" class="wrap hero">
+  <div class="hero-text">
+    <div class="eyebrow">Research light wallet for Grin · v0.2.0</div>
+    <h1>Don’t trust the balance.<br><em>Check it.</em></h1>
+    <p class="lead">GrinSight downloads data from public Grin peers and verifies it on your device — headers, proof of work, the coin state and every new block. It shows a balance only after the proof. No own full node needed.</p>
+    <div class="small">Free · MIT · Windows, Linux, Android · <a href="#download">download below ↓</a></div>
+    <div class="times">
+      <div class="time"><div class="k">First launch · mainnet</div><b>10–20 min</b><span>about 670 MB, once</span></div>
+      <div class="time fast"><div class="k">Every next launch</div><b>seconds</b><span>password → update → ready</span></div>
+    </div>
+  </div>
+  <div class="hero-shot">
+    <figure><img src="../app-wallet.png" width="1280" height="720" alt="GrinSight on Windows, testnet: 1393.68 tGRIN available, marked proven on verified block 3,332,579 from 4 peers"></figure>
+    <div class="receipt" aria-hidden="true"><div class="ok">✓ BALANCE PROVEN</div><div><i>verified tip</i><span>3,332,579</span></div><div><i>peers</i><span>4</span></div><div><i>network</i><span>testnet</span></div></div>
+  </div>
+</div>
+
+<section id="download" class="wrap">
+  <div class="head-row">
+    <h2>Download the latest: 0.2.0 <span class="badge">latest</span></h2>
+    <a href="https://github.com/DanilaGrinRus/GrinSight/releases/latest">Latest release: all files, source, SHA256SUMS.txt →</a>
+  </div>
+  <div class="cards">
+      <div class="card">
+        <a class="btn btn-primary" href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-windows-x64-setup.exe">Download .exe</a>
+        <h3>Windows 10/11 x64</h3>
+        <p>Installer, no administrator rights. The signed checkpoint is inside. Wallet data lives in <code>%APPDATA%\GrinSight</code>.</p>
+        <div class="file-meta"><span>19.9 MB</span><span class="hash">sha256 519c8a43…b681f4</span></div>
+      </div>
+      <div class="card">
+        <a class="btn btn-ghost" href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-linux-amd64.deb">Download .deb</a>
+        <h3>Debian / Ubuntu amd64</h3>
+        <p><code>sudo apt install ./GrinSight-0.2.0-linux-amd64.deb</code> — core, signed checkpoint and Tor inside; a launcher is added to the menu.</p>
+        <div class="file-meta"><span>17.3 MB</span><span class="hash">sha256 d6f02b07…aab99a</span></div>
+      </div>
+      <div class="card">
+        <a class="btn btn-ghost" href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-android-arm64.apk">Download .apk</a>
+        <h3>Android 7+ <span class="tag">preview</span></h3>
+        <p>APK for arm64. Allow installs from this source. Tor delivery is not in every build; slatepacks can always be exchanged as text.</p>
+        <div class="file-meta"><span>45.5 MB</span><span class="hash">sha256 6c0c4e9b…f2ca5</span></div>
+      </div>
+  </div>
+  <div class="more"><a href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/SHA256SUMS.txt">SHA256SUMS.txt — hashes of every file</a><a href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-source.zip">Source code (zip)</a><a href="https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.2.0/GrinSight-0.2.0-CHECKPOINT.txt">Checkpoint 4,098,960</a></div>
+  <div class="howto"><div><h3>1. Verify the SHA-256</h3><p>Compare with <code>SHA256SUMS.txt</code>: Windows — <code>Get-FileHash</code>, Linux — <code>sha256sum</code>.</p></div><div><h3>2. Install</h3><p>Windows — run the installer; Linux — <code>sudo apt install</code>; Android — install the APK.</p></div><div><h3>3. Build the state</h3><p>The first “Update” downloads about 670 MB and verifies the chain. Later updates take seconds.</p></div></div>
+</section>
+
+<section id="checks" class="wrap">
+  <div class="head">
+    <div class="kicker">Revelio for your coins</div>
+    <h2>Four checks before you see a number</h2>
+    <p>If any check fails, the wallet shows no balance rather than a wrong one.</p>
+  </div>
+  <div class="grid4"><div class="step"><div class="n">01</div><h3>Headers</h3><p>From several public peers. Proof of work, difficulty and links are checked for each one; the heaviest chain must be agreed by peers from different networks.</p></div><div class="step"><div class="n">02</div><h3>Coin state</h3><p>The unspent outputs are rebuilt from PIBD segments and matched to <code>output_root</code> in a verified header.</p></div><div class="step"><div class="n">03</div><h3>Your coins</h3><p>Found with your own seed. The wallet never asks a server “what’s my balance?”. The phrase is encrypted with your password and stays on the device.</p></div><div class="step"><div class="n">04</div><h3>Every new block</h3><p>Checked against <code>output_root</code> / <code>kernel_root</code>. Payments are confirmed by kernel in a block of the verified chain, with a reorg check.</p></div></div>
+</section>
+
+<section id="tested" class="wrap">
+  <div class="head"><h2>Tested on the live networks</h2></div>
+  <div class="grid3"><div class="fact "><b>5</b><strong>mainnet transactions</strong><span>sent from the wallet and confirmed in blocks 4,100,766 – 4,100,860.</span></div><div class="fact "><b>14</b><strong>blocks deep on floonet</strong><span>a 1 tGRIN payment between two wallets through the app, S1 → S2 → finalize → broadcast, with a payment proof.</span></div><div class="fact gold"><b>4,098,960</b><strong>signed checkpoint height</strong><span>or skip the trust: “Check myself” verifies every header from the first block and builds your own.</span></div></div>
+</section>
+
+<section id="limits" class="wrap">
+  <div class="limits">
+    <h2>What GrinSight does not promise</h2>
+    <div class="grid3"><p><b>No independent security audit yet.</b> It is a research wallet; the result depends on the checkpoint, the network and the implementation.</p><p><b>Peers from different /16 networks</b> make isolation harder, but do not prove the peers are independent.</p><p><b>Android is a preview.</b> GlauxNet, the own Tor mailbox, runs on Windows only.</p></div>
+    <a href="https://github.com/DanilaGrinRus/GrinSight/blob/GrinSight/Documents/MATHEMATICS_EN.md">Mathematics and trust boundaries →</a>
+  </div>
+</section>
+
+<section id="docs" class="wrap">
+  <div class="head"><h2>Documents</h2></div>
+  <div class="docs"><a class="doc" href="https://github.com/DanilaGrinRus/GrinSight/blob/GrinSight/Documents/HOW_IT_WORKS_EN.md">How it works<span>step by step</span></a><a class="doc" href="https://github.com/DanilaGrinRus/GrinSight/blob/GrinSight/Documents/MATHEMATICS_EN.md">Mathematics and trust boundaries<span>what the chain proves</span></a><a class="doc" href="https://github.com/DanilaGrinRus/GrinSight/blob/GrinSight/Documents/RELEASE_NOTES_EN.md">Release notes 0.2.0<span>changes and tests</span></a></div>
+</section>
+</main>
+<footer>
+  <div class="wrap foot">
+    <div>GrinSight 0.2.0 · “Revelio for your coins” · by DanilaBear</div>
+    <div>Code MIT · docs and diagrams CC BY 4.0 · <a href="https://github.com/DanilaGrinRus/GrinSight/blob/GrinSight/NOTICE.md">NOTICE</a> · <a href="https://github.com/DanilaGrinRus/GrinSight/releases/latest">Release</a> · <a href="#top">Back to top ↑</a></div>
+  </div>
+</footer>
+<script src="../release.js" defer></script>
+</body>
+</html>

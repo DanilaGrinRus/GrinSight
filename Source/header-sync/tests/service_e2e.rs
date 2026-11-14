@@ -1,0 +1,766 @@
+//! End to end: the app's calls against a real `grinsight-service` process.
+//!
+//! The core binary is replaced by a copy of THIS test program (it acts as the
+//! core when started under that name): network modes (peer probe, header
+//! sync, gap proof, broadcast) are simulated, every offline mode (slatepack
+//! address, building S1, receiving, finalizing, invoices) runs the REAL core
+//! with the phrase on stdin. So the money logic, the seed vault and the RPC
+//! are real; only the chain is not.
+//!
+//! Flow: create two wallets (A, B) -> A opens -> A pays B (S1) -> B receives
+//! (S2) -> A finalizes + broadcasts -> A confirms (kernel in a block) ->
+//! B issues an invoice -> history, balances, refusals (wrong password, bad
+//! token, browser origin, locked wallet, wrong network address).
+
+use serde_json::{json, Value};
+use std::io::{Read, Write};
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+use std::time::{Duration, Instant};
+
+const CORE: &str = "reverse-wtema-header-sync";
+const TOR: &str = "grinsight-tor";
+
+// Files the simulated Tor daemon leaves for the service (see fake_tor).
+const ONION: &str = "fakefakefake.onion";
+const PENDING_ID: &str = "11111111-2222-4333-8444-555555555555";
+const PAY_ID: &str = "5f0c1111-2222-4333-8444-555555555555";
+const INV_ID: &str = "6f0c1111-2222-4333-8444-555555555555";
+const BARE_ID: &str = "7f0c1111-2222-4333-8444-555555555555";
+const ACCEPT_ID: &str = "9f0c1111-2222-4333-8444-555555555555";
+const SENDER: &str = "tgrin1senderfake";
+
+fn main() {
+    let me = std::env::current_exe().unwrap();
+    if me.file_stem().and_then(|s| s.to_str()) == Some(CORE) {
+        fake_core();
+        return;
+    }
+    if me.file_stem().and_then(|s| s.to_str()) == Some(TOR) {
+        fake_tor();
+        return;
+    }
+    scenario();
+    println!("test service_e2e ... ok");
+}
+
+// ---------------------------------------------------------------------------
+// Simulated core (network modes only)
+// ---------------------------------------------------------------------------
+
+fn header(height: u64, ts: i64) -> Vec<u8> {
+    let mut h = 5u16.to_be_bytes().to_vec();
+    h.extend(height.to_be_bytes());
+    h.extend(ts.to_be_bytes());
+    h.extend([0u8; 16]);
+    h
+}
+
+fn now() -> i64 {
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64
+}
+
+fn fake_core() {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let real = std::env::var("GS_REAL_CORE").expect("GS_REAL_CORE");
+    let has = |k: &str| args.iter().any(|a| a == k);
+    let val = |k: &str| args.iter().position(|a| a == k).and_then(|i| args.get(i + 1)).cloned();
+    let vals = |k: &str| args.windows(2).filter(|w| w[0] == k).map(|w| w[1].clone()).collect::<Vec<_>>();
+    if has("--probe-peer") {
+        for p in vals("--probe-peer") {
+            println!("PROBE_PEER={p} OK agent=\"fake\" version=3 caps=0x1 pibd=yes block_hist=1 total_difficulty=100");
+        }
+        println!("PROBE_ANY_PIBD=yes");
+        return;
+    }
+    if has("--checkpoint-file") {
+        let dir = PathBuf::from(val("--state-dir").unwrap());
+        let hs: Vec<Vec<u8>> = (6400..=10010u64).map(|h| header(h, now() - (10010 - h as i64) * 60)).collect();
+        let mut t = (hs.len() as u32).to_le_bytes().to_vec();
+        for h in &hs {
+            t.extend((h.len() as u32).to_le_bytes());
+            t.extend(h);
+        }
+        std::fs::write(dir.join("verified-headers.bin"), t).unwrap();
+        let hex: String = hs.last().unwrap().iter().map(|b| format!("{b:02x}")).collect();
+        std::fs::write(dir.join("checkpoint.rwm"), format!("version 1\nheader {hex}\n")).unwrap();
+        println!("HEADER_SYNC=PASS\nHEADER_SYNC_PEERS_OK=2/2\nHEADER_SYNC_NETWORK_DIFFICULTY_UNCHECKED_NO_HISTORY=0\nHEADER_SYNC_COMMON_HEADERS=AGREE_FULL_BYTES\nHEADER_SYNC_INDEPENDENT_NETS=2 (a,b)\nHEADER_SYNC_CAUGHT_UP_PEERS=2\nHEADER_SYNC_LAST_HEIGHT=10010\nHEADER_SYNC_CHAIN_SUPPORT=2/2");
+        return;
+    }
+    if has("--gap-headers") {
+        // The gap proof is simulated; a payment is built by the REAL core
+        // (testnet bench mode) with the phrase from our stdin.
+        let mut seeds = String::new();
+        if has("--gap-send-to") {
+            std::io::stdin().read_to_string(&mut seeds).unwrap();
+            let mut c = Command::new(&real)
+                .args([
+                    "--bench-build-send", "--seeds", "-", "--wallet", "1",
+                    "--to", &val("--gap-send-to").unwrap(), "--amount", &val("--gap-send-amount").unwrap(),
+                    "--slatepack-out", &val("--gap-slatepack-out").unwrap(), "--context-out", &val("--gap-context-out").unwrap(),
+                ])
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .spawn()
+                .unwrap();
+            c.stdin.take().unwrap().write_all(seeds.as_bytes()).unwrap();
+            let out = c.wait_with_output().unwrap();
+            print!("{}", String::from_utf8_lossy(&out.stdout));
+            assert!(out.status.success(), "bench send failed");
+        }
+        for k in vals("--gap-kernel") {
+            println!("GAP_KERNEL={k} FOUND height=10005 hash={} (bound to kernel_root)", "ab".repeat(32));
+        }
+        for b in vals("--gap-check-block") {
+            println!("GAP_BLOCK_CHECK={b} ON_VERIFIED_CHAIN depth=6");
+        }
+        println!("GAP_ARCHIVE_HEIGHT=0\nGAP_TIP_HEIGHT=10010\nGAP_WALLET=wallet=1 outputs=0 unspent_at_tip=0 balance_nanogrin=0\nGAP_PROVE_VERDICT=MULTI worst_exit=0");
+        return;
+    }
+    if has("--broadcast-tx") {
+        assert!(std::path::Path::new(&val("--broadcast-tx").unwrap()).exists());
+        for p in vals("--peer") {
+            println!("BROADCAST_TX={p} SENT");
+        }
+        return;
+    }
+    // Offline modes: the real core, same arguments, our stdin passed on.
+    let st = Command::new(&real).args(&args).status().unwrap();
+    std::process::exit(st.code().unwrap_or(1));
+}
+
+// ---------------------------------------------------------------------------
+// Client
+// ---------------------------------------------------------------------------
+
+struct Svc {
+    child: std::process::Child,
+    port: u16,
+    token: String,
+}
+
+impl Svc {
+    fn raw(&self, body: &str, token: &str, extra: &str) -> (u16, Value) {
+        let mut s = std::net::TcpStream::connect(("127.0.0.1", self.port)).unwrap();
+        // The service must end every reply itself (also on Windows, where a
+        // child started meanwhile holds a copy of the socket): never hang.
+        s.set_read_timeout(Some(Duration::from_secs(60))).unwrap();
+        let req = format!(
+            "POST /rpc HTTP/1.1\r\nHost: 127.0.0.1:{}\r\nAuthorization: Bearer {token}\r\n{extra}Content-Type: application/json\r\nContent-Length: {}\r\n\r\n{body}",
+            self.port,
+            body.len()
+        );
+        s.write_all(req.as_bytes()).unwrap();
+        let mut resp = String::new();
+        s.read_to_string(&mut resp).unwrap();
+        let code: u16 = resp.split(' ').nth(1).unwrap().parse().unwrap();
+        let body = resp.split("\r\n\r\n").nth(1).unwrap_or("");
+        (code, serde_json::from_str(body).unwrap_or(Value::Null))
+    }
+
+    fn call(&self, method: &str, params: Value) -> Result<Value, String> {
+        let body = json!({ "jsonrpc": "2.0", "id": 1, "method": method, "params": params }).to_string();
+        let (code, v) = self.raw(&body, &self.token, "");
+        assert_eq!(code, 200, "{method}: {v}");
+        match v.get("error") {
+            Some(e) => Err(e["message"].as_str().unwrap_or("").to_string()),
+            None => Ok(v["result"].clone()),
+        }
+    }
+
+    fn ok(&self, method: &str, params: Value) -> Value {
+        self.call(method, params.clone()).unwrap_or_else(|e| panic!("{method} {params}: {e}"))
+    }
+
+    /// Starts a job method and waits for it.
+    fn job(&self, method: &str, params: Value) -> Value {
+        let id = self.ok(method, params)["job"].as_str().unwrap().to_string();
+        let t0 = Instant::now();
+        loop {
+            let j = self.ok("job.status", json!({ "id": id, "all": true }));
+            match j["state"].as_str().unwrap() {
+                "running" => {}
+                "done" => return j["result"].clone(),
+                other => panic!("{method} job {other}: {} lines={}", j["error"], j["lines"]),
+            }
+            assert!(t0.elapsed() < Duration::from_secs(300), "{method} job too slow");
+            std::thread::sleep(Duration::from_millis(200));
+        }
+    }
+}
+
+fn copy_core(bin: &Path) {
+    let me = std::env::current_exe().unwrap();
+    for name in [CORE, TOR] {
+        std::fs::copy(&me, bin.join(format!("{name}{}", std::env::consts::EXE_SUFFIX))).unwrap();
+    }
+}
+
+/// Simulated grinsight-tor daemon. Started by the service under the name
+/// `grinsight-tor`: `serve` takes the phrase on stdin, reports a local
+/// GlauxNet (or the remote one when --relay is given, as when Tor fails),
+/// leaves the pending-requests / inbox files the real daemon writes, then
+/// idles until the service kills it (at most 5 minutes). `book …` is the
+/// address-book CLI the service calls for contacts and for a manual "Да".
+fn fake_tor() {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    match args.first().map(String::as_str) {
+        Some("book") => fake_tor_book(&args),
+        Some("serve") => fake_tor_serve(&args),
+        other => panic!("fake grinsight-tor: unexpected mode {other:?} {args:?}"),
+    }
+}
+
+fn fake_tor_serve(args: &[String]) {
+    let val = |k: &str| args.iter().position(|a| a == k).and_then(|i| args.get(i + 1)).cloned();
+    assert_eq!(val("--seeds").as_deref(), Some("-"));
+    let mut phrase = String::new();
+    std::io::stdin().read_to_string(&mut phrase).unwrap();
+    assert!(phrase.split_whitespace().count() >= 12, "phrase must arrive on stdin");
+    let work = PathBuf::from(val("--user-dir").unwrap()).join("tor-wallet-1");
+    for d in ["pending", "decisions", "inbox"] {
+        std::fs::create_dir_all(work.join(d)).unwrap();
+    }
+    let now = now();
+    // A request held for a manual answer (Tor foreign API, sender waits 40 s).
+    std::fs::write(
+        work.join("pending").join(format!("{PENDING_ID}.json")),
+        json!({
+            "slate_id": PENDING_ID, "amount": 25_000_000_000u64, "fee": 1_000_000u64, "from": SENDER,
+            "channel": "tor-foreign", "received_at": now, "expires_at": now + 40, "sender_verified": false, "peer": Value::Null,
+        })
+        .to_string(),
+    )
+    .unwrap();
+    std::fs::write(work.join("pending").join(format!("{PENDING_ID}.s1.json")), r#"{"sta":"S1","amt":"25000000000"}"#).unwrap();
+    // Inbox: a payment with a meta sidecar, an invoice, and a bare payment
+    // without any meta (the fallback path). The `.peer`/`.s2.txt` side files
+    // and `*.meta.json` sidecars must never be listed as payments anyway.
+    let inbox = work.join("inbox");
+    std::fs::write(inbox.join(format!("{PAY_ID}.json")), r#"{"sta":"S1","amt":"500000000"}"#).unwrap();
+    std::fs::write(
+        inbox.join(format!("{PAY_ID}.meta.json")),
+        json!({ "kind": "payment", "amount": 500_000_000u64, "fee": 1_000_000u64, "from": SENDER,
+                "channel": "tor-foreign", "received_at": now - 50, "slate_id": PAY_ID, "file": format!("{PAY_ID}.json") }).to_string(),
+    )
+    .unwrap();
+    std::fs::write(inbox.join(format!("{PAY_ID}.peer")), "grinmsg1peer").unwrap();
+    std::fs::write(inbox.join(format!("{PAY_ID}.s2.txt")), "BEGINSLATEPACK. fake .ENDSLATEPACK.").unwrap();
+    std::fs::write(inbox.join(format!("invoice-{INV_ID}.txt")), "BEGINSLATEPACK. invoice .ENDSLATEPACK.").unwrap();
+    std::fs::write(
+        inbox.join(format!("invoice-{INV_ID}.meta.json")),
+        json!({ "kind": "invoice", "amount": 7_000_000_000u64, "fee": Value::Null, "from": Value::Null,
+                "channel": "tor-foreign", "received_at": now - 70, "slate_id": INV_ID, "file": format!("invoice-{INV_ID}.txt") }).to_string(),
+    )
+    .unwrap();
+    std::fs::write(inbox.join(format!("{BARE_ID}.json")), r#"{"sta":"S1","amt":"2500000000"}"#).unwrap();
+    // Loopback fake chat API exercises service routing and bearer auth only.
+    let chat_token = "0123456789abcdef0123456789abcdef";
+    std::fs::write(work.join("chat-api.token"), chat_token).unwrap();
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let chat_port = listener.local_addr().unwrap().port();
+    let profile = PathBuf::from(val("--user-dir").unwrap()).file_name().unwrap().to_string_lossy().to_string();
+    let control_work = work.clone();
+    std::thread::spawn(move || {
+        for mut stream in listener.incoming().flatten() {
+            let _ = stream.set_read_timeout(Some(Duration::from_secs(3)));
+            let mut data = Vec::new();
+            let mut buf = [0u8; 4096];
+            let req = loop {
+                match stream.read(&mut buf) {
+                    Ok(0) | Err(_) => break String::new(),
+                    Ok(n) => data.extend_from_slice(&buf[..n]),
+                }
+                if let Some(pos) = data.windows(4).position(|w| w == b"\r\n\r\n") {
+                    let head = String::from_utf8_lossy(&data[..pos]);
+                    let len = head.lines().find_map(|l| l.strip_prefix("Content-Length: ")).and_then(|x| x.parse::<usize>().ok()).unwrap_or(0);
+                    if data.len() >= pos + 4 + len { break String::from_utf8_lossy(&data).into_owned(); }
+                }
+            };
+            let good = req.contains(&format!("Authorization: Bearer {chat_token}\r\n"));
+            let payload = if !good { json!({"error":"unauthorized"}) }
+            else if req.starts_with("GET /v1/messages?") { json!({"epoch":profile,"next":1,"messages":[{"id":"m1","peer":"tgrin1peer","direction":"incoming","kind":"text","text":"hello","created_at":1,"verified":true}]}) }
+            else if req.starts_with("POST /v1/channel/drain ") { json!({"drained":!control_work.join("deny-drain").exists()}) }
+            else if req.starts_with("POST /v1/send ") { json!({"message":{"id":"m2","peer":"tgrin1peer","direction":"outgoing","kind":"text","text":"hi","created_at":2,"verified":false}}) }
+            else { json!({"error":"bad request"}) };
+            let body = payload.to_string();
+            let status = if good { "200 OK" } else { "401 Unauthorized" };
+            let _ = write!(stream, "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len());
+        }
+    });
+    let glaux = match val("--relay") {
+        Some(r) => format!("remote {r}"),
+        None => "local".into(),
+    };
+    std::fs::write(
+        work.join("status.json"),
+        json!({
+            "onion": ONION, "address": "tgrin1daemonfake", "messenger_address": "grinmsg1fake", "tor": "ready",
+            "glauxnet": glaux, "messenger": "ready (fake)", "chat_port": chat_port, "foreign_api": { "address": "tgrin1daemonfake", "onion": ONION }, "pending_count": 1,
+        })
+        .to_string(),
+    )
+    .unwrap();
+    std::thread::sleep(Duration::from_secs(300));
+}
+
+/// The daemon's `book add|remove|auto-accept|list` used by contacts.* and by
+/// tor.decide (the real daemon additionally validates the onion of an id).
+fn fake_tor_book(args: &[String]) {
+    let val = |k: &str| args.iter().position(|a| a == k).and_then(|i| args.get(i + 1)).cloned();
+    let user = PathBuf::from(val("--user-dir").expect("--user-dir"));
+    std::fs::create_dir_all(&user).unwrap();
+    let path = user.join("address-book.json");
+    let mut book: Value = std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|t| serde_json::from_str(&t).ok())
+        .unwrap_or_else(|| json!({ "version": 2, "auto_accept": "ask", "contacts": [] }));
+    let sub = args.iter().skip(1).find(|a| ["add", "remove", "auto-accept", "list"].contains(&a.as_str())).cloned().unwrap_or_else(|| "list".into());
+    match sub.as_str() {
+        "add" => {
+            let id = val("--id").expect("--id");
+            let c = json!({
+                "id": id,
+                "name": val("--name").unwrap_or_default(),
+                "messenger": val("--messenger"),
+                "auto": val("--auto").map_or(true, |a| a != "no"),
+                "onion": "fakeonion",
+            });
+            let contacts = book["contacts"].as_array_mut().unwrap();
+            contacts.retain(|x| x["id"].as_str() != Some(id.as_str()));
+            contacts.push(c);
+            std::fs::write(&path, serde_json::to_string_pretty(&book).unwrap()).unwrap();
+            println!("CONTACT_SAVED={id}");
+        }
+        "remove" => {
+            let id = val("--id").expect("--id");
+            let contacts = book["contacts"].as_array_mut().unwrap();
+            let before = contacts.len();
+            contacts.retain(|x| x["id"].as_str() != Some(id.as_str()));
+            let removed = before != contacts.len();
+            std::fs::write(&path, serde_json::to_string_pretty(&book).unwrap()).unwrap();
+            println!("CONTACT_REMOVED={removed}");
+        }
+        "auto-accept" => {
+            let i = args.iter().position(|a| a == "auto-accept").unwrap();
+            let mode = args.get(i + 1).cloned().expect("mode");
+            book["auto_accept"] = json!(mode);
+            std::fs::write(&path, serde_json::to_string_pretty(&book).unwrap()).unwrap();
+            println!("AUTO_ACCEPT={mode}");
+        }
+        _ => {
+            println!("AUTO_ACCEPT={}", book["auto_accept"].as_str().unwrap_or("ask"));
+            for c in book["contacts"].as_array().cloned().unwrap_or_default() {
+                println!(
+                    "CONTACT id={} name={:?} auto={} messenger={} onion={}.onion",
+                    c["id"].as_str().unwrap_or(""),
+                    c["name"].as_str().unwrap_or(""),
+                    if c["auto"].as_bool().unwrap_or(true) { "yes" } else { "no" },
+                    c["messenger"].as_str().unwrap_or("-"),
+                    c["onion"].as_str().unwrap_or("fakeonion")
+                );
+            }
+        }
+    }
+}
+
+fn start(root: &Path) -> Svc {
+    let mut child = Command::new(env!("CARGO_BIN_EXE_grinsight-service"))
+        .args(["serve", "--data-dir"])
+        .arg(root.join("data"))
+        .arg("--bin-dir")
+        .arg(root.join("bin"))
+        .arg("--checkpoints")
+        .arg(root.join("cp"))
+        .env("GS_REAL_CORE", env!("CARGO_BIN_EXE_reverse-wtema-header-sync"))
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .unwrap();
+    let mut out = child.stdout.take().unwrap();
+    let mut text = String::new();
+    let mut b = [0u8; 1];
+    while text.matches('\n').count() < 2 {
+        out.read_exact(&mut b).unwrap();
+        text.push(b[0] as char);
+    }
+    let get = |k: &str| text.lines().find_map(|l| l.strip_prefix(k)).unwrap().to_string();
+    Svc { port: get("GRINSIGHT_SERVICE_PORT=").parse().unwrap(), token: get("GRINSIGHT_SERVICE_TOKEN="), child }
+}
+
+fn scenario() {
+    let root = std::env::temp_dir().join(format!("gs-e2e-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    for d in ["bin", "cp/floonet", "data"] {
+        std::fs::create_dir_all(root.join(d)).unwrap();
+    }
+    copy_core(&root.join("bin"));
+    // Shipped checkpoint (content irrelevant to the simulated sync) + pins.
+    let cp = b"version 1\nheight 900\n";
+    let hi = b"history";
+    std::fs::write(root.join("cp/floonet/checkpoint.rwm"), cp).unwrap();
+    std::fs::write(root.join("cp/floonet/recent-headers.bin"), hi).unwrap();
+    std::fs::write(
+        root.join("cp/floonet/pin.txt"),
+        format!("checkpoint_sha256={}\nhistory_sha256={}\n", grinsight_state::session::sha256_hex(cp), grinsight_state::session::sha256_hex(hi)),
+    )
+    .unwrap();
+
+    let svc = start(&root);
+
+    // Refusals before anything else: token, browser origin, locked wallet.
+    let info_body = r#"{"jsonrpc":"2.0","id":1,"method":"service.info"}"#;
+    assert_eq!(svc.raw(info_body, "wrong", "").0, 401);
+    assert_eq!(svc.raw(info_body, &svc.token, "Origin: http://evil.example\r\n").0, 403);
+    assert_eq!(svc.ok("service.info", json!({}))["profiles"], json!([]));
+    assert!(svc.call("wallet.status", json!({})).unwrap_err().contains("locked"));
+
+    // Choices made on the login screen (no wallet yet) go to the wallet that opens next, once.
+    assert_eq!(svc.ok("wallet.settings", json!({}))["verify_mode"], "checkpoint");
+    assert!(svc.call("wallet.set_settings", json!({ "verify_mode": "nonsense" })).is_err());
+    assert!(svc.call("wallet.set_settings", json!({ "auto_broadcast": false })).unwrap_err().contains("locked"));
+    svc.ok("wallet.set_settings", json!({ "verify_mode": "header_proof" }));
+    assert_eq!(svc.ok("wallet.settings", json!({}))["verify_mode"], "header_proof");
+
+    // The checkpoint is visible (and can be checked from genesis) before login.
+    let ci = svc.ok("wallet.checkpoint_info", json!({ "network": "floonet" }));
+    assert_eq!(ci["network"], "floonet");
+    assert_eq!(ci["source"], "release");
+    assert_eq!(ci["own"]["built"], false);
+    assert!(svc.call("wallet.checkpoint_info", json!({ "network": "moon" })).is_err());
+
+    // Two new wallets (phrases made by the service).
+    let pa = svc.ok("wallet.new_phrase", json!({}))["phrase"].as_str().unwrap().to_string();
+    let pb = svc.ok("wallet.new_phrase", json!({}))["phrase"].as_str().unwrap().to_string();
+    assert_eq!(pa.split(' ').count(), 24);
+    // 12 and 18 words are made on request; other lengths are refused.
+    for n in [12usize, 18] {
+        let r = svc.ok("wallet.new_phrase", json!({ "words": n }));
+        assert_eq!(r["phrase"].as_str().unwrap().split(' ').count(), n);
+        assert_eq!(r["words"], n);
+    }
+    assert!(svc.call("wallet.new_phrase", json!({ "words": 15 })).is_err());
+    let p12 = svc.ok("wallet.new_phrase", json!({ "words": 12 }))["phrase"].as_str().unwrap().to_string();
+    assert_eq!(svc.ok("wallet.create", json!({ "name": "short12", "network": "floonet", "phrase": p12, "password": "short-pass-12" }))["origin"], "new");
+    // short12 is the first wallet opened after the login-screen choice: it took it.
+    assert_eq!(svc.ok("wallet.settings", json!({}))["verify_mode"], "header_proof", "the first wallet took the login-screen choice");
+    // Own checkpoint cannot be chosen before it is built; the offer flag is kept.
+    assert!(svc.call("wallet.set_settings", json!({ "checkpoint_source": "own" })).unwrap_err().contains("not built"));
+    assert!(svc.call("wallet.set_settings", json!({ "checkpoint_source": "moon" })).is_err());
+    svc.ok("wallet.set_settings", json!({ "checkpoint_offer_seen": true }));
+    assert_eq!(svc.ok("wallet.checkpoint_info", json!({}))["offer_seen"], true);
+    assert_eq!(svc.ok("wallet.create", json!({ "name": "alice", "network": "floonet", "phrase": pa, "password": "alice-pass-1" }))["origin"], "new");
+    assert_eq!(svc.ok("wallet.settings", json!({}))["verify_mode"], "checkpoint", "the choice was used once");
+    assert_eq!(svc.ok("wallet.create", json!({ "name": "bob", "network": "floonet", "phrase": pb, "password": "bob-pass-12" }))["origin"], "new");
+    assert_eq!(svc.ok("wallet.settings", json!({}))["verify_mode"], "checkpoint", "the choice was used once");
+    // A phrase the service did not make is a restore (scan before keys).
+    assert_eq!(svc.ok("wallet.create", json!({ "name": "carol", "network": "floonet", "phrase": pa, "password": "carol-pass" }))["origin"], "restored");
+    assert!(svc.call("wallet.create", json!({ "name": "alice", "network": "floonet", "phrase": pb, "password": "xxxxxxxxx" })).is_err(), "exists");
+    assert!(svc.call("wallet.unlock", json!({ "name": "alice", "network": "floonet", "password": "nope-nope" })).unwrap_err().contains("wrong password"));
+    // The vault never holds the phrase in clear.
+    let vault = std::fs::read_to_string(root.join("data/profiles/floonet/alice/vault.json")).unwrap();
+    assert!(!vault.contains(pa.split(' ').next().unwrap()) || pa.split(' ').next().unwrap().len() < 4);
+
+    // Bob: address (real core, phrase on stdin).
+    svc.ok("wallet.unlock", json!({ "name": "bob", "network": "floonet", "password": "bob-pass-12" }));
+    let addr_b = svc.ok("wallet.address", json!({}))["address"].as_str().unwrap().to_string();
+    assert!(addr_b.starts_with("tgrin1"), "{addr_b}");
+
+    // GlauxNet: on by default, started with the wallet, can be turned off
+    // and on; a remote GlauxNet is only a fallback URL.
+    let glaux = |want: &str| {
+        let t = Instant::now();
+        loop {
+            let g = svc.ok("glauxnet.status", json!({}));
+            if g["state"] == want {
+                return g;
+            }
+            assert!(t.elapsed() < Duration::from_secs(20), "GlauxNet state {g} (want {want})");
+            std::thread::sleep(Duration::from_millis(100));
+        }
+    };
+    // Configuration round trip only; no real bridge is contacted.
+    let transport = std::env::current_exe().unwrap();
+    svc.ok("wallet.set_settings", json!({"tor_bridge_mode":"obfs4", "tor_bridge_line":"Bridge obfs4 example:443 test", "tor_bridge_binary":transport}));
+    let bridge = svc.ok("wallet.settings", json!({}));
+    assert_eq!(bridge["tor_bridge_mode"], "obfs4");
+    assert_eq!(bridge["tor_bridge_line"], "obfs4 example:443 test");
+    assert!(svc.call("wallet.set_settings", json!({"tor_bridge_mode":"snowflake", "tor_bridge_line":"obfs4 wrong"})).is_err());
+    svc.ok("wallet.set_settings", json!({"tor_bridge_mode":"direct"}));
+    assert_eq!(svc.ok("wallet.settings", json!({}))["glauxnet"], true);
+    let g = glaux("local");
+    assert_eq!(g["onion"], "fakefakefake.onion");
+    assert_eq!(g["messenger_address"], "grinmsg1fake");
+    assert_eq!(svc.ok("glauxnet.enable", json!({ "enabled": false }))["state"], "off");
+    assert_eq!(svc.ok("wallet.settings", json!({}))["glauxnet"], false);
+    assert!(svc.call("wallet.set_settings", json!({ "glauxnet_relay": "ftp://x" })).unwrap_err().contains("http"));
+    svc.ok("wallet.set_settings", json!({ "glauxnet_relay": "http://127.0.0.1:9" }));
+    assert_eq!(glaux("off")["running"], false);
+    svc.ok("glauxnet.enable", json!({ "enabled": true }));
+    assert_eq!(glaux("remote")["relay"], "http://127.0.0.1:9");
+    svc.ok("wallet.set_settings", json!({ "glauxnet_relay": "" }));
+    // Off survives a lock/unlock (no daemon at all), on comes back with it.
+    svc.ok("glauxnet.enable", json!({ "enabled": false }));
+    let u = svc.ok("wallet.unlock", json!({ "name": "bob", "network": "floonet", "password": "bob-pass-12" }));
+    assert_eq!(u["glauxnet"]["state"], "off");
+    svc.ok("glauxnet.enable", json!({ "enabled": true }));
+    glaux("local");
+
+    // The service proxies only the selected profile's authenticated local API.
+    let info = svc.ok("chat.info", json!({}));
+    assert_eq!(info["ready"], true);
+    assert_eq!(info["address"], "grinmsg1fake");
+    let messages = svc.ok("chat.messages", json!({"after":0}));
+    assert_eq!(messages["epoch"], "bob");
+    assert_eq!(messages["messages"][0]["verified"], true);
+    let token_file = root.join("data/profiles/floonet/bob/tor-wallet-1/chat-api.token");
+    std::fs::write(&token_file, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").unwrap();
+    assert!(svc.call("chat.messages", json!({})).is_err(), "wrong bearer must be rejected");
+    std::fs::write(&token_file, "0123456789abcdef0123456789abcdef").unwrap();
+    assert_eq!(svc.ok("chat.send", json!({"to":"tgrin1peer","text":"hi"}))["message"]["verified"], false);
+    assert!(svc.call("chat.send", json!({"to":"tgrin1peer","text":""})).is_err());
+    svc.ok("glauxnet.enable", json!({"enabled":false}));
+    assert!(svc.call("chat.messages", json!({})).is_err());
+    svc.ok("glauxnet.enable", json!({"enabled":true}));
+    glaux("local");
+    assert_eq!(svc.ok("chat.messages", json!({"after":0}))["epoch"], "bob");
+
+    // ---- Tor manual acceptance: files the fake daemon left ------------------
+    let tor_wallet = root.join("data/profiles/floonet/bob/tor-wallet-1");
+    let ts = svc.ok("tor.status", json!({}));
+    assert_eq!(ts["pending_count"], 1, "{ts}");
+    assert_eq!(ts["foreign_api"]["address"].as_str(), Some(addr_b.as_str()), "the profile's own address wins");
+    assert_eq!(ts["foreign_api"]["onion"], ONION, "{ts}");
+
+    let pending = svc.ok("tor.pending", json!({}));
+    let arr = pending.as_array().unwrap();
+    assert_eq!(arr.len(), 1, "{pending}");
+    let p0 = &arr[0];
+    assert_eq!(p0["slate_id"], PENDING_ID);
+    assert_eq!(p0["amount"], 25_000_000_000u64);
+    assert_eq!(p0["fee"], 1_000_000u64);
+    assert_eq!(p0["from"].as_str(), Some(SENDER));
+    assert_eq!(p0["channel"], "tor-foreign");
+    assert_eq!(p0["waiting"], true);
+    assert!(p0["expires_in_s"].as_i64().unwrap() > 0 && p0["expires_in_s"].as_i64().unwrap() <= 40, "{p0}");
+
+    // A slate id is a UUID and a pending file must exist; nothing else is written.
+    assert!(svc.call("tor.decide", json!({ "slate_id": "../../bob", "accept": true })).unwrap_err().contains("UUID"));
+    assert!(svc.call("tor.decide", json!({ "slate_id": "22222222-3333-4444-8555-666666666666", "accept": true })).unwrap_err().contains("no such pending request"));
+    // Accept writes the daemon decision. An unverified Foreign API address is not added to contacts.
+    let dec = svc.ok("tor.decide", json!({ "slate_id": PENDING_ID, "accept": true, "add_contact": true, "name": "Tor sender" }));
+    assert_eq!(dec, json!({ "accepted": true, "answered_over_tor": true, "contact_added": false }));
+    let df = tor_wallet.join("decisions").join(format!("{PENDING_ID}.json"));
+    let dv: Value = serde_json::from_str(&std::fs::read_to_string(&df).unwrap()).unwrap();
+    assert_eq!(dv, json!({ "slate_id": PENDING_ID, "accept": true, "add_contact": true, "name": "Tor sender" }));
+    assert!(!tor_wallet.join("decisions").join(format!("{PENDING_ID}.tmp-write")).exists(), "atomic write leaves no temp file");
+    let cl = svc.ok("contacts.list", json!({}));
+    assert!(
+        !cl["contacts"].as_array().unwrap().iter().any(|c| c["id"].as_str() == Some(SENDER)),
+        "{cl}"
+    );
+    // Add contact true but without an address: nothing to add (grin-wallet
+    // without a payment proof); this request has one, so a decline adds nothing.
+    let dec2 = svc.ok("tor.decide", json!({ "slate_id": PENDING_ID, "accept": false, "add_contact": true }));
+    assert_eq!(dec2, json!({ "accepted": false, "answered_over_tor": false, "contact_added": false }));
+
+    // Inbox: meta sidecars first, then plain files (`amt` from the slate JSON);
+    // sidecars themselves are never listed as payments.
+    let ib = svc.ok("tor.inbox", json!({}));
+    let entries = ib.as_array().unwrap();
+    assert_eq!(entries.len(), 3, "{ib}");
+    let entry = |f: &str| entries.iter().find(|e| e["file"].as_str() == Some(f)).cloned().unwrap_or_else(|| panic!("{f} not in {ib}"));
+    let pay = entry(&format!("{PAY_ID}.json"));
+    assert_eq!((pay["kind"].as_str(), pay["amount"].as_u64(), pay["from"].as_str()), (Some("payment"), Some(500_000_000), Some(SENDER)));
+    let inv = entry(&format!("invoice-{INV_ID}.txt"));
+    assert_eq!((inv["kind"].as_str(), inv["amount"].as_u64()), (Some("invoice"), Some(7_000_000_000)));
+    let bare = entry(&format!("{BARE_ID}.json"));
+    assert_eq!((bare["kind"].as_str(), bare["amount"].as_u64()), (Some("payment"), Some(2_500_000_000)));
+    assert!(entries.iter().all(|e| {
+        let f = e["file"].as_str().unwrap_or("");
+        !f.ends_with(".meta.json") && !f.ends_with(".peer") && !f.ends_with(".s2.txt")
+    }), "{ib}");
+
+    // An invoice is never received by hand here (it must be paid), and only a
+    // plain payment file name from the inbox folder is accepted.
+    let e = svc.call("wallet.receive", json!({ "inbox_file": format!("invoice-{INV_ID}.txt") })).unwrap_err();
+    assert!(e.contains("invoice"), "{e}");
+    assert!(svc.call("wallet.receive", json!({ "inbox_file": "../pending/x.json" })).is_err(), "path escape");
+    assert!(svc.call("wallet.receive", json!({ "inbox_file": format!("{PAY_ID}.meta.json") })).unwrap_err().contains("bad inbox file"));
+    assert!(svc.call("wallet.receive", json!({ "inbox_file": "nope.json" })).unwrap_err().contains("no such inbox file"));
+
+    // Auto-accept accepts the new default mode "ask" (and only known modes).
+    let aa = svc.ok("contacts.auto_accept", json!({ "mode": "ask" }));
+    assert_eq!(aa["auto_accept"], "ask");
+    assert!(svc.call("contacts.auto_accept", json!({ "mode": "sometimes" })).is_err());
+
+    // Carol (restored, never opened): may not hand out keys yet.
+    svc.ok("wallet.unlock", json!({ "name": "carol", "network": "floonet", "password": "carol-pass" }));
+    assert!(svc.call("wallet.invoice", json!({ "amount": 5 })).unwrap_err().contains("open the wallet once"));
+
+    // Alice: open (checkpoint -> peers -> sync -> proven update).
+    svc.ok("wallet.unlock", json!({ "name": "alice", "network": "floonet", "password": "alice-pass-1" }));
+    glaux("local");
+    assert_eq!(svc.ok("chat.messages", json!({"after":0}))["epoch"], "alice", "chat must follow selected profile");
+    svc.ok("wallet.set_settings", json!({ "extra_peers": ["192.0.2.1:13414", "198.51.100.7:13414"], "auto_broadcast": true }));
+    let opened = svc.job("wallet.open", json!({}));
+    assert_eq!(opened["last_open"]["tip_height"], 10010);
+    assert_eq!(opened["last_open"]["current_tip_state"], "AT_VERIFIED_TIP_ONLY");
+    let st = svc.ok("wallet.status", json!({}));
+    assert_eq!(st["proof"]["session"]["can_spend"], true, "{st}");
+    assert_eq!(st["proof"]["session"]["sync_status"], "PASS");
+    assert!(svc.call("wallet.send", json!({ "to": "grin1mainnetaddress", "amount": 1 })).unwrap_err().contains("tgrin1"));
+
+    // Alice pays Bob 2 GRIN: S1 built by the real core.
+    let sent = svc.job("wallet.send", json!({ "to": addr_b, "amount": 2_000_000_000u64 }));
+    let tx_a = sent["tx_id"].as_str().unwrap().to_string();
+    let s1 = sent["slatepack"].as_str().unwrap().to_string();
+    assert!(s1.contains("BEGINSLATEPACK"));
+    let pay = svc.ok("wallet.payments", json!({}));
+    assert_eq!(pay["payments"][0]["stage"], "waiting_answer", "{pay}");
+
+    // Bob receives (real core): S2 + incoming in his balance.
+    svc.ok("wallet.unlock", json!({ "name": "bob", "network": "floonet", "password": "bob-pass-12" }));
+    let got = svc.ok("wallet.receive", json!({ "slatepack": s1 }));
+    assert_eq!(got["amount"], 2_000_000_000u64);
+    let s2 = got["answer"].as_str().unwrap().to_string();
+    let sb = svc.ok("wallet.status", json!({}));
+    assert_eq!(sb["balance"]["incoming_nanogrin"], 2_000_000_000u64, "{sb}");
+    assert_eq!(svc.ok("wallet.payments", json!({}))["payments"][0]["stage"], "waiting_sender");
+    // The same S1 again: the same answer (no second key).
+    let again = svc.ok("wallet.receive", json!({ "slatepack": s1 }));
+    assert_eq!(again["answer"], got["answer"]);
+    assert_eq!((again["tx_id"].clone(), again["resent"].clone()), (got["tx_id"].clone(), json!(true)));
+
+    // Alice finalizes (real core validates the transaction) and broadcasts.
+    svc.ok("wallet.unlock", json!({ "name": "alice", "network": "floonet", "password": "alice-pass-1" }));
+    let fin = svc.job("wallet.finalize", json!({ "tx_id": tx_a, "answer": s2 }));
+    assert_eq!(fin["kernel"].as_str().unwrap().len(), 66, "{fin}");
+    assert!(fin["broadcast"]["peers_sent"].as_u64().unwrap() >= 1);
+    assert!(svc.call("wallet.finalize", json!({ "tx_id": tx_a, "answer": s2 })).unwrap_err().contains("already finalized"));
+    let after = svc.ok("wallet.payments", json!({}));
+    assert_eq!(after["payments"][0]["stage"], "broadcast");
+    assert_eq!(after["payments"][0]["payment_proof"], true, "receiver signature kept by finalize");
+
+    // Confirm: kernel in block 10005 of a tip at 10010 -> depth 6 (in block).
+    let c = svc.job("wallet.confirm", json!({ "tx_id": tx_a }));
+    assert_eq!((c["state"].as_str(), c["height"].as_u64(), c["depth"].as_u64()), (Some("in_block"), Some(10005), Some(6)), "{c}");
+    // Again: the earlier block is re-checked on the chain verified now.
+    let c2 = svc.job("wallet.confirm", json!({ "tx_id": tx_a }));
+    assert_eq!(c2["state"], "in_block", "{c2}");
+    assert_eq!(svc.ok("wallet.payments", json!({}))["payments"][0]["stage"], "in_block");
+
+    // Bob asks Alice for 1 GRIN: invoice I1 by the real core.
+    svc.ok("wallet.unlock", json!({ "name": "bob", "network": "floonet", "password": "bob-pass-12" }));
+    let inv = svc.ok("wallet.invoice", json!({ "amount": "1000000000" }));
+    assert!(inv["slatepack"].as_str().unwrap().contains("BEGINSLATEPACK"));
+    let tx_inv = inv["tx_id"].as_str().unwrap();
+    assert_eq!(svc.ok("wallet.slatepack", json!({ "tx_id": tx_inv }))["file"], "invoice-i1.txt");
+    let pb_list = svc.ok("wallet.payments", json!({}));
+    assert_eq!(pb_list["payments"].as_array().unwrap().len(), 2);
+    assert!(svc.call("wallet.slatepack", json!({ "tx_id": "../../alice" })).is_err(), "path escape");
+
+    // ---- Manual acceptance of a real S1 JSON from the inbox -----------------
+    // Alice pays Bob again; the real core writes the plain S1 JSON next to the
+    // armor. It lies in Bob's inbox like a held Tor payment; accepting it by
+    // hand must give the armored S2 for `grin-wallet finalize`.
+    svc.ok("wallet.unlock", json!({ "name": "alice", "network": "floonet", "password": "alice-pass-1" }));
+    let sent2 = svc.job("wallet.send", json!({ "to": addr_b, "amount": 1_000_000_000u64 }));
+    let tx2 = sent2["tx_id"].as_str().unwrap().to_string();
+    let s1_json_path = root.join("data/profiles/floonet/alice/txs").join(&tx2).join("slatepack-s1.json");
+    assert!(s1_json_path.is_file(), "the core writes the JSON S1 next to the armor");
+    let s1_json = std::fs::read_to_string(&s1_json_path).unwrap();
+    let inbox_dir = tor_wallet.join("inbox");
+    std::fs::copy(&s1_json_path, inbox_dir.join(format!("{ACCEPT_ID}.json"))).unwrap();
+    std::fs::write(
+        inbox_dir.join(format!("{ACCEPT_ID}.meta.json")),
+        json!({ "kind": "payment", "amount": 1_000_000_000u64, "fee": 0, "from": Value::Null,
+                "channel": "tor-foreign", "received_at": 1_700_000_100, "slate_id": ACCEPT_ID,
+                "file": format!("{ACCEPT_ID}.json") }).to_string(),
+    )
+    .unwrap();
+    svc.ok("wallet.unlock", json!({ "name": "bob", "network": "floonet", "password": "bob-pass-12" }));
+    let accepted = svc.ok("wallet.receive", json!({ "inbox_file": format!("{ACCEPT_ID}.json") }));
+    assert_eq!(accepted["amount"], 1_000_000_000u64, "{accepted}");
+    let answer = accepted["answer"].as_str().unwrap().to_string();
+    assert!(answer.starts_with("BEGINSLATEPACK"), "{}", &answer[..answer.len().min(40)]);
+    assert_eq!(accepted["answer"], accepted["slatepack"], "answer and slatepack are the same armor");
+    assert_eq!(accepted["resent"], false);
+    assert!(accepted["slate_id"].as_str().is_some_and(|s| s.len() == 36), "{accepted}");
+    assert!(!inbox_dir.join(format!("{ACCEPT_ID}.json")).exists(), "the accepted inbox payment is removed");
+    assert!(!inbox_dir.join(format!("{ACCEPT_ID}.meta.json")).exists(), "its meta sidecar is removed");
+    assert!(svc.call("wallet.receive", json!({ "inbox_file": format!("{ACCEPT_ID}.json") })).unwrap_err().contains("no such inbox file"));
+    // Plain S1 JSON is accepted by wallet.receive too: the same, already
+    // received slate gives its S2 again (`resent`), never a second key.
+    let dup = svc.ok("wallet.receive", json!({ "slatepack": s1_json }));
+    assert_eq!(dup["resent"], true);
+    assert_eq!(dup["slate_id"].as_str(), accepted["slate_id"].as_str());
+
+    // Isolated cancelled history can be removed without deleting its files.
+    let txroot = root.join("data/profiles/floonet/bob/txs");
+    for (id, stage) in [("history-cancelled", "cancelled"), ("history-active", "waiting_answer")] {
+        let d = txroot.join(id);
+        std::fs::create_dir_all(&d).unwrap();
+        std::fs::write(d.join("meta.json"), json!({"kind":"send", "stage":stage, "slate_id":PENDING_ID}).to_string()).unwrap();
+    }
+    assert!(svc.call("wallet.hide_cancelled", json!({"tx_id":"history-active"})).is_err());
+    assert_eq!(svc.ok("wallet.hide_cancelled", json!({"tx_id":"history-cancelled"}))["hidden"], "history-cancelled");
+    assert!(txroot.join("history-cancelled/meta.json").exists());
+    let rows = svc.ok("wallet.payments", json!({}));
+    let rows = rows["payments"].as_array().unwrap();
+    assert!(rows.iter().all(|x| x["tx_id"] != "history-cancelled"));
+    assert!(rows.iter().any(|x| x["tx_id"] == "history-active"));
+    std::fs::write(txroot.join("history-cancelled/spend-tx.hex"), "test").unwrap();
+    let rows = svc.ok("wallet.payments", json!({}));
+    assert!(rows["payments"].as_array().unwrap().iter().any(|x| x["tx_id"] == "history-cancelled"));
+
+    // A channel switch does not request another password and never proceeds
+    // if the old daemon refuses to acknowledge a safe drain.
+    let settings = json!({"messenger_nostr_mode":"direct", "messenger_nostr_url":"wss://relay.primal.net", "messenger_nostr_proxy":"", "messenger_nostr_consent":true, "messenger_nostr_expiry":false});
+    let mut no_consent=settings.clone(); no_consent["messenger_nostr_consent"]=json!(false);
+    assert!(svc.call("wallet.set_settings", no_consent).is_err());
+    let previous=svc.ok("wallet.settings", json!({}));
+    std::fs::write(tor_wallet.join("deny-drain"), "test").unwrap();
+    assert!(svc.call("wallet.set_settings", settings.clone()).is_err());
+    assert_eq!(svc.ok("wallet.settings", json!({}))["messenger_nostr_mode"], previous["messenger_nostr_mode"]);
+    assert_eq!(svc.ok("service.info", json!({}))["unlocked"]["name"],"bob");
+    std::fs::remove_file(tor_wallet.join("deny-drain")).unwrap();
+    svc.ok("wallet.set_settings", settings);
+    assert_eq!(svc.ok("wallet.settings", json!({}))["messenger_nostr_mode"],"direct");
+    assert_eq!(svc.ok("service.info", json!({}))["unlocked"]["name"],"bob");
+
+    // Changing a channel after the daemon stopped starts it without logout.
+    svc.ok("tor.stop", json!({}));
+    assert_eq!(svc.ok("glauxnet.status", json!({}))["running"],false);
+    svc.ok("wallet.set_settings", json!({"messenger_nostr_mode":"direct", "messenger_nostr_url":"wss://second.example", "messenger_nostr_consent":true}));
+    assert_eq!(svc.ok("glauxnet.status", json!({}))["running"],true);
+    assert_eq!(svc.ok("service.info", json!({}))["unlocked"]["name"],"bob");
+
+    // Tor bridge settings take effect through the same checked drain without
+    // closing the wallet. The fake daemon requires a short startup interval.
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        if svc.ok("chat.info", json!({}))["ready"] == true { break; }
+        assert!(Instant::now() < deadline, "fake daemon not ready for bridge switch");
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    svc.ok("wallet.set_settings", json!({"tor_bridge_mode":"obfs4", "tor_bridge_line":"obfs4 192.0.2.1:443 cert=test iat-mode=0", "tor_bridge_binary":"bundled"}));
+    assert_eq!(svc.ok("wallet.settings",json!({}))["tor_bridge_mode"],"obfs4");
+    assert_eq!(svc.ok("service.info",json!({}))["unlocked"]["name"],"bob");
+
+    // Locked again: nothing works without the password.
+    svc.ok("wallet.lock", json!({}));
+    assert!(svc.call("wallet.payments", json!({})).unwrap_err().contains("locked"));
+    assert_eq!(svc.ok("service.info", json!({}))["profiles"].as_array().unwrap().len(), 4);
+
+    // Closing stdin (the app exited) stops the service.
+    let Svc { mut child, .. } = svc;
+    drop(child.stdin.take());
+    let t0 = Instant::now();
+    while child.try_wait().unwrap().is_none() {
+        assert!(t0.elapsed() < Duration::from_secs(10), "service did not stop");
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    let _ = std::fs::remove_dir_all(&root);
+}

@@ -1,0 +1,262 @@
+// Copyright 2021 The Grin Developers
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//! Storage implementation for peer data.
+
+use chrono::Utc;
+use num::FromPrimitive;
+use rand::prelude::*;
+
+use crate::core::ser::{self, DeserializationMode, Readable, Reader, Writeable, Writer};
+use crate::types::{Capabilities, PeerAddr, ReasonForBan};
+use grin_store::{self, option_to_not_found, Error};
+
+const DB_NAME: &str = "peer";
+const STORE_SUBPATH: &str = "peers";
+
+const PEER_PREFIX: u8 = b'P';
+
+// Types of peers
+enum_from_primitive! {
+	#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+	pub enum State {
+		Healthy = 0,
+		Banned = 1,
+		Defunct = 2,
+		Unknown = 3,
+	}
+}
+
+/// Data stored for any given peer we've encountered.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PeerData {
+	/// Network address of the peer.
+	pub addr: PeerAddr,
+	/// What capabilities the peer advertises. Unknown until a successful
+	/// connection.
+	pub capabilities: Capabilities,
+	/// The peer user agent.
+	pub user_agent: String,
+	/// State the peer has been detected with.
+	pub flags: State,
+	/// The time the peer was last banned
+	pub last_banned: i64,
+	/// The reason for the ban
+	pub ban_reason: ReasonForBan,
+	/// Time when we last connected to this peer.
+	pub last_connected: i64,
+	/// Time when last connection attempt happened to this peer.
+	pub last_attempt: i64,
+}
+
+impl Writeable for PeerData {
+	fn write<W: Writer>(&self, writer: &mut W) -> Result<(), ser::Error> {
+		self.addr.write(writer)?;
+		ser_multiwrite!(
+			writer,
+			[write_u32, self.capabilities.bits()],
+			[write_bytes, &self.user_agent],
+			[write_u8, self.flags as u8],
+			[write_i64, self.last_banned],
+			[write_i32, self.ban_reason as i32],
+			[write_i64, self.last_connected],
+			[write_i64, self.last_attempt]
+		);
+		Ok(())
+	}
+}
+
+impl Readable for PeerData {
+	fn read<R: Reader>(reader: &mut R) -> Result<PeerData, ser::Error> {
+		let addr = PeerAddr::read(reader)?;
+		let capab = reader.read_u32()?;
+		let ua = reader.read_bytes_len_prefix()?;
+		let (fl, lb, br) = ser_multiread!(reader, read_u8, read_i64, read_i32);
+
+		let lc = reader.read_i64();
+		let last_connected = lc.unwrap_or_else(|_| Utc::now().timestamp());
+
+		let la = reader.read_i64();
+		let last_attempt = la.unwrap_or_else(|_| 0);
+
+		let user_agent = String::from_utf8(ua).map_err(|_| ser::Error::CorruptedData)?;
+		let capabilities = Capabilities::from_bits_truncate(capab);
+		let ban_reason = ReasonForBan::from_i32(br).ok_or(ser::Error::CorruptedData)?;
+
+		match State::from_u8(fl) {
+			Some(flags) => Ok(PeerData {
+				addr,
+				capabilities,
+				user_agent,
+				flags,
+				last_banned: lb,
+				ban_reason,
+				last_connected,
+				last_attempt,
+			}),
+			None => Err(ser::Error::CorruptedData),
+		}
+	}
+}
+
+/// Storage facility for peer data.
+pub struct PeerStore {
+	db: grin_store::Store,
+}
+
+impl PeerStore {
+	/// Instantiates a new peer store under the provided root path.
+	pub fn new(db_root: &str) -> Result<PeerStore, Error> {
+		let db = grin_store::Store::new(
+			db_root,
+			Some(DB_NAME),
+			Some(STORE_SUBPATH),
+			vec![PEER_PREFIX],
+			None,
+			None,
+		)?;
+		Ok(PeerStore { db })
+	}
+
+	pub fn save_peer(&self, p: &PeerData) -> Result<(), Error> {
+		debug!("save_peer: {:?} marked {:?}", p.addr, p.flags);
+
+		let mut batch = self.db.batch()?;
+		let key = p.addr.as_key();
+		batch.put_ser(Some(PEER_PREFIX), key.as_bytes(), p)?;
+		batch.commit()
+	}
+
+	pub fn save_peers(&self, p: Vec<PeerData>) -> Result<(), Error> {
+		let mut batch = self.db.batch()?;
+		for pd in p {
+			debug!("save_peers: {:?} marked {:?}", pd.addr, pd.flags);
+			let key = pd.addr.as_key();
+			batch.put_ser(Some(PEER_PREFIX), key.as_bytes(), &pd)?;
+		}
+		batch.commit()
+	}
+
+	pub fn get_peer(&self, peer_addr: PeerAddr) -> Result<PeerData, Error> {
+		let key = peer_addr.as_key();
+		option_to_not_found(
+			self.db.get_ser(Some(PEER_PREFIX), key.as_bytes(), None),
+			|| format!("Peer at address: {}", peer_addr),
+		)
+	}
+
+	pub fn exists_peer(&self, peer_addr: PeerAddr) -> Result<bool, Error> {
+		let key = peer_addr.as_key();
+		self.db.exists(Some(PEER_PREFIX), key.as_bytes())
+	}
+
+	/// Convenience method to load a peer data, update its status and save it
+	/// back. If new state is Banned its last banned time will be updated too.
+	/// If new state is Defunct last connection attempt will be updated too.
+	pub fn update_state(&self, peer_addr: PeerAddr, new_state: State) -> Result<(), Error> {
+		let mut batch = self.db.batch()?;
+		let key = peer_addr.as_key();
+		let mut peer = option_to_not_found(
+			batch.get_ser::<PeerData>(Some(PEER_PREFIX), key.as_bytes(), None),
+			|| format!("Peer at address: {}", peer_addr),
+		)?;
+		peer.flags = new_state;
+		if new_state == State::Banned {
+			peer.last_banned = Utc::now().timestamp();
+		} else {
+			peer.last_attempt = Utc::now().timestamp();
+		}
+
+		batch.put_ser(Some(PEER_PREFIX), key.as_bytes(), &peer)?;
+		batch.commit()
+	}
+
+	/// Builds a new iterator batch to be used with this store.
+	pub fn iter_batch(&self) -> Result<PeersIterBatch<'_>, Error> {
+		Ok(PeersIterBatch {
+			db: self.db.batch()?,
+		})
+	}
+}
+
+pub struct PeersIterBatch<'a> {
+	db: grin_store::Batch<'a>,
+}
+
+impl<'a> PeersIterBatch<'a> {
+	/// Iterator over all known peers.
+	pub fn peers_iter(
+		&'a self,
+	) -> Result<impl Iterator<Item = Result<PeerData, Error>> + 'a, Error> {
+		let protocol_version = self.db.protocol_version();
+		self.db.iter(Some(PEER_PREFIX), move |_, mut v| {
+			ser::deserialize(&mut v, protocol_version, DeserializationMode::default())
+				.map_err(From::from)
+		})
+	}
+
+	/// Find some peers in our local db.
+	pub fn find_peers(
+		&self,
+		state: State,
+		cap: Capabilities,
+		count: usize,
+	) -> Result<Vec<PeerData>, Error> {
+		let peers = self
+			.peers_iter()?
+			.filter(|p| p.is_ok())
+			.map(|p| p.ok().unwrap())
+			.filter(|p| p.flags == state && p.capabilities.contains(cap))
+			.choose_multiple(&mut thread_rng(), count);
+		Ok(peers)
+	}
+
+	/// List all known peers
+	/// Used for /v1/peers/all api endpoint
+	pub fn all_peers(&self) -> Result<Vec<PeerData>, Error> {
+		let peers: Vec<PeerData> = self
+			.peers_iter()?
+			.filter(|p| p.is_ok())
+			.map(|p| p.ok().unwrap())
+			.collect();
+		Ok(peers)
+	}
+
+	/// Deletes peers from the storage that satisfy some condition `predicate`
+	pub fn delete_peers<F>(mut self, predicate: F) -> Result<(), Error>
+	where
+		F: Fn(&PeerData) -> bool,
+	{
+		let mut to_remove = vec![];
+
+		for x in self.peers_iter()? {
+			if let Ok(x) = x {
+				if predicate(&x) {
+					to_remove.push(x)
+				}
+			}
+		}
+
+		// Delete peers in single batch
+		if !to_remove.is_empty() {
+			for peer in to_remove {
+				let key = peer.addr.as_key();
+				self.db.delete(Some(PEER_PREFIX), key.as_bytes())?;
+			}
+			self.db.commit()?;
+		}
+
+		Ok(())
+	}
+}

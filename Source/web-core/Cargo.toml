@@ -1,0 +1,23 @@
+[package]
+name = "grinsight-web-core"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "GrinSight browser core spike: raw C ABI for wasm32-unknown-emscripten"
+
+[lib]
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+grinsight-state = { path = "../grinsight-state", default-features = false, features = ["web"] }
+grin_core = { path = "../vendor/grin-5.5.2/core" }
+grin_keychain = { path = "../vendor/grin-5.5.2/keychain" }
+grin_util = { path = "../vendor/grin-5.5.2/util" }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom01 = { package = "getrandom", version = "0.1", features = ["wasm-bindgen"] }
+getrandom02 = { package = "getrandom", version = "0.2", features = ["js"] }
+getrandom03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
+getrandom04 = { package = "getrandom", version = "0.4", features = ["wasm_js"] }
+
+

@@ -1,0 +1,48 @@
+[package]
+name = "reverse-wtema-header-sync"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Header sync over standard Grin P2P (RESEARCH / NOT VERIFIED)"
+
+[dependencies]
+grin_core = { path = "../vendor/grin-5.5.2/core" }
+grin_chain = { path = "../vendor/grin-5.5.2/chain" }
+grin_p2p = { path = "../vendor/grin-5.5.2/p2p" }
+grin_util = { path = "../vendor/grin-5.5.2/util" }
+grin_keychain = { path = "../vendor/grin-5.5.2/keychain" }
+grin_wallet_libwallet = { path = "../vendor/grin-wallet/libwallet" }
+grinsight-state = { path = "../grinsight-state", features = ["testkit"] }
+ed25519-dalek = "2"
+bech32 = "0.7"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+hkdf = "0.12"
+sha2 = "0.10"
+chrono = "0.4"
+blake2 = { package = "blake2-rfc", version = "0.2" }
+
+
+
+croaring = "1.1"
+# grinsight-service seed vault (versions already in Cargo.lock via grin-wallet / age).
+chacha20poly1305 = { version = "0.9", default-features = false, features = ["alloc"] }
+scrypt = { version = "0.9", default-features = false }
+getrandom = "0.2"
+zeroize = "1"
+
+[patch.crates-io]
+# build.rs links advapi32 by the TARGET, not the build machine (see GRINSIGHT_PATCH.md).
+lmdb-master-sys = { path = "patches/lmdb-master-sys" }
+
+[dev-dependencies]
+serde_json = "1"
+
+[[bin]]
+name = "grinsight-sync"
+path = "src/bin/grinsight_sync.rs"
+
+[[test]]
+name = "service_e2e"
+path = "tests/service_e2e.rs"
+harness = false

@@ -1,0 +1,11 @@
+target/
+.build/
+dist/
+evidence/
+Source/UI/flutter_app/build/
+**/.dart_tool/
+*.local.txt
+*.jks
+*.keystore
+key.properties
+local.properties

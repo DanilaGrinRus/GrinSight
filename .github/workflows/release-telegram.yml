@@ -1,0 +1,112 @@
+name: Release to Telegram
+
+# Публикует анонс стабильного релиза в Telegram-группу GrinSight.
+# Токен бота и chat_id берутся из секретов репозитория:
+#   TELEGRAM_BOT_TOKEN — токен @checktg13bot из @BotFather
+#   TELEGRAM_CHAT_ID   — @grinsightwallet (или числовой id, надёжнее)
+# Пререлизы пропускаются.
+
+on:
+  # Ручной резервный запуск. Автоматические анонсы шлёт Cloudflare Worker
+  # по вебхуку GitHub (release: published); здесь триггер на релиз не нужен,
+  # иначе получится двойной пост.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Тег релиза (например, v0.2.1)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve release
+        id: rel
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          if [ -z "$TAG" ]; then echo "no tag" >&2; exit 1; fi
+          gh api "repos/$REPO/releases/tags/$TAG" > release.json
+          python3 - <<'PY'
+          import json, os
+          r = json.load(open("release.json"))
+          open("prerelease", "w").write("true" if r.get("prerelease") else "false")
+          open("tag", "w").write(r.get("tag_name") or "")
+          open("name", "w").write(r.get("name") or r.get("tag_name") or "")
+          open("url", "w").write(r.get("html_url") or "")
+          open("body", "w").write(r.get("body") or "")
+          PY
+
+      - name: Send to Telegram
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PYTHONIOENCODING: utf-8
+        run: |
+          set -euo pipefail
+          if [ "$(cat prerelease)" = "true" ]; then
+            echo "prerelease: skip"; exit 0
+          fi
+          python3 - <<'PY' > message.txt
+          import re
+
+          tag = open("tag").read().strip()
+          name = open("name").read().strip()
+          url = open("url").read().strip()
+          body = open("body").read().strip()
+
+          # заголовки разделов не выводим пунктами
+          headings = {ln.strip().lstrip("#").strip() for ln in body.splitlines() if ln.strip().startswith("#")}
+
+          # markdown -> plain text
+          body = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", body)          # images
+          body = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", body)        # links
+          body = re.sub(r"<[^>]+>", "", body)                          # html
+          body = re.sub(r"[*_`>#]+", "", body)                         # emphasis
+          body = re.sub(r"^\s*[-+]+\s*", "", body, flags=re.M)         # bullets marker
+          body = re.sub(r"\n{3,}", "\n\n", body).strip()
+
+          # краткое описание: первые строки, примерно до 700 символов
+          acc, total = [], 0
+          for ln in body.splitlines():
+              ln = ln.strip()
+              if not ln:
+                  if acc:
+                      break
+                  continue
+              if ln in headings or ln.rstrip(":").strip() in headings:
+                  continue
+              if len(ln) > 240:
+                  ln = ln[:237].rstrip() + "…"
+              if total + len(ln) > 700 or len(acc) >= 10:
+                  break
+              acc.append("• " + ln)
+              total += len(ln) + 3
+
+          if name and name != tag:
+              head = f"🚀 {name}" if name.lower().startswith("grinsight") else f"🚀 GrinSight {tag} — {name}"
+          else:
+              head = f"🚀 GrinSight {tag}"
+          text = head + "\n\n"
+          if acc:
+              text += "\n".join(acc) + "\n\n"
+          text += "Подробнее: " + url
+          print(text[:3900])
+          PY
+          echo "----- message -----"
+          cat message.txt
+          echo "-------------------"
+          code=$(curl -sS -o resp.json -w '%{http_code}' \
+            -X POST "https://api.telegram.org/bot$TG_TOKEN/sendMessage" \
+            --data-urlencode "chat_id=$TG_CHAT" \
+            --data-urlencode "text@message.txt" \
+            --data-urlencode "disable_web_page_preview=false")
+          echo "telegram http=$code"
+          cat resp.json || true
+          [ "$code" = "200" ] || exit 1
