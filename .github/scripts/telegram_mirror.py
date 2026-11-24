@@ -25,7 +25,7 @@ class NoRedirect(HTTPRedirectHandler):
 def bridge(release_id, action, **fields):
     payload = json.dumps(dict(id=release_id, action=action, **fields)).encode()
     req = Request(BRIDGE, data=payload, headers={
-        "Content-Type": "application/json", "Authorization": "Bearer " + os.environ["MIRROR_KEY"]})
+        "Content-Type": "application/json", "User-Agent": "GrinSight-release-mirror", "Authorization": "Bearer " + os.environ["MIRROR_KEY"].strip()})
     with build_opener(NoRedirect()).open(req, timeout=50) as response:
         return json.load(response)
 
@@ -33,7 +33,10 @@ def bridge(release_id, action, **fields):
 def stable_release():
     rid, tag = os.getenv("RELEASE_ID"), os.getenv("RELEASE_TAG")
     path = str(int(rid)) if rid else "tags/" + quote(tag, safe="") if tag else "latest"
-    with urlopen(Request(API + path, headers={"User-Agent": "GrinSight-release-mirror"}), timeout=45) as response:
+    headers={"User-Agent": "GrinSight-release-mirror"}
+    if os.getenv("GITHUB_TOKEN"):
+        headers["Authorization"]="Bearer " + os.environ["GITHUB_TOKEN"]
+    with build_opener(NoRedirect()).open(Request(API + path, headers=headers), timeout=45) as response:
         release = json.load(response)
     if release["draft"] or release["prerelease"] or not release["assets"]:
         raise ValueError("Expected a published stable release with assets")
@@ -124,4 +127,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except HTTPError as error:
-        raise SystemExit("Release mirror HTTP failure: " + str(error.code)) from None
+        raise SystemExit(f"HTTP {error.code} from {urlparse(error.url).hostname}") from None
