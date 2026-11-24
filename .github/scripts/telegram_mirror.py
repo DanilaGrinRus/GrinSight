@@ -22,12 +22,24 @@ class NoRedirect(HTTPRedirectHandler):
         return None
 
 
-def bridge(release_id, action, **fields):
-    payload = json.dumps(dict(id=release_id, action=action, **fields)).encode()
+def bridge(release, action, **fields):
+    manifest = {key: release[key] for key in ("id", "tag_name", "name", "body", "draft", "prerelease", "html_url")}
+    manifest["assets"] = [{key: asset[key] for key in ("id", "name", "digest", "size", "browser_download_url")}
+                          for asset in release["assets"]]
+    payload = json.dumps(dict(id=release["id"], release=manifest, action=action, **fields)).encode()
     req = Request(BRIDGE, data=payload, headers={
         "Content-Type": "application/json", "User-Agent": "GrinSight-release-mirror", "Authorization": "Bearer " + os.environ["MIRROR_KEY"].strip()})
-    with build_opener(NoRedirect()).open(req, timeout=50) as response:
-        return json.load(response)
+    try:
+        with build_opener(NoRedirect()).open(req, timeout=50) as response:
+            return json.load(response)
+    except HTTPError as exc:
+        try:
+            reason = json.load(exc).get("error")
+        except ValueError:
+            reason = None
+        allowed = {"invalid release manifest", "stable release unavailable", "forbidden", "incomplete archive",
+                   "invalid asset receipt", "conflicting receipt", "announcement edit rejected", "announcement not confirmed"}
+        raise SystemExit(f"Mirror {action}: HTTP {exc.code} ({reason if reason in allowed else 'check Worker response'})") from None
 
 
 def stable_release():
@@ -93,8 +105,8 @@ async def main():
             raise SystemExit("Missing Actions secret: " + key)
     release = stable_release()
     rid = release["id"]
-    preflight = bridge(rid, "preflight")
-    status = bridge(rid, "status")
+    preflight = bridge(release, "preflight")
+    status = bridge(release, "status")
     if not re.fullmatch(r"-100[1-9]\d*", status["chat"]):
         raise ValueError("Expected a Telegram supergroup or channel")
     peer = types.InputPeerChannel(int(status["chat"][4:]), 0)
@@ -115,9 +127,9 @@ async def main():
                 path = Path(tmp) / "payload"
                 download(asset, path)
                 mid = await upload(client, peer, rid, asset, path)
-            bridge(rid, "save", mid=mid, asset_id=asset["id"], digest=asset["digest"])
+            bridge(release, "save", mid=mid, asset_id=asset["id"], digest=asset["digest"])
             print("Archived verified asset", asset["id"], asset["size"], "bytes", flush=True)
-        complete = bridge(rid, "finish")
+        complete = bridge(release, "finish")
         print("Release announcement is ready:", rid, "message", complete["announcement_message"])
     finally:
         await client.disconnect()
