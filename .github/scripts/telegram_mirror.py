@@ -98,15 +98,15 @@ def telegram(method, fields):
         raise SystemExit(f"Telegram {method}: {reason}") from None
 
 
-async def upload(client, chat, asset, path):
+async def upload(client, chat, media_peer, asset, path):
     name = asset["name"]
     handle = await client.upload_file(str(path), file_name=name)
     media = types.InputMediaUploadedDocument(file=handle, mime_type="application/octet-stream",
             attributes=[types.DocumentAttributeFilename(name)], force_file=True)
     caption = name + "\nSHA-256: " + asset["digest"][7:]
-    # Bot sessions can upload without a destination. The HTTP Bot API then
-    # posts the existing Telegram file by ID to the exact private supergroup.
-    uploaded = await client(functions.messages.UploadMediaRequest(peer=types.InputPeerEmpty(), media=media))
+    # Resolve a real peer in this MTProto session. uploadMedia only stores the
+    # document; the single visible message is addressed to the archive below.
+    uploaded = await client(functions.messages.UploadMediaRequest(peer=media_peer, media=media))
     doc = uploaded.document
     if doc.size != asset["size"]:
         raise ValueError("Telegram stored an unexpected document size")
@@ -135,6 +135,8 @@ async def main():
         me = await client.get_me()
         if not me.bot or me.username.lower() != preflight["bot"].lower():
             raise ValueError("Actions and Cloudflare must use the same release bot")
+        archive_chat = telegram("getChat", {"chat_id": status["chat"]})
+        media_peer = await client.get_input_entity(archive_chat.get("username") or "grinsightwallet")
         for asset in sorted(release["assets"], key=lambda a: a["size"]):
             if status["files"].get(str(asset["id"]), {}).get("digest") == asset.get("digest") and asset.get("digest"):
                 continue
@@ -144,7 +146,7 @@ async def main():
             with tempfile.TemporaryDirectory() as tmp:
                 path = Path(tmp) / "payload"
                 download(asset, path)
-                mid = await upload(client, status["chat"], asset, path)
+                mid = await upload(client, status["chat"], media_peer, asset, path)
             bridge(release, "save", mid=mid, asset_id=asset["id"], digest=asset["digest"])
             print("Archived verified asset", asset["id"], asset["size"], "bytes", flush=True)
         complete = bridge(release, "finish")
