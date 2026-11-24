@@ -1,0 +1,39 @@
+name: Mirror release files to Telegram
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Stable release tag (leave empty for latest)
+        required: false
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: telegram-mirror-${{ github.event.release.tag_name || inputs.tag || 'latest' }}
+  cancel-in-progress: false
+jobs:
+  upload:
+    if: github.repository == 'DanilaGrinRus/GrinSight' && (github.event_name == 'workflow_dispatch' || !github.event.release.prerelease)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: GrinSight
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - name: Install the uploader
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install --require-hashes -r .github/scripts/telegram-requirements.txt
+      - name: Verify and upload release files
+        env:
+          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          MIRROR_KEY: ${{ secrets.GRINSIGHT_MIRROR_KEY }}
+          RELEASE_ID: ${{ github.event.release.id }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: .venv/bin/python .github/scripts/telegram_mirror.py
