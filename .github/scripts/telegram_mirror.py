@@ -26,7 +26,7 @@ class NoRedirect(HTTPRedirectHandler):
 
 
 def bridge(release, action, **fields):
-    manifest = {key: release[key] for key in ("id", "tag_name", "name", "body", "draft", "prerelease", "html_url")}
+    manifest = {key: release[key] for key in ("id", "tag_name", "name", "body", "draft", "prerelease", "html_url", "published_at")}
     manifest["assets"] = [{key: asset[key] for key in ("id", "name", "digest", "size", "browser_download_url")}
                           for asset in release["assets"]]
     payload = json.dumps(dict(id=release["id"], release=manifest, action=action, **fields)).encode()
@@ -126,6 +126,13 @@ async def main():
     rid = release["id"]
     preflight = bridge(release, "preflight")
     status = bridge(release, "status")
+    if status.get("retired"):
+        print("Release is outside the two-release Telegram archive:", rid)
+        return
+    if all(status["files"].get(str(a["id"]), {}).get("digest") == a["digest"] for a in release["assets"]):
+        complete = bridge(release, "finish")
+        print("Archive verified without uploading; retained release IDs:", complete["kept"], "announcement", complete["announcement_message"])
+        return
     if not re.fullmatch(r"-100[1-9]\d*", status["chat"]):
         raise ValueError("Expected a Telegram supergroup or channel")
     client = TelegramClient(MemorySession(), int(os.environ["TELEGRAM_API_ID"]), os.environ["TELEGRAM_API_HASH"],
