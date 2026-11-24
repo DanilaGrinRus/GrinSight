@@ -1,9 +1,11 @@
 """Publish only verified assets of a stable GrinSight release, as whole documents."""
 import asyncio
+import base64
 import hashlib
 import json
 import os
 import re
+import struct
 import tempfile
 from pathlib import Path
 from urllib.error import HTTPError
@@ -11,6 +13,7 @@ from urllib.parse import quote, urlparse
 from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 
 from telethon import TelegramClient, functions, types
+from telethon.tl.tlobject import TLObject
 from telethon.sessions import MemorySession
 
 API = "https://api.github.com/repos/DanilaGrinRus/GrinSight/releases/"
@@ -75,28 +78,44 @@ def download(asset, destination):
         raise ValueError("GitHub asset size or SHA-256 mismatch")
 
 
-async def upload(client, peer, rid, asset, path):
+def telegram_document_id(document):
+    # TDLib persistent document ID, v4, with the file reference from uploadMedia.
+    location = struct.pack("<ii", 5 | (1 << 25), document.dc_id)
+    location += TLObject.serialize_bytes(document.file_reference)
+    location += struct.pack("<qqBB", document.id, document.access_hash, 30, 4)
+    packed = re.sub(b"\x00{1,255}", lambda m: bytes([0, len(m[0])]), location)
+    return base64.urlsafe_b64encode(packed).rstrip(b"=").decode()
+
+
+def telegram(method, fields):
+    url = "https://api.telegram.org/bot" + os.environ["TELEGRAM_BOT_TOKEN"] + "/" + method
+    req = Request(url, data=json.dumps(fields).encode(), headers={"Content-Type": "application/json"})
+    try:
+        with build_opener(NoRedirect()).open(req, timeout=60) as response:
+            return json.load(response)["result"]
+    except HTTPError as exc:
+        reason = json.load(exc).get("description", "rejected")
+        raise SystemExit(f"Telegram {method}: {reason}") from None
+
+
+async def upload(client, chat, asset, path):
     name = asset["name"]
     handle = await client.upload_file(str(path), file_name=name)
     media = types.InputMediaUploadedDocument(file=handle, mime_type="application/octet-stream",
             attributes=[types.DocumentAttributeFilename(name)], force_file=True)
-    key = f"grinsight:{peer.channel_id}:{rid}:{asset['id']}:{asset['digest']}".encode()
-    random_id = int.from_bytes(hashlib.sha256(key).digest()[:8], "big", signed=True)
     caption = name + "\nSHA-256: " + asset["digest"][7:]
-    result = await client(functions.messages.SendMediaRequest(peer=peer, media=media,
-                          message=caption, random_id=random_id, silent=True))
-    if isinstance(result, types.UpdateShortSentMessage):
-        mid = result.id
-    else:
-        mid = next((u.id for u in result.updates if isinstance(u, types.UpdateMessageID)
-                    and u.random_id == random_id), None)
-        if mid is None:
-            mid = next((u.message.id for u in result.updates if isinstance(u, types.UpdateNewChannelMessage)
-                        and u.message.peer_id == types.PeerChannel(peer.channel_id)
-                        and u.message.message == caption and u.message.out), None)
-    if not mid:
-        raise RuntimeError("Telegram upload receipt missing")
-    return mid
+    # Bot sessions can upload without a destination. The HTTP Bot API then
+    # posts the existing Telegram file by ID to the exact private supergroup.
+    uploaded = await client(functions.messages.UploadMediaRequest(peer=types.InputPeerEmpty(), media=media))
+    doc = uploaded.document
+    if doc.size != asset["size"]:
+        raise ValueError("Telegram stored an unexpected document size")
+    result = telegram("sendDocument", {"chat_id": chat, "document": telegram_document_id(doc),
+                      "caption": caption, "disable_notification": True})
+    sent = result.get("document", {})
+    if str(result["chat"]["id"]) != chat or sent.get("file_name") != name or sent.get("file_size") != asset["size"]:
+        raise RuntimeError("Telegram document receipt mismatch")
+    return result["message_id"]
 
 
 async def main():
@@ -109,7 +128,6 @@ async def main():
     status = bridge(release, "status")
     if not re.fullmatch(r"-100[1-9]\d*", status["chat"]):
         raise ValueError("Expected a Telegram supergroup or channel")
-    peer = types.InputPeerChannel(int(status["chat"][4:]), 0)
     client = TelegramClient(MemorySession(), int(os.environ["TELEGRAM_API_ID"]), os.environ["TELEGRAM_API_HASH"],
                             receive_updates=False)
     await client.start(bot_token=os.environ["TELEGRAM_BOT_TOKEN"])
@@ -117,7 +135,7 @@ async def main():
         me = await client.get_me()
         if not me.bot or me.username.lower() != preflight["bot"].lower():
             raise ValueError("Actions and Cloudflare must use the same release bot")
-        for asset in release["assets"]:
+        for asset in sorted(release["assets"], key=lambda a: a["size"]):
             if status["files"].get(str(asset["id"]), {}).get("digest") == asset.get("digest") and asset.get("digest"):
                 continue
             name = asset["name"]
@@ -126,7 +144,7 @@ async def main():
             with tempfile.TemporaryDirectory() as tmp:
                 path = Path(tmp) / "payload"
                 download(asset, path)
-                mid = await upload(client, peer, rid, asset, path)
+                mid = await upload(client, status["chat"], asset, path)
             bridge(release, "save", mid=mid, asset_id=asset["id"], digest=asset["digest"])
             print("Archived verified asset", asset["id"], asset["size"], "bytes", flush=True)
         complete = bridge(release, "finish")
