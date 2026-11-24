@@ -1,0 +1,27 @@
+[package]
+name = "fly-paycore-store"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Append-only authenticated journal with a tail guard (payment core spec rev. 0.3, stage E1)"
+
+[features]
+# In-memory directory with fault injection. For tests only; never enable in a product build.
+sim = []
+
+[dependencies]
+chacha20poly1305 = { version = "0.10", default-features = false, features = ["alloc"] }
+sha2 = { version = "0.10", default-features = false }
+hmac = { version = "0.12", default-features = false }
+hkdf = { version = "0.12", default-features = false }
+subtle = { version = "2", default-features = false }
+zeroize = { version = "1", default-features = false, features = ["alloc"] }
+getrandom = { version = "0.2", default-features = false }
+
+[dev-dependencies]
+fly-paycore-store = { path = ".", features = ["sim"] }
+
+[profile.release]
+overflow-checks = true
+
+[workspace]

@@ -1,0 +1,35 @@
+[package]
+name = "fly-chain-state"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "The state of the Grin chain at a node's archive point, collected from PIBD segments and checked against the header: the bitmap of unspent outputs, their identifiers, the peaks of the three MMRs"
+
+[dependencies]
+grin_core = { path = "../../vendor/grin/core" }
+grin_chain = { path = "../../vendor/grin/chain" }
+grin_util = { path = "../../vendor/grin/util" }
+croaring = "1.0.1"
+grin_keychain = { path = "../../vendor/grin/keychain", optional = true }
+chrono = { version = "0.4", optional = true }
+getrandom = { version = "0.2", optional = true }
+
+[features]
+# A node with a mined chain, for this crate's tests and for the tests of the
+# program that fetches the state. Never part of a product build.
+testkit = ["dep:grin_keychain", "dep:chrono", "dep:getrandom"]
+
+[[test]]
+name = "state"
+required-features = ["testkit"]
+
+[[test]]
+name = "advance"
+required-features = ["testkit"]
+
+[workspace]
+
+# The tests mine a real chain with range proofs; without this the elliptic
+# curve code is built unoptimized and they take many minutes.
+[profile.dev.package.grin_secp256k1zkp]
+opt-level = 3

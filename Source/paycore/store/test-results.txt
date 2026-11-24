@@ -1,0 +1,50 @@
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test file_names_cannot_escape_the_directory ... ok
+test real_files_single_writer_and_permissions ... ok
+test real_files_roundtrip_checkpoint_and_torn_tail ... ok
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+test corrupted_sealed_tail_is_reported_by_the_guard ... ok
+corruption: 1068 rejected, 276 reduced to the valid prefix
+test corruption_of_every_byte ... ok
+test failed_operation_poisons_until_reopen ... ok
+test frames_are_randomised ... ok
+test guard_across_generations ... ok
+test limits_and_reserved_kinds ... ok
+test model_trace_a5_guard_catch_up ... ok
+crash matrix: 3968 runs over 62 operations
+test crash_at_every_operation ... ok
+test scenario_without_faults ... ok
+test single_writer ... ok
+test tail_guard_table ... ok
+test truncation_at_every_length ... ok
+test wrong_key_and_wrong_identity_are_refused ... ok
+test random_damage_never_panics_or_forges ... ok
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.24s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+Дополнение 21.11 (FileGuard): cargo test
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+running 4 tests
+test file_names_cannot_escape_the_directory ... ok
+test real_files_roundtrip_checkpoint_and_torn_tail ... ok
+test real_files_single_writer_and_permissions ... ok
+test file_guard_authenticates_and_detects_rollback_of_the_wallet_directory ... ok
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+running 14 tests
+test corrupted_sealed_tail_is_reported_by_the_guard ... ok
+test corruption_of_every_byte ... ok
+test failed_operation_poisons_until_reopen ... ok
+test frames_are_randomised ... ok
+test guard_across_generations ... ok
+test limits_and_reserved_kinds ... ok
+test model_trace_a5_guard_catch_up ... ok
+test crash_at_every_operation ... ok
+test scenario_without_faults ... ok
+test single_writer ... ok
+test tail_guard_table ... ok
+test truncation_at_every_length ... ok
+test wrong_key_and_wrong_identity_are_refused ... ok
+test random_damage_never_panics_or_forges ... ok
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.13s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+Поломка «MAC стража не проверяется» — ловится тестом file_guard_authenticates_and_detects_rollback_of_the_wallet_directory.

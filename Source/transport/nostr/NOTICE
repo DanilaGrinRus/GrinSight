@@ -1,0 +1,20 @@
+This research crate contains unmodified files from Goblin.
+Copyright 2026 The Goblin Developers.
+Licensed under the Apache License, Version 2.0; see LICENSE.
+
+Source repository: https://github.com/2ro/goblin.git
+Source commit: bc62dd68ebd7a7d09ee753ecb5ea209266e21730
+Source path: src/nostr/protocol.rs
+SHA-256: 14BE36DA11C03E66028D40152D5E8BCCA12BF63E4D2B0019CF53282094A6C54C
+Source path: src/nostr/sanitize.rs
+SHA-256: D43D4F7EC9CF4440AEFBFE056051EC2E35D03F38565874B21287FAE66E19EBC4
+Source path: src/nostr/wrapv3.rs
+SHA-256: 18EFE20A3DE26D3BE727B91479D9DA06E76CB306E91A9145FED133A99970D965
+Source path: LICENSE
+SHA-256: C71D239DF91726FC519C6EB72D318EC65820627232B2F796219E87DCF35D0AB4
+
+The crate manifest and wrapper are local research scaffolding. Windows release
+tests passed offline with the lockfile: 23 unit tests and 9 adversarial tests.
+They include v2/v3 synthetic gift-wrap handling and an explicit outer signature
+and sender-key check. This is not evidence of cross-client interoperability,
+network delivery, a trusted contact registry or payments.

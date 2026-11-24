@@ -1,0 +1,54 @@
+cargo test, 21.11.2026, Linux x86_64, rustc 1.97.0
+running 1 test
+test state::tests::late_arming_frame_is_validated ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+running 27 tests
+test blocks_must_extend_the_tip_and_ttl_is_enforced ... ok
+test broadcast_outcomes_are_recorded_and_never_resign ... ok
+test cancel_releases_inputs_and_blocks_signing ... ok
+test core_to_core_and_replay_equivalence ... ok
+test contested_operation_replacement_and_death ... ok
+test counterparty_half_is_checked_before_arming ... ok
+late finalize crash matrix: {"Finalized": 11, "Prepared": 7, "Unknown": 18}
+test crash_at_every_operation_of_late_finalize ... ok
+test crash_while_paying_or_completing_an_invoice ... ok
+finalize crash matrix: {"Finalized": 14, "Prepared": 10, "Unknown": 24}
+test crash_at_every_operation_of_finalize ... ok
+test draft_limit_expiry_and_late_arrival ... ok
+test invoice_from_grin_wallet_paid_by_us ... ok
+test invoice_issued_by_us_paid_by_grin_wallet ... ok
+test late_lock_refuses_without_signing ... ok
+test late_lock_reserves_only_when_arming ... ok
+test malformed_and_mismatched_s2_are_rejected_before_arming ... ok
+test migration_from_v01_is_refused_while_operations_are_open ... ok
+test payment_proof_for_another_address_is_refused ... ok
+test reanchor_between_draft_and_inclusion_prevents_binding ... ok
+test receive_draft_from_grin_wallet_with_and_without_payment_proof ... ok
+test rollback_locks_prepared_operations ... ok
+test second_s2_is_refused_and_replay_does_not_sign ... ok
+test send_to_grin_wallet_both_receive_modes ... ok
+test send_with_payment_proof_from_grin_wallet ... ok
+test stateless_receive_writes_nothing_and_is_found_by_scan ... ok
+test traces_are_exported_for_the_wallet_model ... ok
+test v_changes_share_the_frames_of_the_blocks ... ok
+damaged slates: 5675 refused, 68 accepted
+test damaged_slates_never_panic_or_leave_traces ... ok
+test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 110.89s
+
+Мутационные проверки новых функций (каждая поломка должна ронять тесты):
+invoice_pay ignores agreed maximum: caught
+invoice_pay replays for a different I1: caught
+I2 returned without durable InvoicePaid: caught
+invoice_finalize accepts a second I2: caught
+payment proof signature not verified: caught
+payment proof addresses not compared: caught
+requested proof may be dropped: caught
+migration ignores locked outputs: caught
+migration ignores open receives: caught
+late lock signs with a fee that no longer pays: caught
+late lock takes an input reserved by another operation: caught
+late inputs missing from the signing context: caught
+S2 half not checked before arming: caught
+range proof not verified before arming: caught
+offset/excess relation not checked: caught
+offset hex not pre-checked (upstream panic): caught

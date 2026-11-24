@@ -1,0 +1,10 @@
+[package]
+name = "fly-paycore-chain-port"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "What the payment core takes from the chain layer: types and one trait, no dependencies"
+
+[dependencies]
+
+[workspace]

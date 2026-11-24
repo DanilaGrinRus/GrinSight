@@ -1,0 +1,105 @@
+{
+  "initial": {
+    "conflict": false,
+    "known": true,
+    "reserve": true,
+    "spent": false,
+    "status": "not_confirmed",
+    "status_rule": null,
+    "x_send_state": "Prepared"
+  },
+  "owned_fields": [
+    "status",
+    "status_rule",
+    "known",
+    "spent",
+    "reserve",
+    "conflict"
+  ],
+  "producer": "fly-paycore-wallet",
+  "result": {
+    "conflict": false,
+    "known": true,
+    "reserve": false,
+    "spent": true,
+    "status": "confirmed",
+    "status_rule": null,
+    "x_send_state": "Confirmed"
+  },
+  "scenario": "paycore_send_reorg_crash_restart",
+  "schema": "grinsight.wallet.trace.v1",
+  "steps": [
+    {
+      "action": "finalize",
+      "expected": {
+        "conflict": false,
+        "known": true,
+        "reserve": true,
+        "spent": false,
+        "status": "not_confirmed",
+        "status_rule": null,
+        "x_send_state": "Finalized"
+      },
+      "params": {}
+    },
+    {
+      "action": "block",
+      "expected": {
+        "conflict": true,
+        "known": true,
+        "reserve": true,
+        "spent": false,
+        "status": "not_confirmed",
+        "status_rule": null,
+        "x_send_state": "Contested"
+      },
+      "params": {
+        "foreign_spend_of_input": true
+      }
+    },
+    {
+      "action": "reorg",
+      "expected": {
+        "conflict": false,
+        "known": true,
+        "reserve": true,
+        "spent": false,
+        "status": "not_confirmed",
+        "status_rule": null,
+        "x_send_state": "Finalized"
+      },
+      "params": {
+        "depth": 1
+      }
+    },
+    {
+      "action": "crash_restart",
+      "expected": {
+        "conflict": false,
+        "known": true,
+        "reserve": true,
+        "spent": false,
+        "status": "not_confirmed",
+        "status_rule": null,
+        "x_send_state": "Finalized"
+      },
+      "params": {}
+    },
+    {
+      "action": "block",
+      "expected": {
+        "conflict": false,
+        "known": true,
+        "reserve": false,
+        "spent": true,
+        "status": "confirmed",
+        "status_rule": null,
+        "x_send_state": "Confirmed"
+      },
+      "params": {
+        "includes_kernel": true
+      }
+    }
+  ],
+  "tick_seconds": 15
+}

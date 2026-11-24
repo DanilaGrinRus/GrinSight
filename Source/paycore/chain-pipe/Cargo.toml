@@ -1,0 +1,22 @@
+[package]
+name = "fly-paycore-chain-pipe"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "The chain port across a process boundary: wire format, the wallet's side and the chain process's loop. No third-party code"
+
+[dependencies]
+fly-paycore-chain-port = { path = "../chain-port" }
+fly-paycore-pipe-link = { path = "../pipe-link" }
+
+[features]
+# Builds `chain-stub`, a stand-in chain process that serves blocks from a
+# directory, for tests of the process boundary. Not part of any product build.
+stub = []
+
+[[bin]]
+name = "chain-stub"
+path = "src/bin/chain-stub.rs"
+required-features = ["stub"]
+
+[workspace]

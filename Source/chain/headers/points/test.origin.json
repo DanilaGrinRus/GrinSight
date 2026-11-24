@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "kind": "release",
+  "network": 2,
+  "height": 3345840,
+  "hash": "767c501ef997674890cae2d0d7bb16d1ff288712aca3e3f163a9182a71775883",
+  "made": 1795387082,
+  "from": "headers from nodes found through the network's seed names",
+  "confirmed": [
+    {
+      "group": "Grinffindor",
+      "host": "testnet.grinffindor.org",
+      "asn": 9145
+    },
+    {
+      "group": "Grin.money",
+      "host": "testapi.grin.money",
+      "asn": 13335
+    }
+  ]
+}

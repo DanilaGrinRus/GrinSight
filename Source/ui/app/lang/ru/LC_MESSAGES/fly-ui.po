@@ -1,0 +1,646 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: ru\n"
+
+msgid " · nodes will see the IP of "
+msgstr " · ноды увидят IP "
+
+msgid ". If you forget it, only the 24 words shown next will bring the wallet back."
+msgstr ". Если его забыть, кошелёк вернут только 24 слова, которые появятся дальше."
+
+msgid ". Whoever knows these words controls the money. We show them once and never keep them in plain form."
+msgstr ". Кто знает эти слова, распоряжается деньгами. Мы покажем их один раз и не сохраним в открытом виде."
+
+msgid "24 words, separated by spaces"
+msgstr "24 слова через пробел"
+
+msgid "grin1… — for a payment proof"
+msgstr "grin1… — для доказательства оплаты"
+
+msgid "Auto-receive"
+msgstr "Автоприём"
+
+msgid "Wallet address (optional)"
+msgstr "Адрес кошелька (необязательно)"
+
+msgid "Wallet address"
+msgstr "Адрес кошелька"
+
+msgid "Recipient's address (optional)"
+msgstr "Адрес получателя (необязательно)"
+
+msgid "Address copied"
+msgstr "Адрес скопирован"
+
+msgid "Your address. A sender can name it so the payment has a payment proof."
+msgstr "Ваш адрес. Отправитель может указать его, чтобы у платежа было доказательство оплаты."
+
+msgid "Your 24 words"
+msgstr "Ваши 24 слова"
+
+msgid "On"
+msgstr "Вкл"
+
+msgid "Unlock"
+msgstr "Войти"
+
+msgid "Restoring…"
+msgstr "Восстанавливаю…"
+
+msgid "Restore a wallet from words"
+msgstr "Восстановить кошелёк по словам"
+
+msgid "Restore from words"
+msgstr "Восстановить по словам"
+
+msgid "Restore"
+msgstr "Восстановить"
+
+msgid "Type the words with these numbers — this shows the copy is right."
+msgstr "Впишите слова под этими номерами — так мы убедимся, что запись верна."
+
+msgid "By hand — Slatepack text"
+msgstr "Вручную — текстом Slatepack"
+
+msgid "By hand"
+msgstr "Вручную"
+
+msgid "Paste"
+msgstr "Вставить"
+
+msgid "Incoming payment"
+msgstr "Входящий платёж"
+
+msgid "You receive"
+msgstr "Вы получите"
+
+msgid "Lock"
+msgstr "Выйти"
+
+msgid "Off"
+msgstr "Выкл"
+
+msgid "Preparing…"
+msgstr "Готовлю…"
+
+msgid "Done"
+msgstr "Готово"
+
+msgid "Next"
+msgstr "Дальше"
+
+msgid "For a new wallet. Testnet — for trying without real money"
+msgstr "Для нового кошелька. Testnet — для проб без настоящих денег"
+
+msgid "Add a contact"
+msgstr "Добавить контакт"
+
+msgid "Payment delivery"
+msgstr "Доставка платежей"
+
+msgid "Available "
+msgstr "Доступно "
+
+msgid "Available"
+msgstr "Доступно"
+
+msgid "Once more"
+msgstr "Ещё раз"
+
+msgid "Waiting for you"
+msgstr "Ждут вас"
+
+msgid "Set"
+msgstr "Задать"
+
+msgid "Close"
+msgstr "Закрыть"
+
+msgid "Emerald"
+msgstr "Изумруд"
+
+msgid "Name"
+msgstr "Имя"
+
+msgid "The contact finds their message key (npub1…) under “My details”. The address lets the signing window name them."
+msgstr "Ключ для сообщений (npub1…) контакт найдёт у себя в «Моих реквизитах». Адрес нужен, чтобы окно подписи могло назвать его по имени."
+
+msgid "Message key"
+msgstr "Ключ для сообщений"
+
+msgid "The sender pays the network fee."
+msgstr "Комиссию сети платит отправитель."
+
+msgid "Network fee"
+msgstr "Комиссия сети"
+
+msgid "To"
+msgstr "Кому"
+
+msgid "No contacts yet"
+msgstr "Контактов пока нет"
+
+msgid "Ice"
+msgstr "Лёд"
+
+msgid "Bear crafts"
+msgstr "Медвежьи поделки"
+
+msgid "My details"
+msgstr "Мои реквизиты"
+
+msgid "Honey"
+msgstr "Мёд"
+
+msgid "Back"
+msgstr "Назад"
+
+msgid "New contact"
+msgstr "Новый контакт"
+
+msgid "New wallet"
+msgstr "Новый кошелёк"
+
+msgid "New password"
+msgstr "Новый пароль"
+
+msgid "No payments yet"
+msgstr "Операций пока нет"
+
+msgid "Options"
+msgstr "Опции"
+
+msgid "From"
+msgstr "От кого"
+
+msgid "The recipient's reply"
+msgstr "Ответ получателя"
+
+msgid "Decline"
+msgstr "Отклонить"
+
+msgid "Unlocking…"
+msgstr "Открываю…"
+
+msgid "Cancel payment"
+msgstr "Отменить платёж"
+
+msgid "Send"
+msgstr "Отправить"
+
+msgid "Send directly"
+msgstr "Отправлять напрямую"
+
+msgid "Send directly if Tor fails"
+msgstr "Отправлять напрямую, если Tor не дошёл"
+
+msgid "VERIFIED"
+msgstr "ПРОВЕРЕНО"
+
+msgid "Password for "
+msgstr "Пароль для "
+
+msgid "The password opens the wallet "
+msgstr "Пароль открывает кошелёк "
+
+msgid "Password"
+msgstr "Пароль"
+
+msgid "Pass on this text"
+msgstr "Передайте этот текст"
+
+msgid "Contacts"
+msgstr "Переписка"
+
+msgid "Write the words on paper in order and keep them "
+msgstr "Перепишите слова на бумагу по порядку и храните "
+
+msgid "Payment or invoice as text"
+msgstr "Платёж или счёт текстом"
+
+msgid "The payment goes to the contact over Tor. You sign it when the contact replies."
+msgstr "Платёж уйдёт контакту через Tor. Подписать его вы сможете, когда контакт ответит."
+
+msgid "Repeat the password"
+msgstr "Повторите пароль"
+
+msgid "Sign and send"
+msgstr "Подписать и отправить"
+
+msgid "Sign the payment"
+msgstr "Подписать платёж"
+
+msgid "Signing…"
+msgstr "Подписываю…"
+
+msgid "Show the words again"
+msgstr "Показать слова ещё раз"
+
+msgid "The recipient gets"
+msgstr "Получатель получит"
+
+msgid "Receive and copy the address"
+msgstr "Получить и скопировать адрес"
+
+msgid "Receive"
+msgstr "Получить"
+
+msgid "After unlocking, the wallet finds its money in the chain by itself — this can take a while."
+msgstr "После входа кошелёк сам найдёт свои деньги в цепи — это может занять время."
+
+msgid "Recent payments"
+msgstr "Последние операции"
+
+msgid "Read the text"
+msgstr "Прочитать текст"
+
+msgid "Choose a password"
+msgstr "Придумайте пароль"
+
+msgid "Accepting…"
+msgstr "Принимаю…"
+
+msgid "Accept"
+msgstr "Принять"
+
+msgid "Let's check the words are written down"
+msgstr "Проверим, что слова записаны"
+
+msgid "Check"
+msgstr "Проверить"
+
+msgid "Checking…"
+msgstr "Проверяю…"
+
+msgid "Own nodes"
+msgstr "Свои ноды"
+
+msgid "Own point"
+msgstr "Своя точка"
+
+msgid "Connection"
+msgstr "Связь"
+
+msgid "Mainnet. "
+msgstr "Сеть Mainnet. "
+
+msgid "Testnet. "
+msgstr "Сеть Testnet. "
+
+msgid "The network was chosen when the wallet was made"
+msgstr "Сеть кошелька выбрана при его создании"
+
+msgid "Network"
+msgstr "Сеть"
+
+msgid "Copied"
+msgstr "Скопировано"
+
+msgid "Copy the address"
+msgstr "Скопировать адрес"
+
+msgid "Copy"
+msgstr "Скопировать"
+
+msgid "Hide options"
+msgstr "Скрыть опции"
+
+msgid "Word No. "
+msgstr "Слово № "
+
+msgid "Create a wallet"
+msgstr "Создать кошелёк"
+
+msgid "Creating…"
+msgstr "Создаю…"
+
+msgid "Save"
+msgstr "Сохранить"
+
+msgid "Saving…"
+msgstr "Сохраняю…"
+
+msgid "Total to be spent"
+msgstr "Спишется всего"
+
+msgid "Chain starting point"
+msgstr "Стартовая точка цепи"
+
+msgid "Amount, GRIN"
+msgstr "Сумма, GRIN"
+
+msgid "Theme"
+msgstr "Тема"
+
+msgid "Theme: "
+msgstr "Тема: "
+
+msgid "Phrase to find you in Nostr"
+msgstr "Фраза для поиска в Nostr"
+
+msgid "B/W"
+msgstr "Ч/Б"
+
+msgid "Reading…"
+msgstr "Читаю…"
+
+msgid "I wrote the words down"
+msgstr "Я записал слова"
+
+msgid "I wrote down all 24 words"
+msgstr "Я записал(а) все 24 слова"
+
+msgid "paste the BEGINSLATEPACK… ENDSLATEPACK. text here"
+msgstr "вставьте сюда текст BEGINSLATEPACK… ENDSLATEPACK."
+
+msgid "paste the BEGINSLATEPACK… ENDSLATEPACK. text you were sent"
+msgstr "вставьте присланный вам текст BEGINSLATEPACK… ENDSLATEPACK."
+
+msgid "what you call them"
+msgstr "как вы его зовёте"
+
+msgid "on this computer"
+msgstr "на этом компьютере"
+
+msgid "on this phone"
+msgstr "на этом телефоне"
+
+msgid "for example 1.5"
+msgstr "например 1.5"
+
+msgid "away from the computer"
+msgstr "отдельно от компьютера"
+
+msgid "away from the phone"
+msgstr "отдельно от телефона"
+
+msgid "word"
+msgstr "слово"
+
+msgid "this computer"
+msgstr "этого компьютера"
+
+msgid "this phone"
+msgstr "этого телефона"
+
+msgid "Create a message key"
+msgstr "Создать ключ для сообщений"
+
+msgid "Key copied"
+msgstr "Ключ скопирован"
+
+msgid "Copy the key"
+msgstr "Скопировать ключ"
+
+msgid "Password and words"
+msgstr "Пароль и слова"
+
+msgid "All payments"
+msgstr "Все операции"
+
+msgid "Send GRIN"
+msgstr "Отправить GRIN"
+
+msgid "No messages yet. Messages travel over Tor and wait at a relay until the contact comes online."
+msgstr "Сообщений пока нет. Сообщения идут через Tor и ждут у релея, пока контакт не появится в сети."
+
+msgid "Message"
+msgstr "Сообщение"
+
+msgid "Change the password"
+msgstr "Сменить пароль"
+
+msgid "Current password"
+msgstr "Текущий пароль"
+
+msgid "Show the 24 words"
+msgstr "Показать 24 слова"
+
+msgid "Make sure nobody sees the screen. Whoever knows the words controls the money."
+msgstr "Убедитесь, что экран никто не видит. Кто знает слова, распоряжается деньгами."
+
+msgid "Show the words"
+msgstr "Показать слова"
+
+msgid "Write them on paper in order. Close this window when done."
+msgstr "Перепишите их на бумагу по порядку. Когда закончите, закройте окно."
+
+msgid "Own nodes and own point"
+msgstr "Свои ноды и своя точка"
+
+msgid "Your own public nodes: one https:// address a line, up to 4. They are asked like the listed ones and get your transactions first, but they never count as an independent voice."
+msgstr "Ваши публичные ноды: по одному адресу https:// в строке, до 4. Их спрашивают наравне с нодами списка, им первым уходят ваши транзакции, но независимым голосом они не считаются."
+
+msgid "Own starting point: paste the whole own-point.json that fly-chain point --kind own made. Leave empty for the built-in point."
+msgstr "Своя стартовая точка: вставьте целиком own-point.json, который сделал fly-chain point --kind own. Пусто — вшитая точка."
+
+msgid "Pay the invoice"
+msgstr "Оплата счёта"
+
+msgid "The invoice asks for"
+msgstr "Счёт выставлен на"
+
+msgid "An invoice does not say who issued it. Pay only an invoice you were expecting."
+msgstr "В счёте не сказано, кто его выставил. Платите только по счёту, которого ждали."
+
+msgid "Once signed, the payment cannot be cancelled. You pass the reply to whoever issued the invoice; they complete the payment and send it to the network."
+msgstr "После подписи платёж отменить нельзя. Ответ вы передаёте тому, кто выставил счёт: он завершает платёж и отправляет его в сеть."
+
+msgid "Do not pay"
+msgstr "Не платить"
+
+msgid "An invoice is paid from “Receive”: paste its text there."
+msgstr "Счёт оплачивается из окна «Получить»: вставьте туда его текст."
+
+msgid "A payment from before the restore"
+msgstr "Платёж до восстановления"
+
+msgid "If you release the reserve and the payment was signed, whoever has it can still send it to the network, and the money leaves anyway. Release it only if you know the payment was never signed, or after asking the recipient."
+msgstr "Если снять резерв, а платёж был подписан, тот, у кого он есть, всё ещё может отправить его в сеть — и деньги уйдут. Снимайте резерв, только если знаете, что платёж не подписывался, или спросив получателя."
+
+msgid "Released, it is shown as “reserve released after the restore”, not as cancelled."
+msgstr "После снятия он показывается как «резерв снят после восстановления», а не как отменённый."
+
+msgid "Keep it reserved"
+msgstr "Оставить в резерве"
+
+msgid "Releasing…"
+msgstr "Снимаю…"
+
+msgid "Release the reserve"
+msgstr "Снять резерв"
+
+msgid "Synchronisation"
+msgstr "Синхронизация"
+
+msgid "Problems"
+msgstr "Неполадки"
+
+msgid "Nothing went wrong since the wallet was opened."
+msgstr "С открытия кошелька неполадок не было."
+
+msgid "GlauxMail: soon"
+msgstr "GlauxMail: скоро"
+
+msgid "soon"
+msgstr "скоро"
+
+msgid "By hand: every payment is a text you pass on yourself."
+msgstr "Вручную: каждый платёж — текст, который вы передаёте сами."
+
+msgid "Tor: a payment to a contact or to a grin1 address is delivered by itself."
+msgstr "Tor: платёж контакту или на адрес grin1 доставляется сам."
+
+msgid "Tor is chosen, but delivery does not work now: payments go by hand."
+msgstr "Выбран Tor, но доставка сейчас не работает: платежи передаются вручную."
+
+msgid "Delivery is set to “By hand” on the main screen: contacts are not offered here."
+msgstr "На главном экране выбрана доставка «Вручную»: контакты здесь не предлагаются."
+
+msgid "By hand: the wallet makes a Slatepack text, you pass it on to the recipient."
+msgstr "Вручную: кошелёк делает текст Slatepack, вы передаёте его получателю."
+
+msgid "Make the Slatepack text"
+msgstr "Сделать текст Slatepack"
+
+msgid "Send to the contact"
+msgstr "Отправить контакту"
+
+msgid "Any password is accepted. Twelve characters or more are advised: the password is all that protects the wallet file on this device."
+msgstr "Подойдёт любой пароль. Советуем двенадцать знаков и больше: кроме пароля, файл кошелька на этом устройстве ничто не защищает."
+
+msgid "A short password. Whoever gets the wallet file can try short passwords one after another; twelve characters or more are advised."
+msgstr "Короткий пароль. Тот, к кому попадёт файл кошелька, сможет перебрать короткие пароли; советуем двенадцать знаков и больше."
+
+msgid "The password is twelve characters or longer."
+msgstr "В пароле двенадцать знаков или больше."
+
+msgid "The chain process says"
+msgstr "Процесс цепи сообщает"
+
+msgid "Show the Slatepack text"
+msgstr "Показать текст Slatepack"
+
+msgid "Sending…"
+msgstr "Отправляю…"
+
+msgid "Send over Tor to the address"
+msgstr "Отправить через Tor на адрес"
+
+msgid "How it gets there"
+msgstr "Как дойдёт"
+
+msgid "Over Tor — to a grin1 address"
+msgstr "Через Tor — на адрес grin1"
+
+msgid "Recipient's address"
+msgstr "Адрес получателя"
+
+msgid "grin1… — the wallet there must be open"
+msgstr "grin1… — кошелёк по этому адресу должен быть открыт"
+
+msgid "Delivery is set to “By hand” on the main screen: contacts and Tor are not offered here."
+msgstr "На главном экране выбрана доставка «Вручную»: контакты и Tor здесь не предлагаются."
+
+msgid "The payment goes over Tor straight to the wallet at this address. You sign it when that wallet replies."
+msgstr "Платёж уйдёт через Tor прямо кошельку по этому адресу. Вы подпишете его, когда тот кошелёк ответит."
+
+msgid "You pass the text on yourself and paste the reply. An invoice is paid from “Receive”: paste its text there."
+msgstr "Текст вы передаёте сами и вставляете ответ. Счёт оплачивается из «Получить»: вставьте его текст там."
+
+msgid "Send over Tor"
+msgstr "Отправить через Tor"
+
+msgid "Your address. A payment sent to it over Tor arrives by itself while the wallet is open; a sender can also name it for a payment proof."
+msgstr "Ваш адрес. Платёж, отправленный на него через Tor, придёт сам, пока кошелёк открыт; отправитель может указать его и для подтверждения платежа."
+
+msgid "Or a Slatepack you were sent: a payment or an invoice"
+msgstr "Или присланный вам Slatepack: платёж или счёт"
+
+msgid "Accept the Slatepack"
+msgstr "Принять Slatepack"
+
+msgid "Who gets it and how — choose one"
+msgstr "Кому и как — выберите одно"
+
+msgid "To the contact: "
+msgstr "Контакту: "
+
+msgid "To a grin1 address — the wallet sends it itself, over Tor"
+msgstr "На адрес grin1 — кошелёк отправит сам, через Tor"
+
+msgid "By hand — I pass the Slatepack text on myself"
+msgstr "Вручную — текст Slatepack передам сам"
+
+msgid "Waiting for the wallet at this address to answer — this can take up to two minutes. The window to sign opens by itself."
+msgstr "Жду ответа кошелька по этому адресу — до двух минут. Окно подписи откроется само."
+
+msgid "To a file"
+msgstr "В файл"
+
+msgid "From a file"
+msgstr "Из файла"
+
+msgid "Close the list"
+msgstr "Закрыть список"
+
+msgid "No files yet. Put a .txt or .slatepack file into this folder: "
+msgstr "Файлов пока нет. Положите файл .txt или .slatepack в эту папку: "
+
+msgid "This file could not be read as text"
+msgstr "Этот файл не читается как текст"
+
+msgid "Taken from the file "
+msgstr "Взято из файла "
+
+msgid "QR code"
+msgstr "QR-код"
+
+msgid "Show the text"
+msgstr "Показать текст"
+
+msgid "Hide the QR code"
+msgstr "Скрыть QR-код"
+
+msgid "This text is too long for one QR code. Pass it on as text or as a file."
+msgstr "Этот текст слишком длинный для одного QR-кода. Передайте его текстом или файлом."
+
+msgid "How Tor is reached"
+msgstr "Как выходить в Tor"
+
+msgid "Bridges"
+msgstr "Мосты"
+
+msgid "Where Tor is blocked it can be reached through bridges: relays that are not in the public list, with the traffic disguised. The choice holds for everything the wallet does through Tor: messages, payments to an address, sending transactions."
+msgstr "Там, где Tor блокируют, в него можно выйти через мосты: узлы, которых нет в открытом списке, с маскировкой трафика. Выбор действует на всё, что кошелёк делает через Tor: сообщения, платежи на адрес, отправку транзакций."
+
+msgid "Directly — the ordinary way"
+msgstr "Напрямую — обычным путём"
+
+msgid "Through built-in obfs4 bridges — the first thing to try"
+msgstr "Через встроенные мосты obfs4 — попробуйте сначала их"
+
+msgid "Through Snowflake — when obfs4 does not get through"
+msgstr "Через Snowflake — если obfs4 не проходит"
+
+msgid "Through my own bridges"
+msgstr "Через свои мосты"
+
+msgid "One bridge a line, as Tor gives them. Fresh ones: bridges.torproject.org, or the Telegram bot @GetBridgesBot."
+msgstr "По одному мосту в строке, как их выдаёт Tor. Свежие: bridges.torproject.org или бот в Telegram @GetBridgesBot."
+
+msgid "My bridges"
+msgstr "Мои мосты"
+
+msgid "This build has no program for bridges (lyrebird) next to the wallet's programs: obfs4 and Snowflake will not connect."
+msgstr "В этой сборке рядом с программами кошелька нет программы для мостов (lyrebird): obfs4 и Snowflake не подключатся."
+
+msgid "With bridges chosen the wallet reaches Tor through them only. If they do not answer, Tor does not connect; it is never reached directly instead."
+msgstr "Когда выбраны мосты, кошелёк выходит в Tor только через них. Если они не отвечают, Tor не подключается; напрямую вместо этого кошелёк не пойдёт."
+
+msgid "Tor bridges"
+msgstr "Мосты Tor"
+
+msgid "What the processes say"
+msgstr "Что говорят процессы"

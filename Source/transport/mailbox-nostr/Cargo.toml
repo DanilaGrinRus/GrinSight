@@ -1,0 +1,34 @@
+[package]
+name = "fly-mailbox-nostr"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "The payment core's Mailbox port over the Nostr transport"
+
+[workspace]
+
+[dependencies]
+fly-paycore-mailbox = { path = "../../paycore/mailbox" }
+fly-paycore-mailbox-pipe = { path = "../../paycore/mailbox-pipe" }
+fly-nostr-research = { path = "../nostr" }
+fly-tor = { path = "../tor" }
+nostr-sdk = { version = "=0.44.1", default-features = false, features = ["nip44", "nip59"] }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "time"] }
+chacha20poly1305 = "=0.10.1"
+sha2 = "=0.10.9"
+zeroize = "1"
+getrandom = "0.2"
+
+[[bin]]
+name = "fly-mailbox"
+path = "src/bin/fly-mailbox.rs"
+
+[dev-dependencies]
+fly-nostr-research = { path = "../nostr", features = ["loopback-testing"] }
+tokio = { version = "1", features = ["macros", "rt", "net", "sync"] }
+tokio-tungstenite = { version = "=0.26.2", features = ["handshake"] }
+futures-util = { version = "0.3", features = ["sink"] }
+
+[patch.crates-io]
+nostr-relay-pool = { path = "../vendor/nostr-relay-pool-0.44.3-privacy" }
+nostr-sdk = { path = "../vendor/nostr-sdk-0.44.1-privacy" }

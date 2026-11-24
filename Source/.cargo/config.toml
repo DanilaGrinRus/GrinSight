@@ -1,0 +1,10 @@
+# The payment core builds offline from its own vendored crates.
+# This overrides any source replacement set in a parent folder (C:\DHW\.cargo).
+[source.crates-io]
+replace-with = "core-vendored"
+
+[source.core-vendored]
+directory = "vendor-crates"
+
+[net]
+offline = true

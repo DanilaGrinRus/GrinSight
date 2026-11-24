@@ -1,0 +1,67 @@
+// Four themes from the design canvas: Изумруд, Лёд, Мёд, Ч/Б в точку.
+export enum ThemeName { emerald, ice, honey, mono }
+
+export global Theme {
+    in-out property <ThemeName> name: ThemeName.ice;
+
+    out property <color> bg: name == ThemeName.ice ? #0A0F1A : name == ThemeName.honey ? #0C0C0C : name == ThemeName.mono ? #0D0D0D : #0A0E14;
+    out property <color> card: name == ThemeName.ice ? #101A2A : name == ThemeName.honey ? #171614 : name == ThemeName.mono ? #1A1A1AE0 : #111922;
+    out property <color> line: name == ThemeName.ice ? #22344D : name == ThemeName.honey ? #302C22 : name == ThemeName.mono ? #363636 : #223041;
+    out property <color> text: name == ThemeName.ice ? #E6EEF8 : name == ThemeName.honey ? #F2EFE6 : name == ThemeName.mono ? #F0F0F0 : #E8EDF2;
+    out property <color> muted: name == ThemeName.ice ? #93A6BE : name == ThemeName.honey ? #A8A397 : name == ThemeName.mono ? #A6A6A6 : #94A3B3;
+    out property <color> accent: name == ThemeName.ice ? #5AB0FF : name == ThemeName.honey ? #FFC814 : name == ThemeName.mono ? #F0F0F0 : #3DDC97;
+    out property <color> on-accent: name == ThemeName.ice ? #03111F : name == ThemeName.honey ? #151000 : name == ThemeName.mono ? #0D0D0D : #05140D;
+    out property <color> soft: name == ThemeName.ice ? #5AB0FF26 : name == ThemeName.honey ? #FFC81424 : name == ThemeName.mono ? #FFFFFF1A : #3DDC9724;
+    out property <color> warn: name == ThemeName.ice ? #FFC94A : name == ThemeName.honey ? #FF9A3D : name == ThemeName.mono ? #E0E0E0 : #F2B53A;
+    out property <color> warn-soft: name == ThemeName.ice ? #FFC94A21 : name == ThemeName.honey ? #FF9A3D24 : name == ThemeName.mono ? #FFFFFF14 : #F2B53A21;
+    // Ч/Б: dotted ground; buttons turn black and yellow under the pointer or focus.
+    out property <bool> dots: name == ThemeName.mono;
+    out property <color> hot-bg: #0B0B0B;
+    out property <color> hot-fg: #FFC814;
+
+    out property <string> label: name == ThemeName.ice ? @tr("Ice") : name == ThemeName.honey ? @tr("Honey") : name == ThemeName.mono ? @tr("B/W") : @tr("Emerald");
+
+    public function next() {
+        name = name == ThemeName.emerald ? ThemeName.ice : name == ThemeName.ice ? ThemeName.honey : name == ThemeName.honey ? ThemeName.mono : ThemeName.emerald;
+    }
+}
+
+// What the app runs on, for the words: «телефон» on Android, «компьютер»
+// elsewhere. Set once at start.
+export global Device {
+    in-out property <bool> phone: false;
+    out property <string> on-this: phone ? @tr("on this phone") : @tr("on this computer");
+    out property <string> of-this: phone ? @tr("this phone") : @tr("this computer");
+    out property <string> from-it: phone ? @tr("away from the phone") : @tr("away from the computer");
+}
+
+// The user's choices that outlive the window: the language (English unless
+// Russian is picked) and, with Theme.name, the theme. `save` asks the
+// program to apply the language and write both down.
+// Slatepack text as a file of the wallet's own folder (`slatepack`, next
+// to the profile folder). The window asks; the program reads and writes.
+export global Files {
+    // save the text as a new file; the answer is a line to show
+    pure callback save(string) -> string;
+    // the files a text can be taken from, the newest first
+    pure callback list() -> [string];
+    // the text of file number N of the last list, or nothing
+    pure callback load(int) -> string;
+    // where the folder is, for showing
+    in-out property <string> folder;
+}
+
+// A QR code of a text the window already shows: the wallet's own address
+// or a Slatepack text to pass on. Never of the wallet's words.
+export global Qr {
+    // the picture, one pixel a module with its light border; an empty
+    // picture when there is no text or it is longer than one code holds
+    pure callback picture(string) -> image;
+}
+
+export global Settings {
+    in-out property <bool> russian: false;
+    // payments are passed on by hand even when delivery over Tor works
+    in-out property <bool> by-hand: false;
+    callback save();
+}

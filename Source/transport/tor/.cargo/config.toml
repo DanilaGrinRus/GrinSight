@@ -1,0 +1,13 @@
+# Dependencies come from the vendored set inside core-v0.2
+# (transport\vendor-sets, copied from C:\DHW\GrinSight\FlyClient\.tools); nothing is downloaded.
+[source.crates-io]
+replace-with = "fly-tor-vendored"
+
+[source.fly-tor-vendored]
+directory = "../vendor-sets/tor-v48"
+
+[net]
+offline = true
+
+[build]
+incremental = false

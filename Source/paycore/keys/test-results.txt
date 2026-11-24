@@ -1,0 +1,14 @@
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test concurrent_issue_never_collides ... ok
+test inconsistent_journal_content_is_refused ... ok
+test issue_is_sequential_and_survives_reopen_and_checkpoint ... ok
+test classify_random_identifiers ... ok
+test origin_follows_the_branch_history ... ok
+test path_classes_roundtrip_and_do_not_overlap ... ok
+path crash matrix: 840 runs over 35 operations
+test no_path_is_issued_twice_across_crashes ... ok
+test rollback_or_move_opens_a_new_branch ... ok
+test stateless_paths_match_the_upstream_range ... ok
+test real_range_proofs_rewind_to_their_path ... ok
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.99s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

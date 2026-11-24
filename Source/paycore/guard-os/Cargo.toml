@@ -1,0 +1,20 @@
+[package]
+name = "fly-paycore-guard-os"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Tail guard whose key is held by the operating system (DPAPI on Windows)"
+
+[dependencies]
+fly-paycore-store = { path = "../store" }
+sha2 = { version = "0.10", default-features = false }
+zeroize = { version = "1", default-features = false, features = ["alloc"] }
+getrandom = { version = "0.2", default-features = false }
+
+[dev-dependencies]
+zeroize = { version = "1", default-features = false, features = ["alloc"] }
+
+[profile.release]
+overflow-checks = true
+
+[workspace]

@@ -1,0 +1,13 @@
+[package]
+name = "fly-tor-bridges"
+version = "0.1.0"
+edition = "2021"
+publish = false
+license = "GPL-3.0-only"
+description = "Tor bridges for the three Tor clients of GrinSight: the lines the user chose, checked and bounded, and their place in an Arti configuration with the pluggable transport program that stands next to the process"
+
+[dependencies]
+arti-client = { version = "=0.48.0", default-features = false, features = ["pt-client", "static-sqlite"] }
+tor-config = { version = "=0.48.0", default-features = false }
+
+[workspace]

@@ -1,0 +1,292 @@
+// The conversation with a contact, the list of all payments, and the
+// windows for the password and the words.
+import { Theme, Device } from "theme.slint";
+import { Card, Btn, Choice, Chip, Heading, Muted, Logo, Ground } from "parts.slint";
+import { Field, Sheet, TextBox, PasswordAdvice } from "flows.slint";
+
+// One line of a conversation. `mine` decides the side and the look; the
+// contact's words never look like the wallet's, and the other way round (О9).
+export struct ChatLine {
+    mine: bool,
+    text: string,
+    when: string,
+    state: string,
+    warn: bool,
+}
+
+export struct OpLine {
+    who: string,
+    sub: string,
+    amount: string,
+    tone: int,
+    // the payment's text can be shown again
+    show: bool,
+}
+
+// The conversation with one contact (О9): the contact's messages on the
+// left, framed and signed with the contact's name; the wallet's on the
+// right. Links are plain text; nothing inside a message can be pressed.
+export component ChatPage inherits Rectangle {
+    in property <string> name;
+    in property <string> note;
+    in property <[ChatLine]> lines;
+    in property <bool> busy;
+    in property <string> error;
+    in property <bool> can-write;
+    callback back();
+    callback send(string);
+    callback pay();
+    property <string> draft;
+    Ground { }
+    VerticalLayout {
+        padding: root.width < 600px ? 10px : 18px;
+        spacing: 10px;
+        HorizontalLayout {
+            spacing: 10px;
+            height: 46px;
+            Btn { text: @tr("Back"); font-size: 13px; clicked => { root.back(); } }
+            VerticalLayout {
+                alignment: center;
+                horizontal-stretch: 1;
+                Text { text: root.name; color: Theme.text; font-size: 17px; font-weight: 700; overflow: elide; }
+                if root.note != "": Text { text: root.note; color: Theme.warn; font-size: 12px; overflow: elide; }
+            }
+            Btn { text: @tr("Send GRIN"); primary: true; font-size: 13px; clicked => { root.pay(); } }
+        }
+        Card {
+            vertical-stretch: 1;
+            flick := Flickable {
+                content-height: max(list.preferred-height, self.height);
+                // the newest at the bottom, in view
+                content-y: min(0px, self.height - max(list.preferred-height, self.height));
+                list := VerticalLayout {
+                    width: parent.width;
+                    padding: 12px;
+                    spacing: 8px;
+                    alignment: end;
+                    if root.lines.length == 0: Muted { text: @tr("No messages yet. Messages travel over Tor and wait at a relay until the contact comes online."); horizontal-alignment: center; }
+                    for l in root.lines: HorizontalLayout {
+                        alignment: l.mine ? end : start;
+                        Rectangle {
+                            max-width: list.width * 0.8;
+                            border-radius: 14px;
+                            // the contact's: an outline in the line colour; the wallet's: filled
+                            background: l.mine ? Theme.soft : Theme.bg;
+                            border-width: l.mine ? 0px : 1px;
+                            border-color: Theme.line;
+                            VerticalLayout {
+                                padding: 10px;
+                                spacing: 4px;
+                                if !l.mine: Text { text: root.name; color: Theme.accent; font-size: 12px; font-weight: 600; overflow: elide; }
+                                Text { text: l.text; color: Theme.text; font-size: 14px; wrap: word-wrap; }
+                                HorizontalLayout {
+                                    spacing: 8px;
+                                    alignment: end;
+                                    Text { text: l.when; color: Theme.muted; font-size: 11px; }
+                                    if l.state != "": Text { text: l.state; color: l.warn ? Theme.warn : Theme.muted; font-size: 11px; }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if root.error != "": Text { text: root.error; color: Theme.warn; font-size: 13px; wrap: word-wrap; }
+        if root.can-write: HorizontalLayout {
+            spacing: 8px;
+            Rectangle {
+                horizontal-stretch: 1;
+                min-height: 46px;
+                border-radius: 12px;
+                border-width: 1px;
+                border-color: box.has-focus ? Theme.accent : Theme.line;
+                background: Theme.card;
+                box := TextInput {
+                    x: 12px;
+                    y: 12px;
+                    width: parent.width - 24px;
+                    height: max(22px, self.preferred-height);
+                    single-line: false;
+                    wrap: word-wrap;
+                    color: Theme.text;
+                    font-size: 14px;
+                    text <=> root.draft;
+                    accessible-label: @tr("Message");
+                    // Ctrl+V and its kin under a Cyrillic layout: the key gives «м», not "v"
+                    key-pressed(event) => {
+                        if (event.modifiers.control && !event.modifiers.shift && !event.modifiers.alt) {
+                            if (event.text == "м" || event.text == "М" || event.text == "\u{16}") { self.paste(); return accept; }
+                            if (event.text == "ф" || event.text == "Ф" || event.text == "\u{1}") { self.select-all(); return accept; }
+                            if (event.text == "с" || event.text == "С" || event.text == "\u{3}") { self.copy(); return accept; }
+                            if (event.text == "ч" || event.text == "Ч" || event.text == "\u{18}") { self.cut(); return accept; }
+                        }
+                        reject
+                    }
+                }
+                if root.draft == "": Text { x: 12px; y: 12px; text: @tr("Message"); color: Theme.muted; font-size: 14px; }
+            }
+            VerticalLayout {
+                alignment: end;
+                Btn {
+                    text: root.busy ? "…" : @tr("Send");
+                    primary: true;
+                    height: 46px;
+                    clicked => {
+                        if (!root.busy && root.draft != "") {
+                            root.send(root.draft);
+                            root.draft = "";
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Every payment, newest first.
+export component OpsPage inherits Rectangle {
+    in property <[OpLine]> ops;
+    callback back();
+    callback show(int);
+    Ground { }
+    VerticalLayout {
+        padding: root.width < 600px ? 10px : 18px;
+        spacing: 10px;
+        HorizontalLayout {
+            spacing: 10px;
+            height: 46px;
+            Btn { text: @tr("Back"); font-size: 13px; clicked => { root.back(); } }
+            Heading { text: @tr("All payments"); font-size: 17px; vertical-alignment: center; horizontal-stretch: 1; }
+        }
+        Card {
+            vertical-stretch: 1;
+            Flickable {
+                content-height: max(col.preferred-height, self.height);
+                col := VerticalLayout {
+                    width: parent.width;
+                    padding: 16px;
+                    alignment: start;
+                    if root.ops.length == 0: Muted { text: @tr("No payments yet"); }
+                    for op[i] in root.ops: VerticalLayout {
+                        padding-top: 8px;
+                        padding-bottom: 8px;
+                        HorizontalLayout {
+                            Text { text: op.who; color: Theme.text; font-size: 14px; font-weight: 600; horizontal-stretch: 1; }
+                            Text { text: op.amount; font-family: "DejaVu Sans Mono"; font-size: 14px; font-weight: 700; color: op.tone == 1 ? Theme.accent : op.tone == 2 ? Theme.warn : Theme.text; }
+                        }
+                        Text { text: op.sub; color: op.tone == 2 ? Theme.warn : Theme.muted; font-size: 12px; wrap: word-wrap; }
+                        if op.show: HorizontalLayout { alignment: start; padding-top: 4px; Btn { text: @tr("Show the Slatepack text"); font-size: 12px; min-height: 32px; clicked => { root.show(i); } } }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// The password and the words.
+export component SecuritySheet inherits Sheet {
+    in property <bool> busy;
+    in property <string> error;
+    in property <string> done-note;
+    callback change(string, string, string);
+    callback words(string);
+    property <string> old;
+    property <string> new1;
+    property <string> new2;
+    property <string> pw;
+    title: @tr("Password and words");
+    Heading { text: @tr("Change the password"); }
+    Field { label: @tr("Current password"); secret: true; text <=> root.old; }
+    Field { label: @tr("New password"); secret: true; text <=> root.new1; }
+    Field { label: @tr("Once more"); secret: true; text <=> root.new2; }
+    PasswordAdvice { password: root.new1; }
+    Btn {
+        text: root.busy ? "…" : @tr("Change the password");
+        height: 46px;
+        clicked => {
+            if (!root.busy) {
+                root.change(root.old, root.new1, root.new2);
+                root.old = "";
+                root.new1 = "";
+                root.new2 = "";
+            }
+        }
+    }
+    Rectangle { height: 1px; background: Theme.line; }
+    Heading { text: @tr("Show the 24 words"); }
+    Muted { text: @tr("Make sure nobody sees the screen. Whoever knows the words controls the money."); }
+    Field { label: @tr("Password"); secret: true; text <=> root.pw; }
+    Btn {
+        text: root.busy ? "…" : @tr("Show the words");
+        height: 46px;
+        clicked => {
+            if (!root.busy) {
+                root.words(root.pw);
+                root.pw = "";
+            }
+        }
+    }
+    if root.error != "": Text { text: root.error; color: Theme.warn; font-size: 14px; wrap: word-wrap; }
+    if root.done-note != "": Text { text: root.done-note; color: Theme.accent; font-size: 14px; wrap: word-wrap; }
+}
+
+// The words, shown on request; closing the window drops them.
+export component WordsSheet inherits Sheet {
+    in property <[string]> words;
+    property <int> cols: root.width < 600px ? 2 : 4;
+    title: @tr("Your 24 words");
+    Muted { text: @tr("Write them on paper in order. Close this window when done."); }
+    GridLayout {
+        spacing: 8px;
+        for w[i] in root.words: HorizontalLayout {
+            col: mod(i, root.cols);
+            row: floor(i / root.cols);
+            spacing: 6px;
+            Text { text: (i + 1) + "."; color: Theme.muted; font-size: 13px; width: 26px; horizontal-alignment: right; }
+            Text { text: w; color: Theme.text; font-family: "DejaVu Sans Mono"; font-size: 15px; font-weight: 700; }
+        }
+    }
+    Btn { text: @tr("Close"); primary: true; height: 46px; clicked => { root.close(); } }
+}
+
+// The user's own nodes and own starting point, for the chain process.
+export component OwnSheet inherits Sheet {
+    in-out property <string> nodes;
+    in-out property <string> point;
+    in property <string> error;
+    in property <string> done-note;
+    callback save(string, string);
+    title: @tr("Own nodes and own point");
+    Muted { text: @tr("Your own public nodes: one https:// address a line, up to 4. They are asked like the listed ones and get your transactions first, but they never count as an independent voice."); }
+    TextBox { label: @tr("Own nodes"); hint: "https://node.example.org:3413"; text <=> root.nodes; box-height: 96px; }
+    Muted { text: @tr("Own starting point: paste the whole own-point.json that fly-chain point --kind own made. Leave empty for the built-in point."); }
+    TextBox { label: @tr("Own point"); hint: "{ … }"; text <=> root.point; box-height: 110px; }
+    if root.error != "": Text { text: root.error; color: Theme.warn; font-size: 14px; wrap: word-wrap; }
+    if root.done-note != "": Text { text: root.done-note; color: Theme.accent; font-size: 14px; wrap: word-wrap; }
+    Btn { text: @tr("Save"); primary: true; height: 48px; clicked => { root.save(root.nodes, root.point); } }
+}
+
+// How Tor is reached: directly, or through bridges where Tor is blocked.
+// 0 directly, 1 built-in obfs4, 2 Snowflake, 3 the user's own lines.
+export component TorSheet inherits Sheet {
+    in-out property <int> mode;
+    in-out property <string> own;
+    // the program for bridges stands next to the wallet's programs
+    in property <bool> has-program;
+    in property <string> error;
+    in property <string> done-note;
+    callback save(int, string);
+    title: @tr("How Tor is reached");
+    Muted { text: @tr("Where Tor is blocked it can be reached through bridges: relays that are not in the public list, with the traffic disguised. The choice holds for everything the wallet does through Tor: messages, payments to an address, sending transactions."); }
+    Choice { text: @tr("Directly — the ordinary way"); chosen: root.mode == 0; clicked => { root.mode = 0; } }
+    Choice { text: @tr("Through built-in obfs4 bridges — the first thing to try"); chosen: root.mode == 1; clicked => { root.mode = 1; } }
+    Choice { text: @tr("Through Snowflake — when obfs4 does not get through"); chosen: root.mode == 2; clicked => { root.mode = 2; } }
+    Choice { text: @tr("Through my own bridges"); chosen: root.mode == 3; clicked => { root.mode = 3; } }
+    if root.mode == 3: Muted { text: @tr("One bridge a line, as Tor gives them. Fresh ones: bridges.torproject.org, or the Telegram bot @GetBridgesBot."); }
+    if root.mode == 3: TextBox { label: @tr("My bridges"); hint: "obfs4 203.0.113.7:443 0123…CDEF cert=… iat-mode=0"; text <=> root.own; box-height: 110px; }
+    if root.mode != 0 && !root.has-program: Text { text: @tr("This build has no program for bridges (lyrebird) next to the wallet's programs: obfs4 and Snowflake will not connect."); color: Theme.warn; font-size: 13px; wrap: word-wrap; }
+    if root.mode != 0: Muted { text: @tr("With bridges chosen the wallet reaches Tor through them only. If they do not answer, Tor does not connect; it is never reached directly instead."); }
+    if root.error != "": Text { text: root.error; color: Theme.warn; font-size: 14px; wrap: word-wrap; }
+    if root.done-note != "": Text { text: root.done-note; color: Theme.accent; font-size: 14px; wrap: word-wrap; }
+    Btn { text: @tr("Save"); primary: true; height: 48px; clicked => { root.save(root.mode, root.own); } }
+}

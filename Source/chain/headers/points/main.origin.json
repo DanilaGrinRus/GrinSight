@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "kind": "release",
+  "network": 1,
+  "height": 4115520,
+  "hash": "000622ed34fb7c40c407c79d70b27bcf5841d1c2893da88c191779b7b4761482",
+  "made": 1795386995,
+  "from": "headers from nodes found through the network's seed names",
+  "confirmed": [
+    {
+      "group": "Grincoin.org",
+      "host": "grincoin.org",
+      "asn": 24940
+    },
+    {
+      "group": "Grinffindor",
+      "host": "mainnet.grinffindor.org",
+      "asn": 9145
+    },
+    {
+      "group": "Grin.money",
+      "host": "api.grin.money",
+      "asn": 13335
+    },
+    {
+      "group": "Raubritter",
+      "host": "main.grin.raubritter.org",
+      "asn": 16276
+    },
+    {
+      "group": "Grin Coffee",
+      "host": "mainnet.grin-coffee.com",
+      "asn": 16276
+    }
+  ]
+}

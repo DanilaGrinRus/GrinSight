@@ -1,0 +1,19 @@
+[package]
+name = "fly-tor"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Isolated native integration; it is not yet linked into the wallet or Nostr.
+[workspace]
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+arti-client = { version = "=0.48.0", default-features = false, features = ["onion-service-client", "rustls", "static-sqlite", "tokio"] }
+tor-rtcompat = { version = "=0.48.0", default-features = false, features = ["rustls", "tokio"] }
+rustls = { version = "=0.23.46", default-features = false, features = ["ring", "std"] }
+tokio = { version = "1", features = ["time", "rt-multi-thread"] }
+url = "2"
+fly-tor-bridges = { path = "../../tor-bridges" }
+
+[dev-dependencies]
+tempfile = "3"

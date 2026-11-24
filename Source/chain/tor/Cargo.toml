@@ -1,0 +1,19 @@
+[package]
+name = "fly-chain-tor"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Tor for the chain process of GrinSight: one embedded Arti client and a bridge that hands an ordinary local TCP connection to a stream through Tor"
+
+[dependencies]
+arti-client = { version = "=0.48.0", default-features = false, features = ["rustls", "static-sqlite", "tokio"] }
+tor-rtcompat = { version = "=0.48.0", default-features = false, features = ["rustls", "tokio"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
+tokio = { version = "1", features = ["rt-multi-thread", "time", "net", "io-util", "macros"] }
+url = "2"
+fly-tor-bridges = { path = "../../tor-bridges" }
+
+[dev-dependencies]
+getrandom = "0.2"
+
+[workspace]

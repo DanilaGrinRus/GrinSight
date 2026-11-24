@@ -1,0 +1,56 @@
+[package]
+name = "fly-nostr-research"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Working copy for GrinSight Fly v0.2 (core-v0.2/transport). Taken from
+# FlyClient/repo/nostr on 2026-11-21; see ../README.md for what differs.
+[workspace]
+
+[features]
+messaging-identity-research = ["nostr-sdk/nip49", "dep:rand_chacha", "dep:rand_core"]
+# Tests that need the wallet, vault and core crates of the original
+# repository. They cannot be built in this copy; run them there.
+repo-linked-tests = []
+# A session constructor that connects without Tor, to a numeric loopback
+# address only. For tests of code built on sessions; it cannot reach a relay
+# on the network.
+loopback-testing = []
+
+# Code behind the features "slatepack-inspection-research" and
+# "windows-vault-queue-research" needs the wallet crates of the original
+# repository and is left out of this copy; the gates stay in the source.
+[lints.rust]
+unexpected_cfgs = { level = "allow" }
+
+[dependencies]
+nostr-sdk = { version = "=0.44.1", default-features = false, features = ["nip44", "nip59"] }
+nip44 = "=0.3.2"
+secp256k1 = "=0.31.1"
+zeroize = "1"
+regex = "1"
+chacha20poly1305 = "=0.10.1"
+hkdf = "=0.12.4"
+sha2 = "=0.10.9"
+getrandom = "0.2"
+rand_chacha = { version = "=0.3.1", optional = true }
+rand_core = { version = "=0.6.4", optional = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+fly-tor = { path = "../tor" }
+async-wsocket = "=0.13.2"
+futures-util = { version = "0.3", features = ["sink"] }
+tokio = { version = "1", features = ["time", "rt", "sync", "macros"] }
+tokio-util = { version = "0.7", features = ["compat"] }
+tokio-tungstenite = { version = "=0.26.2", default-features = false, features = ["rustls-tls-webpki-roots"] }
+
+[dev-dependencies]
+base64 = "0.22"
+tokio = { version = "1", features = ["macros", "rt", "net"] }
+tokio-tungstenite = { version = "=0.26.2", features = ["handshake"] }
+tracing = "0.1"
+
+[patch.crates-io]
+nostr-relay-pool = { path = "../vendor/nostr-relay-pool-0.44.3-privacy" }
+nostr-sdk = { path = "../vendor/nostr-sdk-0.44.1-privacy" }

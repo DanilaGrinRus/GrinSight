@@ -1,0 +1,74 @@
+{
+  "initial": {
+    "conflict": false,
+    "known": true,
+    "reserve": false,
+    "spent": false,
+    "status": "not_confirmed",
+    "status_rule": "S4"
+  },
+  "owned_fields": [
+    "status",
+    "status_rule",
+    "known",
+    "spent",
+    "reserve",
+    "conflict"
+  ],
+  "producer": "fly-paycore-wallet",
+  "result": {
+    "conflict": false,
+    "known": true,
+    "reserve": false,
+    "spent": false,
+    "status": "not_confirmed",
+    "status_rule": "S4"
+  },
+  "scenario": "paycore_incoming_confirm_reorg",
+  "schema": "grinsight.wallet.trace.v1",
+  "steps": [
+    {
+      "action": "block",
+      "expected": {
+        "conflict": false,
+        "known": true,
+        "reserve": false,
+        "spent": false,
+        "status": "preliminary",
+        "status_rule": "S6"
+      },
+      "params": {
+        "includes_kernel": true
+      }
+    },
+    {
+      "action": "block",
+      "expected": {
+        "conflict": false,
+        "known": true,
+        "reserve": false,
+        "spent": false,
+        "status": "confirmed",
+        "status_rule": "S8"
+      },
+      "params": {
+        "count": 2
+      }
+    },
+    {
+      "action": "reorg",
+      "expected": {
+        "conflict": false,
+        "known": true,
+        "reserve": false,
+        "spent": false,
+        "status": "not_confirmed",
+        "status_rule": "S4"
+      },
+      "params": {
+        "depth": 3
+      }
+    }
+  ],
+  "tick_seconds": 15
+}

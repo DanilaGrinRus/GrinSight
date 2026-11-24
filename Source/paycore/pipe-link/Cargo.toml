@@ -1,0 +1,10 @@
+[package]
+name = "fly-paycore-pipe-link"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "One request, one answer over a child process's standard input and output: frames, start-up, timeouts. No third-party code"
+
+[dependencies]
+
+[workspace]

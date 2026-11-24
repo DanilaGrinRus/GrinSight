@@ -1,0 +1,10 @@
+# The interface builds offline from its own vendored crates (Slint included).
+# This overrides the core's source replacement for everything under ui\.
+[source.crates-io]
+replace-with = "ui-vendored"
+
+[source.ui-vendored]
+directory = "vendor-crates"
+
+[net]
+offline = true

@@ -1,0 +1,155 @@
+import { Theme } from "theme.slint";
+
+export component Card inherits Rectangle {
+    in property <color> edge: Theme.line;
+    background: Theme.card;
+    border-radius: 18px;
+    border-width: 1px;
+    border-color: edge;
+}
+
+// A button. In the Ч/Б theme it turns black and yellow under the pointer or
+// when it has keyboard focus.
+export component Btn inherits Rectangle {
+    in property <string> text;
+    in property <bool> primary: false;
+    in property <length> font-size: 15px;
+    callback clicked;
+    min-height: 44px;
+    min-width: label.preferred-width + 28px;
+    border-radius: 12px;
+    border-width: 1px;
+    accessible-role: button;
+    accessible-label: text;
+    accessible-action-default => { root.clicked(); }
+    property <bool> hot: Theme.dots && (touch.has-hover || focus.has-focus);
+    background: hot ? Theme.hot-bg : primary ? (touch.pressed ? Theme.accent.darker(0.15) : Theme.accent) : (touch.has-hover ? Theme.soft : transparent);
+    border-color: hot ? Theme.hot-fg : primary ? Theme.accent : Theme.line;
+
+    label := Text {
+        width: parent.width;
+        height: parent.height;
+        text: root.text;
+        color: root.hot ? Theme.hot-fg : root.primary ? Theme.on-accent : Theme.text;
+        font-size: root.font-size;
+        font-weight: 600;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    focus := FocusScope {
+        key-pressed(event) => {
+            if (event.text == " " || event.text == "\n") {
+                root.clicked();
+                return accept;
+            }
+            reject
+        }
+    }
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            focus.focus();
+            root.clicked();
+        }
+    }
+}
+
+// One of several ways to do a thing: a mark and its words. Choosing it
+// does nothing yet; the action is the button under the choices.
+export component Choice inherits Rectangle {
+    in property <string> text;
+    in property <bool> chosen: false;
+    callback clicked;
+    min-height: 44px;
+    border-radius: 12px;
+    border-width: root.chosen ? 2px : 1px;
+    accessible-role: button;
+    accessible-label: text;
+    accessible-action-default => { root.clicked(); }
+    property <bool> hot: Theme.dots && (touch.has-hover || focus.has-focus);
+    background: hot ? Theme.hot-bg : root.chosen ? Theme.soft : (touch.has-hover ? Theme.soft : transparent);
+    border-color: hot ? Theme.hot-fg : root.chosen ? Theme.accent : Theme.line;
+    HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 14px;
+        spacing: 12px;
+        VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: 18px;
+                height: 18px;
+                border-radius: 9px;
+                border-width: 2px;
+                border-color: root.chosen ? Theme.accent : Theme.muted;
+                Rectangle { x: 5px; y: 5px; width: 8px; height: 8px; border-radius: 4px; background: root.chosen ? Theme.accent : transparent; }
+            }
+        }
+        Text { text: root.text; color: root.hot ? Theme.hot-fg : Theme.text; font-size: 14px; font-weight: root.chosen ? 600 : 500; vertical-alignment: center; horizontal-stretch: 1; wrap: word-wrap; }
+    }
+    focus := FocusScope {
+        key-pressed(event) => {
+            if (event.text == " " || event.text == "\n") {
+                root.clicked();
+                return accept;
+            }
+            reject
+        }
+    }
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            focus.focus();
+            root.clicked();
+        }
+    }
+}
+
+export component Chip inherits Rectangle {
+    in property <string> text;
+    in property <color> fg: Theme.warn;
+    in property <color> fill: Theme.warn-soft;
+    in property <length> text-size: 13px;
+    background: fill;
+    border-radius: 10px;
+    height: 32px;
+    width: chip-text.preferred-width + 24px;
+    chip-text := Text {
+        text: root.text;
+        color: root.fg;
+        font-size: root.text-size;
+        font-weight: 600;
+        vertical-alignment: center;
+        horizontal-alignment: center;
+    }
+}
+
+export component Heading inherits Text {
+    color: Theme.text;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+export component Muted inherits Text {
+    color: Theme.muted;
+    font-size: 13px;
+    wrap: word-wrap;
+}
+
+export component Logo inherits Image {
+    source: @image-url("../images/icon.png");
+    image-fit: contain;
+    accessible-role: image;
+    accessible-label: "GrinSight";
+}
+
+// The dotted ground of the Ч/Б theme.
+export component Ground inherits Rectangle {
+    background: Theme.bg;
+    if Theme.dots: Image {
+        width: parent.width;
+        height: parent.height;
+        source: @image-url("../images/dot.png");
+        horizontal-tiling: repeat;
+        vertical-tiling: repeat;
+    }
+}

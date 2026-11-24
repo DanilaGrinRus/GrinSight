@@ -1,0 +1,16 @@
+[package]
+name = "fly-paycore-onion-pipe"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "The Onion port of the payment core and what is said to the Tor process over the shared link: no third-party code"
+
+[dependencies]
+fly-paycore-pipe-link = { path = "../pipe-link" }
+
+[features]
+# Builds the stand-in Tor process used by tests of the process boundary.
+# Not part of any product build.
+stub = []
+
+[workspace]

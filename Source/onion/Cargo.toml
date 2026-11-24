@@ -1,0 +1,29 @@
+[package]
+name = "fly-onion"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Payments to and from a Grin address through Tor for GrinSight: one embedded Arti client, the onion service of the wallet's address, and the wallet-to-wallet requests of Grin over them"
+
+[dependencies]
+fly-tor-bridges = { path = "../tor-bridges" }
+arti-client = { version = "=0.48.0", default-features = false, features = ["rustls", "static-sqlite", "tokio", "onion-service-client", "onion-service-service", "ephemeral-keystore", "experimental-api"] }
+tor-rtcompat = { version = "=0.48.0", default-features = false, features = ["rustls", "tokio"] }
+tor-hsservice = { version = "=0.48.0", default-features = false }
+tor-hscrypto = { version = "=0.48.0", default-features = false }
+tor-llcrypto = { version = "=0.48.0", default-features = false }
+tor-cell = { version = "=0.48.0", default-features = false }
+tor-proto = { version = "=0.48.0", default-features = false }
+safelog = "0.10"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
+tokio = { version = "1", features = ["rt-multi-thread", "time", "net", "io-util", "macros", "sync"] }
+futures = "0.3"
+tor-config = { version = "=0.48.0", default-features = false }
+tor-keymgr = { version = "=0.48.0", default-features = false, features = ["ephemeral-keystore"] }
+fly-paycore-onion-pipe = { path = "../paycore/onion-pipe" }
+fly-paycore-pipe-link = { path = "../paycore/pipe-link" }
+
+[dev-dependencies]
+getrandom = "0.2"
+
+[workspace]

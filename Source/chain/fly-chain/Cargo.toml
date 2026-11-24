@@ -1,0 +1,62 @@
+[package]
+name = "fly-chain"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "The chain process of GrinSight: connects to Grin nodes, verifies the header chain from a built-in starting point, collects the state at the nodes' archive header and answers the wallet process over a pipe"
+
+[dependencies]
+fly-chain-headers = { path = "../headers" }
+fly-chain-state = { path = "../state" }
+fly-chain-tips = { path = "../tips" }
+fly-chain-tor = { path = "../tor" }
+serde_json = "1"
+fly-paycore-chain-pipe = { path = "../../paycore/chain-pipe" }
+fly-paycore-chain-port = { path = "../../paycore/chain-port" }
+grin_core = { path = "../../vendor/grin/core" }
+grin_chain = { path = "../../vendor/grin/chain" }
+grin_p2p = { path = "../../vendor/grin/p2p" }
+grin_util = { path = "../../vendor/grin/util" }
+chrono = "0.4"
+
+[features]
+# Lets the program run on the network of automated tests, with a starting
+# point read from a file in its data directory. Never part of a product build.
+test-net = []
+
+[dev-dependencies]
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+fly-chain-headers = { path = "../headers", features = ["testkit"] }
+fly-chain-state = { path = "../state", features = ["testkit"] }
+getrandom = "0.2"
+serde_json = "1"
+
+[[test]]
+name = "sync"
+required-features = ["test-net"]
+
+[[test]]
+name = "old"
+required-features = ["test-net"]
+
+[[test]]
+name = "proofs"
+required-features = ["test-net"]
+
+[[test]]
+name = "post"
+required-features = ["test-net"]
+
+[[test]]
+name = "select"
+required-features = ["test-net"]
+
+[profile.release]
+overflow-checks = true
+
+# The tests mine a real chain with range proofs; without this the elliptic
+# curve code is built unoptimized and they take many minutes.
+[profile.dev.package.grin_secp256k1zkp]
+opt-level = 3
+
+[workspace]

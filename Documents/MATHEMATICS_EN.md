@@ -1,109 +1,103 @@
 # Mathematical Explanation of GrinSight
 
-GrinSight can be viewed as a system that builds a local copy of the state and verifies it against cryptographic commitments in blockchain headers.
+GrinSight builds a local copy of the part of the chain state it needs and verifies it against the commitments in block headers. This text describes version 0.4.3.
 
-Let $H_h$ denote the block header at height $h$, and let $S_h$ denote the state of the unspent output set at the same height.
+Let $H_h$ denote the block header at height $h$, and $S_h$ the state after block $h$: the unspent outputs, their range proofs and the kernels, each committed to by a root in $H_h$.
 
-## 1. Verifying the Header Chain
+## 1. The Starting Point
 
-GrinSight receives a sequence of headers from peers:
-
-$$
-H_{h_0}, H_{h_0+1}, \ldots, H_n
-$$
-
-Here, $H_{h_0}$ is the starting point for verification: a pinned checkpoint or a header reached by verifying from genesis.
-
-For each subsequent header, the client checks that it is correctly linked to the preceding chain and satisfies the applicable rules, including difficulty and proof-of-work rules. Schematically:
+A light wallet cannot check the chain from the first block, so it starts from a header $H_s$ built into the program (mainnet: $s = 4{,}115{,}520$). The record of the point carries $H_s$, the two headers before it and the peaks of the header MMR under the root written in $H_s$. The program checks that everything in the record follows from one hash:
 
 $$
-\operatorname{ValidHeader}(H_i, H_{i-1}, \text{history}) = \text{true}
+\operatorname{ValidPoint}(\text{record}) \;\Longrightarrow\; \text{the only thing taken on trust is } \operatorname{hash}(H_s)
 $$
 
-The **accumulated work**, not just height, is considered when comparing verified branches:
+This check cannot be replaced by anything computed on the device. You can put a point of your own instead of the built-in one.
+
+## 2. Verifying the Header Chain
+
+From peers the wallet receives
+
+$$
+H_{s+1}, H_{s+2}, \ldots, H_n
+$$
+
+and checks each one with the node's own functions: the version for the height, strictly growing time, proof of work, difficulty, the commitment to the previous headers.
+
+$$
+\operatorname{ValidHeader}(H_i, H_{i-1}, \text{peaks}_{i-1}) = \text{true}
+$$
+
+The file of headers is not trusted either: it is verified again from the point each time it is opened. Branches are compared by **accumulated work**, not height:
 
 $$
 \operatorname{Work}(C) = \sum_{H_i \in C} \operatorname{work}(H_i)
 $$
 
-This does not prove that the client has seen every branch in the network: the result depends on the available peers. Multiple peers from different `/16` networks reduce reliance on a single source but do not prove their independence.
+A branch replaces the end of the chain only when it carries strictly more work. This does not prove that the wallet has seen every branch in the network.
 
-## 2. Reconstructing State with PIBD
+## 3. Choosing the Tip
 
-At archive height $a$, the header contains a commitment to the output state: `output_root`. Peers provide PIBD segments from which GrinSight reconstructs its local representation of the state:
-
-$$
-\widehat{S}_a = \operatorname{Reconstruct}(\text{bitmap segments}, \text{output segments})
-$$
-
-The notation $\widehat{S}_a$ denotes the state reconstructed by the client from the received data. The client verifies the segments and compares the calculated root with the header:
+A chain of valid headers is not yet the chain everyone else is on. Before a tip is *selected*, public nodes of different named operators are asked over HTTPS what their tip is and what the time is. The tip is selected when their answers agree with the verified chain, and the time of the answers gives a clock that does not depend on the device:
 
 $$
-\operatorname{OutputRoot}(\widehat{S}_a) \stackrel{?}{=} H_a.\operatorname{output\_root}
+\operatorname{Selected}(H_n) = \operatorname{ValidChain}(H_s \ldots H_n) \;\wedge\; \operatorname{Confirmed}_{\text{operators}}(H_n) \;\wedge\; \operatorname{TimeConfirmed}
 $$
 
-If the check fails, the state cannot be considered verified against that header. If it passes, the data is bound to the header’s `output_root`, assuming correct verification and the cryptographic assumptions of the scheme.
+The operators do not sign anything and are not trusted with the balance; they can only refuse a tip, not invent one that passes section 2. Operators that collude, or a network that shows the wallet only chosen nodes, remain outside what this check can exclude.
 
-This is a **schematic expression**: Grin’s actual root is more complex than a simple hash of an output list and involves PMMR and bitmap structures.
+## 4. The State at the Archive Point
 
-## 3. Updating from the Archive to the Tip
-
-Let $B_i$ be the block at height $i$. Starting from the archive state, GrinSight applies subsequent blocks in order:
+Nodes hand out the state at an archive header $H_a$ ($a < n$) in PIBD segments. The wallet collects the bitmap of unspent outputs and the output identifiers and checks them against the roots in $H_a$:
 
 $$
-\widehat{S}_i = \operatorname{ApplyBlock}(\widehat{S}_{i-1}, B_i)
+\operatorname{Root}(\widehat{S}_a) = \operatorname{root}(H_a)
 $$
 
-After each step, it compares the resulting roots with the corresponding verified header. In simplified form:
+A peer can neither add an output that is not under the root nor hide one that is.
+
+## 5. From the Archive Point to the Tip
+
+Each block $B_i$ for $a < i \le n$ is applied to the state and the result is compared with the next header:
 
 $$
-\operatorname{OutputRoot}(\widehat{S}_i) \stackrel{?}{=} H_i.\operatorname{output\_root}
+\widehat{S}_i = \operatorname{Apply}(\widehat{S}_{i-1}, B_i), \qquad \operatorname{Root}(\widehat{S}_i) = \operatorname{root}(H_i)
 $$
 
-$$
-\operatorname{KernelRoot}(\widehat{S}_i) \stackrel{?}{=} H_i.\operatorname{kernel\_root}
-$$
+Only a block that passed this check is handed to the wallet process.
 
-This advances the state from archive height $a$ to the verified tip $n$. On a later run, the saved state can allow updates to resume without a complete reconstruction, provided the saved data passes the necessary checks.
+## 6. The Wallet's Outputs and the Balance
 
-## 4. Finding Wallet Outputs and Calculating the Balance
-
-From the unspent outputs, the wallet identifies those belonging to its keys. It uses rangeproof data and checks its binding to the corresponding root.
-
-Denote the set of outputs found for the wallet by:
+Among the outputs the wallet finds its own with its keys; no server is asked. Outputs created before the wallet's first block are found by a separate search through the archive, which can still be running when the balance is first shown.
 
 $$
-W_n = \{o \in \widehat{S}_n \mid \operatorname{OwnedByWallet}(o)\}
+W_n = \{o \in \widehat{S}_n \mid \operatorname{OwnedByWallet}(o)\}, \qquad \operatorname{Spendable}_n = \sum_{\substack{o \in W_n \\ \operatorname{EligibleToSpend}(o,n)}} \operatorname{value}(o)
 $$
 
-The total verified balance can then be represented as:
+Eligibility takes into account maturity, confirmations and outputs reserved for prepared payments.
 
-$$
-\operatorname{Balance}_n = \sum_{o \in W_n} \operatorname{value}(o)
-$$
-
-**The total balance and the balance available to spend may differ.** Selecting funds also takes into account, for example, coinbase maturity, confirmations, and reserved outputs:
-
-$$
-\operatorname{Spendable}_n = \sum_{\substack{o \in W_n \\ \operatorname{EligibleToSpend}(o,n)}} \operatorname{value}(o)
-$$
-
-## 5. Payment and Confirmation
-
-To make a payment, the wallet selects eligible inputs. The amounts must satisfy:
+## 7. Payment and Confirmation
 
 $$
 \sum \operatorname{inputs} = \sum \operatorname{outputs} + \operatorname{fee}
 $$
 
-Some outputs may represent change. Once created and signed, the transaction is sent to peers. Its inclusion in a block and subsequent status are tracked using verifiable chain data, including the kernel.
+The transaction is built and signed in the wallet process and handed to the chain process, which sends it through Tor. A payment counts as confirmed when its kernel is in a block of the selected chain and $k = 10$ more blocks stand on it. The equation explains the balance of amounts; it does not replace Grin's cryptographic checks.
 
-This equation explains the balance of amounts; it does not replace Grin’s cryptographic transaction checks.
+## 8. Rollback of the Wallet Itself
+
+The wallet's journal can be replaced with an older copy of itself. A small record kept outside the profile (the *guard*) remembers how far the journal has gone. If the journal is behind the guard, payments prepared before the copy was taken are locked: the wallet can no longer tell whether they were signed.
 
 ## Main Relationship and Trust Boundaries
 
 $$
-\boxed{\text{verified header chain} \;\longrightarrow\; \text{verified state} \;\longrightarrow\; \text{balance and payment status}}
+\boxed{\text{starting point} \;\longrightarrow\; \text{verified headers} \;\longrightarrow\; \text{selected tip} \;\longrightarrow\; \text{verified state} \;\longrightarrow\; \text{balance and payment status}}
 $$
 
-The result applies to **the chain the client was able to obtain and verify**. Root verification protects against data that does not match the selected headers, but does not by itself prove that a client isolated from honest peers has seen the globally canonical tip.
+What is taken on trust:
+
+- the hash of the starting point;
+- that the public nodes asked about the tip are not all controlled by one party, and that the network lets the wallet reach them;
+- the implementation: there has been no independent audit by a human.
+
+Headers before the starting point are not checked. Verification from the first block is not part of this version.

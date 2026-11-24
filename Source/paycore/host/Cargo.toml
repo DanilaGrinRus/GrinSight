@@ -1,0 +1,77 @@
+[package]
+name = "fly-paycore-host"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "The wallet process: opens a profile by password, runs the payment core and starts the transport process; speaks JSON-RPC lines on standard input and output"
+
+[dependencies]
+fly-paycore-bridge = { path = "../bridge" }
+fly-paycore-wallet = { path = "../wallet" }
+fly-paycore-store = { path = "../store" }
+fly-paycore-guard-os = { path = "../guard-os" }
+fly-paycore-keys = { path = "../keys", optional = true }
+grin_keychain = { path = "../../vendor/grin/keychain" }
+grin_core = { path = "../../vendor/grin/core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+zeroize = "1"
+getrandom = "0.2"
+chacha20poly1305 = { version = "0.10", default-features = false, features = ["alloc"] }
+scrypt = { path = "../../vendor/scrypt-0.9-research", default-features = false }
+
+[features]
+# Builds a second program with a stand-in chain and a stand-in transport for
+# the tests. Nothing of it is in the product program.
+test-chain = ["fly-paycore-bridge/stub", "dep:fly-paycore-keys"]
+
+[[bin]]
+name = "fly-paycore-host"
+path = "src/bin/fly-paycore-host.rs"
+
+[[bin]]
+name = "fly-paycore-host-test"
+path = "src/bin/fly-paycore-host-test.rs"
+required-features = ["test-chain"]
+
+[[bin]]
+name = "host-onion-stub"
+path = "src/bin/host-onion-stub.rs"
+required-features = ["test-chain"]
+
+[[bin]]
+name = "host-mailbox-stub"
+path = "src/bin/host-mailbox-stub.rs"
+required-features = ["test-chain"]
+
+[[bin]]
+name = "host-chain-stub"
+path = "src/bin/host-chain-stub.rs"
+required-features = ["test-chain"]
+
+[dev-dependencies]
+serde_json = "1"
+getrandom = "0.2"
+grin_util = { path = "../../vendor/grin/util" }
+grin_core = { path = "../../vendor/grin/core" }
+grin_keychain = { path = "../../vendor/grin/keychain" }
+fly-paycore-keys = { path = "../keys" }
+
+[patch.crates-io]
+scrypt = { path = "../../vendor/scrypt-0.9-research" }
+
+[profile.release]
+overflow-checks = true
+
+# The password key derivation is the one hot loop of this program: without
+# this a debug build takes many seconds to open a profile.
+[profile.dev.package.scrypt]
+opt-level = 3
+[profile.dev.package.salsa20]
+opt-level = 3
+# Trying the wallet's keys on range proofs is the other one: a restored
+# wallet does it for every unspent output of the network.
+[profile.dev.package.grin_secp256k1zkp]
+opt-level = 3
+
+[workspace]

@@ -1,0 +1,21 @@
+[package]
+name = "fly-paycore-keys"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Key paths, branch ledger and classification of found outputs (payment core spec rev. 0.3, stage E2)"
+
+[dependencies]
+fly-paycore-store = { path = "../store" }
+grin_keychain = { path = "../../vendor/grin/keychain" }
+grin_core = { path = "../../vendor/grin/core" }
+grin_util = { path = "../../vendor/grin/util" }
+getrandom = { version = "0.2", default-features = false }
+
+[dev-dependencies]
+fly-paycore-store = { path = "../store", features = ["sim"] }
+
+[profile.release]
+overflow-checks = true
+
+[workspace]

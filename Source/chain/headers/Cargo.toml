@@ -1,0 +1,26 @@
+[package]
+name = "fly-chain-headers"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "The header chain of Grin from a built-in starting point: the record of the point, the header MMR peaks, the rules for one more header, a file that is verified again whenever it is opened"
+
+[dependencies]
+grin_core = { path = "../../vendor/grin/core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", optional = true }
+
+[features]
+# Builds `testkit`: a miner of short chains on the automated-testing network
+# and a writer of starting-point records for them. Never part of a product build.
+testkit = ["dep:chrono"]
+
+[dev-dependencies]
+getrandom = "0.2"
+
+[[test]]
+name = "headers"
+required-features = ["testkit"]
+
+[workspace]

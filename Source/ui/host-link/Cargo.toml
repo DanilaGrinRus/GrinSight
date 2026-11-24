@@ -1,0 +1,16 @@
+[package]
+name = "fly-host-link"
+version = "0.1.0"
+edition = "2021"
+publish = false
+license = "GPL-3.0-only"
+description = "JSON-RPC link from the interface of GrinSight to fly-paycore-host (stdin/stdout lines)"
+
+[dependencies]
+serde_json = "1"
+zeroize = "1"
+
+[target.'cfg(target_os = "android")'.dependencies]
+rustix = { version = "=1.1.6", features = ["net", "process"] }
+
+[workspace]

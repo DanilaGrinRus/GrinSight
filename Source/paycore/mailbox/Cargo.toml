@@ -1,0 +1,10 @@
+[package]
+name = "fly-paycore-mailbox"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "The message-transport port of the payment core: types and the trait, no dependencies"
+
+[dependencies]
+
+[workspace]

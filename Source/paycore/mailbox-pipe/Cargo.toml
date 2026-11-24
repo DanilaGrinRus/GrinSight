@@ -1,0 +1,22 @@
+[package]
+name = "fly-paycore-mailbox-pipe"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "The Mailbox port across a process boundary: what is said over the shared link, no third-party code"
+
+[dependencies]
+fly-paycore-mailbox = { path = "../mailbox" }
+fly-paycore-pipe-link = { path = "../pipe-link" }
+
+[features]
+# Builds `mailbox-stub`, a stand-in transport process used by this crate's
+# own tests of the process boundary. Not part of any product build.
+stub = []
+
+[[bin]]
+name = "mailbox-stub"
+path = "src/bin/mailbox-stub.rs"
+required-features = ["stub"]
+
+[workspace]
