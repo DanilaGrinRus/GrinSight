@@ -115,7 +115,7 @@ async def upload(client, chat, media_peer, asset, path):
     sent = result.get("document", {})
     if str(result["chat"]["id"]) != chat or sent.get("file_name") != name or sent.get("file_size") != asset["size"]:
         raise RuntimeError("Telegram document receipt mismatch")
-    return result["message_id"]
+    return result["message_id"], sent["file_id"]
 
 
 async def main():
@@ -153,8 +153,8 @@ async def main():
             with tempfile.TemporaryDirectory() as tmp:
                 path = Path(tmp) / "payload"
                 download(asset, path)
-                mid = await upload(client, status["chat"], media_peer, asset, path)
-            bridge(release, "save", mid=mid, asset_id=asset["id"], digest=asset["digest"])
+                mid, file_id = await upload(client, status["chat"], media_peer, asset, path)
+            bridge(release, "save", mid=mid, file_id=file_id, asset_id=asset["id"], digest=asset["digest"])
             print("Archived verified asset", asset["id"], asset["size"], "bytes", flush=True)
         complete = bridge(release, "finish")
         print("Release announcement is ready:", rid, "message", complete["announcement_message"])
