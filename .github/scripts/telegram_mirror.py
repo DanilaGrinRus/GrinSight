@@ -124,12 +124,13 @@ async def main():
             raise SystemExit("Missing Actions secret: " + key)
     release = stable_release()
     rid = release["id"]
+    repost = os.getenv("REPOST_ALBUM", "").lower() == "true"
     preflight = bridge(release, "preflight")
     status = bridge(release, "status")
     if status.get("retired"):
         print("Release is outside the two-release Telegram archive:", rid)
         return
-    if all(status["files"].get(str(a["id"]), {}).get("digest") == a["digest"] for a in release["assets"]):
+    if not repost and all(status["files"].get(str(a["id"]), {}).get("digest") == a["digest"] for a in release["assets"]):
         complete = bridge(release, "finish")
         print("Archive verified without uploading; retained release IDs:", complete["kept"], "announcement", complete["announcement_message"])
         return
@@ -145,7 +146,8 @@ async def main():
         archive_chat = telegram("getChat", {"chat_id": status["chat"]})
         media_peer = await client.get_input_entity(archive_chat.get("username") or "grinsightwallet")
         for asset in sorted(release["assets"], key=lambda a: a["size"]):
-            if status["files"].get(str(asset["id"]), {}).get("digest") == asset.get("digest") and asset.get("digest"):
+            existing = status["files"].get(str(asset["id"]), {})
+            if existing.get("digest") == asset.get("digest") and asset.get("digest") and (not repost or existing.get("file_id")):
                 continue
             name = asset["name"]
             if not name or "/" in name or "\\" in name or any(ord(c) < 32 for c in name):
@@ -154,8 +156,10 @@ async def main():
                 path = Path(tmp) / "payload"
                 download(asset, path)
                 mid, file_id = await upload(client, status["chat"], media_peer, asset, path)
-            bridge(release, "save", mid=mid, file_id=file_id, asset_id=asset["id"], digest=asset["digest"])
+            bridge(release, "save", mid=mid, file_id=file_id, asset_id=asset["id"], digest=asset["digest"], refresh=repost)
             print("Archived verified asset", asset["id"], asset["size"], "bytes", flush=True)
+        if repost:
+            bridge(release, "album-repost")
         complete = bridge(release, "finish")
         print("Release announcement is ready:", rid, "message", complete["announcement_message"])
     finally:

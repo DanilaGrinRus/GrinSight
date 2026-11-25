@@ -8,6 +8,11 @@ on:
         description: Stable release tag (leave empty for latest)
         required: false
         type: string
+      repost_album:
+        description: Repost an existing release as an album
+        required: false
+        default: false
+        type: boolean
 permissions:
   contents: read
 concurrency:
@@ -37,4 +42,5 @@ jobs:
           MIRROR_KEY: ${{ secrets.GRINSIGHT_MIRROR_KEY }}
           RELEASE_ID: ${{ github.event.release.id }}
           RELEASE_TAG: ${{ inputs.tag }}
+          REPOST_ALBUM: ${{ inputs.repost_album }}
         run: .venv/bin/python .github/scripts/telegram_mirror.py
