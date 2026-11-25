@@ -90,8 +90,8 @@ msgstr "Готово"
 msgid "Next"
 msgstr "Дальше"
 
-msgid "For a new wallet. Testnet — for trying without real money"
-msgstr "Для нового кошелька. Testnet — для проб без настоящих денег"
+msgid "For a new wallet"
+msgstr "Для нового кошелька"
 
 msgid "Add a contact"
 msgstr "Добавить контакт"
@@ -402,8 +402,8 @@ msgstr "Все операции"
 msgid "Send GRIN"
 msgstr "Отправить GRIN"
 
-msgid "No messages yet. Messages travel over Tor and wait at a relay until the contact comes online."
-msgstr "Сообщений пока нет. Сообщения идут через Tor и ждут у релея, пока контакт не появится в сети."
+msgid "No messages yet. Messages travel over Tor and wait on a delivery server until the contact comes online."
+msgstr "Сообщений пока нет. Сообщения идут через Tor и ждут на сервере доставки, пока контакт не появится в сети."
 
 msgid "Message"
 msgstr "Сообщение"
@@ -432,8 +432,8 @@ msgstr "Свои ноды и своя точка"
 msgid "Your own public nodes: one https:// address a line, up to 4. They are asked like the listed ones and get your transactions first, but they never count as an independent voice."
 msgstr "Ваши публичные ноды: по одному адресу https:// в строке, до 4. Их спрашивают наравне с нодами списка, им первым уходят ваши транзакции, но независимым голосом они не считаются."
 
-msgid "Own starting point: paste the whole own-point.json that fly-chain point --kind own made. Leave empty for the built-in point."
-msgstr "Своя стартовая точка: вставьте целиком own-point.json, который сделал fly-chain point --kind own. Пусто — вшитая точка."
+msgid "Own starting point: an open wallet makes it under Connection → Details. A point made on another computer of yours can be pasted here whole. Leave empty for the built-in point."
+msgstr "Своя стартовая точка: её делает открытый кошелёк, в блоке «Связь» → «Подробнее». Точку, сделанную на другом вашем компьютере, можно вставить сюда целиком. Пусто — вшитая точка."
 
 msgid "Pay the invoice"
 msgstr "Оплата счёта"
@@ -516,8 +516,8 @@ msgstr "Короткий пароль. Тот, к кому попадёт фай
 msgid "The password is twelve characters or longer."
 msgstr "В пароле двенадцать знаков или больше."
 
-msgid "The chain process says"
-msgstr "Процесс цепи сообщает"
+msgid "The network check reports"
+msgstr "Проверка сети сообщает"
 
 msgid "Show the Slatepack text"
 msgstr "Показать текст Slatepack"
@@ -642,5 +642,143 @@ msgstr "Когда выбраны мосты, кошелёк выходит в T
 msgid "Tor bridges"
 msgstr "Мосты Tor"
 
-msgid "What the processes say"
-msgstr "Что говорят процессы"
+msgid "What the program reports"
+msgstr "Что сообщает программа"
+
+msgid "Connection and synchronisation"
+msgstr "Связь и синхронизация"
+
+msgid "Details"
+msgstr "Подробнее"
+
+msgid "Hide details"
+msgstr "Скрыть подробности"
+
+msgid "Through Tor everything goes slower. That is the price of privacy, not a fault."
+msgstr "Через Tor всё идёт медленнее. Это цена приватности, а не неполадка."
+
+msgid "Any characters will do: letters of any language, digits, signs and spaces. Capital and small letters differ."
+msgstr "Подойдут любые символы: буквы любого языка, цифры, знаки и пробелы. Заглавные и строчные буквы различаются."
+
+msgid "Mainnet is real GRIN. Testnet is practice coins that are worth nothing."
+msgstr "Mainnet — настоящие GRIN. Testnet — учебные монеты, они ничего не стоят."
+
+msgid "Usually not needed. Own nodes: servers of yours the wallet also asks. Own point: the place in the chain the wallet starts checking from."
+msgstr "Обычно не нужно. Свои ноды — ваши серверы, которые кошелёк тоже спрашивает. Своя точка — место в цепи, с которого кошелёк начинает проверку."
+
+msgid "Tor hides where you are on the network. Bridges are for places where Tor is blocked."
+msgstr "Tor скрывает, где вы в сети. Мосты нужны там, где Tor заблокирован."
+
+msgid "On: if Tor does not work, a payment goes out without it and the node sees your address. Off: the wallet waits for Tor."
+msgstr "Включено: если Tor не сработал, платёж уйдёт без него и нода увидит ваш адрес в сети. Выключено: кошелёк ждёт Tor."
+
+msgid "Delete the wallet"
+msgstr "Удалить кошелёк"
+
+msgid "The wallet and everything it keeps are removed from this computer. After that only your 24 words bring the money back. To show that you have them, type the two words with these numbers."
+msgstr "Кошелёк и всё, что он хранит, будет удалено с этого компьютера. После этого деньги вернут только ваши 24 слова. Чтобы подтвердить, что они у вас есть, введите два слова с этими номерами."
+
+msgid "Word number "
+msgstr "Слово номер "
+
+msgid "Delete the wallet for good"
+msgstr "Удалить кошелёк насовсем"
+
+msgid "The wallet starts checking the network from a starting point built into the program. It can make one of its own from the chain it has checked itself; from the next unlock it then starts from that one."
+msgstr "Кошелёк начинает проверку сети со стартовой точки, вшитой в программу. Он может сделать свою — из цепи, которую проверил сам; со следующего входа он начнёт с неё."
+
+msgid "Make my own starting point"
+msgstr "Сделать свою стартовую точку"
+
+msgid "Making the point…"
+msgstr "Делаю точку…"
+
+msgid "Where the wallet's files are"
+msgstr "Где лежат файлы кошелька"
+
+msgid "Everything this wallet keeps on this computer is in the first folder. The 24 words are not there as text: without the password the files are of no use. The second folder holds a small file that guards against a wallet rolled back to an old copy."
+msgstr "Всё, что этот кошелёк хранит на этом компьютере, лежит в первой папке. 24 слов текстом там нет: без пароля файлы бесполезны. Во второй папке — маленький файл защиты от отката кошелька к старой копии."
+
+msgid "What is this?"
+msgstr "Что это?"
+
+msgid "A faint ring: not begun. A ring: under way. A filled mark: done. The warning colour: needs your attention."
+msgstr "Бледное кольцо — не начато. Кольцо — идёт. Закрашенный круг — готово. Цвет предупреждения — нужно ваше внимание."
+
+msgid "Which characters a password may have"
+msgstr "Какие символы подходят для пароля"
+
+msgid "Tor hides where you are on the network. Bridges are for places where Tor is blocked. Off: nothing of Tor is started — no payments to an address and no messages, and a transaction goes to the network directly, so the node sees your address."
+msgstr "Tor скрывает, где вы в сети. Мосты нужны там, где Tor заблокирован. Выключен: от Tor не запускается ничего — нет платежей на адрес и сообщений, а транзакция идёт в сеть напрямую, и нода видит ваш адрес."
+
+msgid "Off · nodes will see the IP of "
+msgstr "Выкл · ноды увидят IP "
+
+msgid "Messages (Nostr)"
+msgstr "Сообщения (Nostr)"
+
+msgid "Messages and payments to saved contacts travel through Nostr servers, over Tor. Off: the program for them is not started; payments go by hand or to an address."
+msgstr "Сообщения и платежи сохранённым контактам идут через серверы Nostr, поверх Tor. Выключены: программа для них не запускается; платежи передаются вручную или на адрес."
+
+msgid "Off · payments to contacts go by hand"
+msgstr "Выкл · платежи контактам — вручную"
+
+msgid "Do not work without Tor"
+msgstr "Без Tor не работают"
+
+msgid "Each of the two can be switched off, in case you need to. Off means its program is not started at all. Switching takes effect at once: the wallet locks and asks for the password again."
+msgstr "Каждую из двух частей можно выключить — на всякий случай. Выключена значит, что её программа не запускается вовсе. Переключение действует сразу: кошелёк закрывается и снова спрашивает пароль."
+
+msgid "Switch Tor off? Without it there are no payments to an address and no messages, and a transaction goes to the network directly: the node sees the address of your device. The wallet locks and asks for the password again."
+msgstr "Выключить Tor? Без него нет платежей на адрес и сообщений, а транзакция идёт в сеть напрямую: нода видит адрес вашего устройства. Кошелёк закроется и снова спросит пароль."
+
+msgid "Switch Tor on? The wallet locks and asks for the password again."
+msgstr "Включить Tor? Кошелёк закроется и снова спросит пароль."
+
+msgid "Switch Nostr off? Without it there are no messages and no payments to saved contacts; everything else works. The wallet locks and asks for the password again."
+msgstr "Выключить Nostr? Без него нет сообщений и платежей сохранённым контактам; всё остальное работает. Кошелёк закроется и снова спросит пароль."
+
+msgid "Switch Nostr on? The wallet locks and asks for the password again."
+msgstr "Включить Nostr? Кошелёк закроется и снова спросит пароль."
+
+msgid "Switch off"
+msgstr "Выключить"
+
+msgid "Switch on"
+msgstr "Включить"
+
+msgid "Cancel"
+msgstr "Отмена"
+
+msgid "Tor is switched off: every payment is a text you pass on yourself."
+msgstr "Tor выключен: каждый платёж — текст, который вы передаёте сами."
+
+msgid "Send to the network again"
+msgstr "Отправить в сеть ещё раз"
+
+msgid "Received after"
+msgstr "Считать полученным после"
+
+msgid "confirmations"
+msgstr "подтверждений"
+
+msgid "A payment gets its first confirmation with the block it is in, and one more with every block after it. Here you choose how many make an incoming payment “received”: one at least. It is a word about the status only — it does not change what can be spent."
+msgstr "Первое подтверждение платёж получает с блоком, в который попал, и ещё по одному — с каждым следующим блоком. Здесь вы выбираете, сколько их нужно, чтобы входящий платёж считался «полученным»: не меньше одного. Это только слово о статусе — на то, что можно тратить, оно не влияет."
+
+msgid "Wait for Tor: send through Tor again"
+msgstr "Ждать Tor: отправить через Tor ещё раз"
+
+msgid "Send this payment directly"
+msgstr "Отправить этот платёж напрямую"
+
+msgid "Send this one payment without Tor? The node that takes it sees the address of your device. Other payments still go through Tor."
+msgstr "Отправить этот один платёж без Tor? Нода, которая его примет, увидит адрес вашего устройства. Остальные платежи по-прежнему идут через Tor."
+
+msgid "Switch Tor off for all payments"
+msgstr "Выключить Tor для всех платежей"
+
+msgid "Switching Tor off locks the wallet and asks for the password again; after that payments go directly until you switch Tor back on."
+msgstr "Выключение Tor закрывает кошелёк и снова спрашивает пароль; после этого платежи идут напрямую, пока вы не включите Tor обратно."
+
+msgid "Send it directly"
+msgstr "Отправить напрямую"

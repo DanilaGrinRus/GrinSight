@@ -440,6 +440,8 @@ struct Start {
     direct: bool,
     /// "Tor" does not come up.
     no_tor: bool,
+    /// The user switched Tor off.
+    tor_off: bool,
     /// How many of the public nodes given, the last ones, are the user's
     /// own rather than listed.
     own: usize,
@@ -470,6 +472,7 @@ fn program(tag: &str, source: &Arc<RwLock<Source>>, nodes: &[&Node], public: &[&
         peers: nodes.iter().map(|node| node.addr.to_string()).collect(),
         start_timeout_secs: 30,
         direct_post: start.direct,
+        tor_off: start.tor_off,
         tor_bridges: String::new(),
     };
     let mut chain = PipeChain::spawn(std::path::Path::new(FLY), &config, Duration::from_secs(10)).unwrap();
@@ -729,13 +732,125 @@ fn without_tor() {
     drop(chain);
 
     // with the agreement
-    let (_t, mut chain) = program("no-tor-agreed", &source, &[&a, &b], &[&public], Start { no_tor: true, direct: true, own: 0 });
+    let (_t, mut chain) = program("no-tor-agreed", &source, &[&a, &b], &[&public], Start { no_tor: true, direct: true, ..Start::default() });
     assert_eq!(chain.post(&bytes(&tx)), Posted::Unknown);
     wait_for("the stem over the program's own connection", || a.stems() + b.stems() == 1);
     assert_eq!(public.count(), 0);
     // announced to all when the stem's time is up, as before
     wait_for("the announcement", || a.pooled() == 1 && b.pooled() == 1);
     wait_for("the wallet to be told", || chain.post(&bytes(&tx)) == Posted::Accepted);
+    let text = chain.problem().unwrap_or_default();
+    assert!(!text.contains("is not sent"), "{text}");
+}
+
+/// K192: the owner's agreement to the direct way for one transaction. Given
+/// while a try through Tor is under way, it changes nothing until that try
+/// fails - and a transaction Tor does send is not sent directly as well.
+/// Given after a try has failed, the transaction goes over the program's
+/// own connections at once. It is for that transaction only, and for no
+/// transaction this program does not keep track of.
+#[test]
+fn the_agreement_to_the_direct_way_for_one() {
+    let (_, live) = shared();
+    let (t0, peers) = (Instant::now(), peers());
+    let (first, second) = (Source::spend_paid(41, FEE), Source::spend_paid(42, FEE));
+    let fail = || Err("Tor did not come up".to_string());
+
+    // a transaction never handed over is not agreed to
+    let mut outbox = Outbox::new(false);
+    assert!(matches!(outbox.agree_direct(&bytes(&first), t0, &peers), (false, None)));
+    assert!(matches!(outbox.agree_direct(b"not a transaction", t0, &peers), (false, None)));
+
+    // agreed to while the try is under way: nothing yet; Tor sends it - never directly
+    let (_, todo) = outbox.post(&bytes(&first), t0, Some(live), true);
+    let Some(Do::Send { key, .. }) = todo else { panic!() };
+    assert!(matches!(outbox.agree_direct(&bytes(&first), t0, &peers), (true, None)));
+    assert!(outbox.sent(&key, Ok(()), t0, &peers).is_none());
+    assert!(matches!(outbox.agree_direct(&bytes(&first), t0, &peers), (true, None)), "Tor has sent it");
+    assert!(!outbox.direct(), "the agreement is not for everything");
+
+    // agreed to while the try is under way, and the try fails: directly then
+    let mut outbox = Outbox::new(false);
+    let (_, todo) = outbox.post(&bytes(&first), t0, Some(live), true);
+    let Some(Do::Send { key, .. }) = todo else { panic!() };
+    let (_, todo) = outbox.post(&bytes(&second), t0, Some(live), true);
+    let Some(Do::Send { key: other, .. }) = todo else { panic!() };
+    assert!(matches!(outbox.agree_direct(&bytes(&first), t0, &peers), (true, None)));
+    let todo = outbox.sent(&key, fail(), t0, &peers);
+    let Some(Do::Stem { to, tx: sent }) = todo else { panic!("{todo:?}") };
+    assert!(peers.contains(&to) && sent.hash() == first.hash());
+    // the other one was not agreed to: it waits for Tor, and that is said
+    assert!(outbox.sent(&other, fail(), t0, &peers).is_none());
+    assert_eq!(outbox.trouble(), Some("Tor did not come up"));
+    let due = outbox.tend(t0 + RETRY_AFTER, &peers);
+    assert!(matches!(&due[..], [Do::Send { key, .. }] if *key == other), "{due:?}");
+
+    // agreed to after the try failed: directly at once; nothing waits any more
+    let mut outbox = Outbox::new(false);
+    let (_, todo) = outbox.post(&bytes(&first), t0, Some(live), true);
+    let Some(Do::Send { key, .. }) = todo else { panic!() };
+    assert!(outbox.sent(&key, fail(), t0, &peers).is_none());
+    assert_eq!(outbox.trouble(), Some("Tor did not come up"));
+    // with nobody connected it cannot go; the agreement is kept for the next failure
+    assert!(matches!(outbox.agree_direct(&bytes(&first), t0, &[]), (true, None)));
+    assert_eq!(outbox.trouble(), Some("Tor did not come up"));
+    let (known, todo) = outbox.agree_direct(&bytes(&first), t0, &peers);
+    let Some(Do::Stem { tx: sent, .. }) = todo else { panic!("{todo:?}") };
+    assert!(known && sent.hash() == first.hash());
+    assert_eq!(outbox.trouble(), None, "it went");
+    assert!(outbox.tend(t0 + RETRY_AFTER, &peers).is_empty(), "not through Tor again");
+}
+
+/// K192: when "Tor" does not come up and the direct way is not agreed to
+/// for everything, nothing goes out - until the owner agrees for this one
+/// transaction: then it goes over the program's own connections at once.
+/// Another transaction, handed over without that agreement, still waits.
+#[test]
+fn the_direct_way_agreed_to_for_one_transaction() {
+    let source = chain_with_funds();
+    let (a, b) = (Node::with_state(&source), Node::with_state(&source));
+    let public = Public::start();
+    let (_t, mut chain) = program("direct-once", &source, &[&a, &b], &[&public], Start { no_tor: true, ..Start::default() });
+    global::set_local_chain_type(ChainTypes::AutomatedTesting);
+    let first = Source::spend_paid(41, FEE);
+    let second = Source::spend_paid(42, FEE);
+    assert_eq!(chain.post(&bytes(&first)), Posted::Unknown);
+    assert_eq!(chain.post(&bytes(&second)), Posted::Unknown);
+    wait_for("the reason", || chain.problem().is_some_and(|text| text.contains("a transaction is not sent: Tor did not come up")));
+    std::thread::sleep(fly_chain::post::RETRY_AFTER * 2);
+    assert_eq!((a.stems() + b.stems(), public.count()), (0, 0), "something went out without the agreement");
+    // the owner agrees for the first one
+    assert_eq!(chain.post_direct(&bytes(&first)), Posted::Unknown);
+    wait_for("the stem of the first over the program's own connection", || a.stems() + b.stems() == 1);
+    wait_for("the announcement of the first", || a.pooled() == 1 && b.pooled() == 1);
+    wait_for("the wallet to be told", || chain.post(&bytes(&first)) == Posted::Accepted);
+    // the second was not agreed to: it has gone nowhere and is still said to wait
+    std::thread::sleep(fly_chain::post::RETRY_AFTER * 2);
+    assert_eq!((a.stems() + b.stems(), a.pooled(), b.pooled(), public.count()), (1, 1, 1, 0));
+    assert_eq!(chain.post(&bytes(&second)), Posted::Unknown);
+    let text = chain.problem().unwrap_or_default();
+    assert!(text.contains("a transaction is not sent: Tor did not come up"), "{text}");
+}
+
+/// K189: with Tor switched off by the user no "Tor" is brought up and no
+/// public node is asked through it; the transaction goes over the
+/// program's own connections at once, without the separate agreement to
+/// the direct way, and the wallet is not told of any trouble.
+#[test]
+fn with_tor_switched_off() {
+    let source = chain_with_funds();
+    let (a, b) = (Node::with_state(&source), Node::with_state(&source));
+    let public = Public::start();
+    // "Tor" would come up here, and the direct way is not agreed to
+    let (_t, mut chain) = program("tor-off", &source, &[&a, &b], &[&public], Start { tor_off: true, ..Start::default() });
+    global::set_local_chain_type(ChainTypes::AutomatedTesting);
+    let tx = Source::spend_paid(41, FEE);
+    assert_eq!(chain.post(&bytes(&tx)), Posted::Unknown);
+    wait_for("the stem over the program's own connection", || a.stems() + b.stems() == 1);
+    assert_eq!(public.count(), 0, "a public node was reached through \"Tor\"");
+    wait_for("the announcement", || a.pooled() == 1 && b.pooled() == 1);
+    wait_for("the wallet to be told", || chain.post(&bytes(&tx)) == Posted::Accepted);
+    assert_eq!(public.count(), 0);
     let text = chain.problem().unwrap_or_default();
     assert!(!text.contains("is not sent"), "{text}");
 }

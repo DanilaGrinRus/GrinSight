@@ -29,7 +29,7 @@ use grin_core::pow::Difficulty;
 use grin_p2p::handshake::Handshake;
 use grin_p2p::types::NetAdapter;
 use grin_p2p::{Capabilities, P2PConfig, Peer, PeerAddr};
-use std::net::{Ipv4Addr, SocketAddr, TcpStream, ToSocketAddrs};
+use std::net::{Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::{Receiver, RecvTimeoutError, SyncSender};
@@ -110,6 +110,9 @@ pub struct Settings {
     /// The user agreed that a transaction Tor fails to send goes out from
     /// this computer's address.
     pub direct_post: bool,
+    /// The user switched Tor off (K189): none is brought up, and a
+    /// transaction goes out over this program's own connections.
+    pub tor_off: bool,
     /// Tor bridges the user chose, one a line; empty for none.
     pub tor_bridges: String,
 }
@@ -446,14 +449,7 @@ pub fn addresses(net: Net, peers: &[String]) -> Vec<SocketAddr> {
 
 /// Addresses of `text`, which is `host:port` or `host`.
 fn resolve(text: &str, default_port: Option<u16>) -> Vec<SocketAddr> {
-    let found = match (text.to_socket_addrs(), default_port) {
-        (Ok(addrs), _) => addrs.collect(),
-        (Err(_), Some(port)) => (text, port).to_socket_addrs().map(Iterator::collect).unwrap_or_default(),
-        (Err(_), None) => Vec::new(),
-    };
-    let mut found: Vec<SocketAddr> = found;
-    found.truncate(8);
-    found
+    crate::net::lookup(text, default_port)
 }
 
 impl Node {
@@ -598,7 +594,7 @@ impl Node {
         let (events, adapter, handshake) = (self.events.clone(), self.adapter.clone(), self.handshake.clone());
         let work = self.our_work().max(1);
         let spawned = thread::Builder::new().name("fly-chain-connect".into()).spawn(move || {
-            let peer = TcpStream::connect_timeout(&addr, CONNECT_TIMEOUT)
+            let peer = crate::net::connect(&addr, CONNECT_TIMEOUT)
                 .map_err(|_| "no connection".to_string())
                 .and_then(|conn| {
                     // this process listens nowhere; it says so
@@ -705,7 +701,13 @@ impl Node {
                 };
                 let _ = reply.try_send(answer);
             }
-            Event::Post { tx, reply } => {
+            Event::Point { reply } => {
+                let made = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map_or(0, |d| d.as_secs());
+                let _ = reply.try_send(crate::point_from(&self.chain, made));
+            }
+            Event::Post { tx, direct, reply } => {
                 if self.follow.as_ref().is_some_and(|follow| !follow.on_chain(&self.chain)) {
                     let _ = reply.try_send(fly_paycore_chain_port::Posted::Unknown);
                     return;
@@ -722,7 +724,12 @@ impl Node {
                         });
                     }
                 }
-                self.carry_out(todo.into_iter().collect());
+                let mut todo: Vec<_> = todo.into_iter().collect();
+                if direct {
+                    let peers: Vec<SocketAddr> = self.links.iter().map(|l| l.addr).collect();
+                    todo.extend(self.outbox.agree_direct(&tx, Instant::now(), &peers).1);
+                }
+                self.carry_out(todo);
                 self.tell_watch();
                 let _ = reply.try_send(answer);
             }
@@ -1488,7 +1495,7 @@ pub fn run(settings: Settings, view: SharedView, stop: Arc<AtomicBool>, events: 
         sources.rotate_right(tips.own);
         crate::send::start(
             crate::send::Setup {
-                dial: crate::send::Dial::of(settings.data_dir.clone(), settings.tor_bridges.clone()),
+                dial: crate::send::Dial::of(settings.data_dir.clone(), settings.tor_bridges.clone(), settings.tor_off),
                 sources,
                 own: tips.own,
                 asker: tips.asker,
@@ -1526,7 +1533,8 @@ pub fn run(settings: Settings, view: SharedView, stop: Arc<AtomicBool>, events: 
         blocks_retry: None,
         old: Old::new(),
         old_since: None,
-        outbox: Outbox::new(settings.direct_post),
+        // with Tor switched off the direct way is the only one, and the user chose it
+        outbox: Outbox::new(settings.direct_post || settings.tor_off),
         trail: Trail::default(),
         watch,
         waiting_segments,

@@ -1,32 +1,32 @@
 <p align="center"><b>English</b> · <a href="README.ru.md">Русский</a> · <a href="https://danilagrinrus.github.io/GrinSight/en/">Website</a></p>
 
 <p align="center">
-  <img src="assets/readme/hero.png" width="100%" alt="GrinSight 0.4.3: a light Grin wallet that verifies the chain on your device. Below the title, the main window with sample values: balance, a verified tip, payments waiting for a signature.">
+  <img src="assets/readme/hero.png" width="100%" alt="GrinSight (the picture shows the window of 0.4.3): a light Grin wallet that verifies the chain on your device. Below the title, the main window with sample values: balance, a verified tip, payments waiting for a signature.">
 </p>
 
 GrinSight is a research light wallet for [Grin](https://grin.mw). It needs no full node of its own: it checks the header chain from a built-in point to the tip, confirms the tip with public nodes, collects and verifies the state its outputs depend on, and sends transactions through its own Tor. Nothing is signed and there has been no independent audit by a human; what was and was not checked is listed below.
 
 ## Download
 
-Version **0.4.3** — [all files and SHA-256 sums](https://github.com/DanilaGrinRus/GrinSight/releases/tag/v0.4.3).
+Version **0.4.4** — [all files and SHA-256 sums](https://github.com/DanilaGrinRus/GrinSight/releases/tag/v0.4.4).
 
 | Platform | File |
 |---|---|
-| **Windows 10/11 x64** — installer, no administrator rights | [GrinSight-0.4.3-windows-x64-setup.exe](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.3/GrinSight-0.4.3-windows-x64-setup.exe) |
-| **Windows x64** — portable, one file | [GrinSight-0.4.3-windows-x64-portable.exe](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.3/GrinSight-0.4.3-windows-x64-portable.exe) |
-| **Linux** — Debian 10+ / Ubuntu 20.04+ | [GrinSight-0.4.3-linux-amd64.deb](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.3/GrinSight-0.4.3-linux-amd64.deb) |
-| **Linux** — Fedora / RHEL 8+ | [GrinSight-0.4.3-linux-x86_64.rpm](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.3/GrinSight-0.4.3-linux-x86_64.rpm) |
-| **Linux** — any with glibc 2.28+ | [GrinSight-0.4.3-linux-x86_64.tar.gz](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.3/GrinSight-0.4.3-linux-x86_64.tar.gz) |
-| **Android 8+** (arm64) — checked on an emulator only | [GrinSight-0.4.3-android-arm64.apk](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.3/GrinSight-0.4.3-android-arm64.apk) |
-| **macOS 11+** — Apple silicon and Intel; no Tor bridges, not started on a real Mac | [GrinSight-0.4.3-macos-universal.dmg](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.3/GrinSight-0.4.3-macos-universal.dmg) |
+| **Windows 10/11 x64** — installer, no administrator rights | [GrinSight-0.4.4-windows-x64-setup.exe](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-windows-x64-setup.exe) |
+| **Windows x64** — portable, one file | [GrinSight-0.4.4-windows-x64-portable.exe](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-windows-x64-portable.exe) |
+| **Linux** — Debian 10+ / Ubuntu 20.04+ | [GrinSight-0.4.4-linux-amd64.deb](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-linux-amd64.deb) |
+| **Linux** — Fedora / RHEL 8+ | [GrinSight-0.4.4-linux-x86_64.rpm](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-linux-x86_64.rpm) |
+| **Linux** — any with glibc 2.28+ | [GrinSight-0.4.4-linux-x86_64.tar.gz](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-linux-x86_64.tar.gz) |
+| **Android 8+** (arm64) — checked on an emulator only | [GrinSight-0.4.4-android-arm64.apk](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-android-arm64.apk) |
+| **macOS 11+** — Apple silicon and Intel; no Tor bridges, not started on a real Mac | [GrinSight-0.4.4-macos-universal.dmg](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-macos-universal.dmg) |
 
 Check a file before running it — the hash must match its line in `SHA256SUMS.txt`:
 
 ```powershell
-Get-FileHash .\GrinSight-0.4.3-windows-x64-setup.exe -Algorithm SHA256
+Get-FileHash .\GrinSight-0.4.4-windows-x64-setup.exe -Algorithm SHA256
 ```
 
-On Windows and Linux 0.4.3 installs as **GrinSight Light**, next to GrinSight 0.4.2 if you have it; it does not pick up a 0.4.2 wallet — restore it from its words.
+On Windows and Linux 0.4.4 installs as **GrinSight Light**, next to GrinSight 0.4.2 if you have it; it does not pick up a 0.4.2 wallet — restore it from its words.
 
 ## How long it takes
 

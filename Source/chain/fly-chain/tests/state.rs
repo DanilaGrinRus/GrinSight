@@ -582,7 +582,7 @@ fn an_existing_archive_resumes_after_a_local_lock_is_released() {
     let stop = Arc::new(AtomicBool::new(false));
     let net = Net::Automated;
     let (view, _events, worker) = fly_chain::start(
-        net, net.genesis_hash(), dir.0.clone(), vec![], false, String::new(), stop.clone(),
+        net, net.genesis_hash(), dir.0.clone(), vec![], fly_chain::Sending::default(), stop.clone(),
     ).unwrap();
     kit::wait_for("archive reopened with the blocks file busy", || {
         let view = view.lock().unwrap();

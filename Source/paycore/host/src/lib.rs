@@ -29,6 +29,7 @@
 )]
 
 pub mod chain;
+pub mod inline;
 pub mod onion;
 pub mod profile;
 mod session;
@@ -170,6 +171,8 @@ struct HostParams {
     mnemonic: Option<Secret>,
     #[serde(default)]
     network: Option<String>,
+    #[serde(default)]
+    words: Option<Secret>,
     #[serde(default)]
     reset_guard: Option<bool>,
     #[serde(default)]
@@ -319,6 +322,8 @@ struct Args {
     /// `--chain-direct-post`: the user agreed that a transaction may be
     /// sent from this computer's address when Tor fails.
     direct_post: bool,
+    /// `--chain-no-tor`: the user switched Tor off.
+    tor_off: bool,
     /// `--device-key-stdin`: the first line of the input is not a request
     /// but the device's key for the tail guard (see [`device_key_line`]).
     device_key_first: bool,
@@ -351,11 +356,16 @@ fn parse_args(args: &[String]) -> Result<Args, String> {
     let mut tor_bridges = None;
     let mut peers = Vec::new();
     let mut direct_post = false;
+    let mut tor_off = false;
     let mut device_key_first = false;
     let mut it = args.iter();
     while let Some(name) = it.next() {
         if name == "--chain-direct-post" {
             direct_post = true;
+            continue;
+        }
+        if name == "--chain-no-tor" {
+            tor_off = true;
             continue;
         }
         if name == "--device-key-stdin" {
@@ -410,6 +420,13 @@ fn parse_args(args: &[String]) -> Result<Args, String> {
     if direct_post && chain.is_none() {
         return Err("--chain-direct-post needs --chain".to_string());
     }
+    if tor_off && chain.is_none() {
+        return Err("--chain-no-tor needs --chain".to_string());
+    }
+    // with Tor switched off nothing that needs Tor is started (K189)
+    if tor_off && (launcher.is_some() || onion.is_some()) {
+        return Err("--chain-no-tor goes with neither --transport nor --onion".to_string());
+    }
     Ok(Args {
         profile,
         guard_root,
@@ -418,6 +435,7 @@ fn parse_args(args: &[String]) -> Result<Args, String> {
         onion: onion.map(PathBuf::from),
         tor_bridges: tor_bridges.map(PathBuf::from),
         direct_post,
+        tor_off,
         device_key_first,
     })
 }
@@ -495,12 +513,14 @@ fn places(args: Args, setup: &Setup, device_key: Option<Zeroizing<[u8; 32]>>) ->
         data_dir: String::new(),
         retry: setup.transport_retry,
     });
-    let direct_post = args.direct_post;
+    let (direct_post, tor_off) = (args.direct_post, args.tor_off);
     let chain = args.chain.map(|(program, peers)| chain::ChainProgram {
+        inside: None,
         program,
         peers,
         retry: setup.transport_retry,
         direct_post,
+        tor_off,
     });
     if let Some(file) = args.tor_bridges {
         tor_bridges::set_file(file);
@@ -583,6 +603,36 @@ fn phrase_answer(id: &Value, seed: &[u8]) -> Result<Zeroizing<String>, HostFail>
     )))
 }
 
+/// How many numbered words have to be typed to delete a wallet.
+pub const DELETE_WORDS: usize = 2;
+
+/// Whether the numbered words a person typed are the wallet's own: `said`
+/// is "7 apple 19 river" - a place (1 to 24) and the word at it, twice, the
+/// places different. Anything else is a malformed request; right form with
+/// a wrong word is `false`.
+pub(crate) fn words_match(seed: &[u8], said: &str) -> Result<bool, HostFail> {
+    let phrase = Zeroizing::new(grin_keychain::mnemonic::from_entropy(seed).map_err(|_| fail(-32049, "profile_io", "seed"))?);
+    let own: Vec<&str> = phrase.split(' ').collect();
+    let parts: Vec<&str> = said.split(' ').filter(|part| !part.is_empty()).collect();
+    if parts.len() != DELETE_WORDS.saturating_mul(2) {
+        return Err(bad_params("words: two numbered words"));
+    }
+    let mut places: Vec<usize> = Vec::with_capacity(DELETE_WORDS);
+    let mut all = true;
+    for pair in parts.chunks_exact(2) {
+        let (Some(place), Some(word)) = (pair.first().and_then(|n| n.parse::<usize>().ok()), pair.get(1)) else {
+            return Err(bad_params("words: a place and a word"));
+        };
+        if place == 0 || place > own.len() || places.contains(&place) {
+            return Err(bad_params("words: two different places"));
+        }
+        places.push(place);
+        // every pair is looked at, right or wrong: the answer does not say which one failed
+        all &= own.get(place.saturating_sub(1)).is_some_and(|mine| mine == &word.to_lowercase().as_str());
+    }
+    Ok(all)
+}
+
 impl Host {
     fn status(&self) -> Value {
         let state = if self.runner.is_some() {
@@ -619,6 +669,9 @@ impl Host {
             // what a copy of the profile and its guard would have to come
             // with to pass for the original
             "guard_binding": session::guard_binding(&self.places),
+            // where the rollback guards are kept, for the window to show: a
+            // place on this computer, not a secret
+            "guard_dir": self.places.guard_root.to_string_lossy(),
             "transport": {
                 "configured": self.places.launcher.is_some(),
                 "phase": phase(report.phase),
@@ -766,6 +819,7 @@ impl Host {
                 }
             }
             "host.profile.change_password" => self.change_password(&p).map(|()| json!({})),
+            "host.profile.delete" => self.delete(&p).map(|()| json!({})),
             "host.unlock" => self.unlock(&p),
             "host.lock" => {
                 self.lock();
@@ -806,6 +860,25 @@ impl Host {
         let secrets = self.profile_for_session(&old)?;
         let text = Zeroizing::new(profile::seal(&secrets, &new, self.setup.kdf_log_n)?);
         profile::replace(&self.places.profile, &text)?;
+        Ok(())
+    }
+
+    /// Delete the wallet from this computer: for its password and two of
+    /// its 24 words by number - whoever asks has to have the words, because
+    /// after this only the words bring the money back. The wallet is closed,
+    /// its own directories go, the profile's file goes last.
+    fn delete(&mut self, p: &HostParams) -> Result<(), HostFail> {
+        let pass = password(&p.password, "password")?;
+        let Some(Secret(said)) = &p.words else {
+            return Err(bad_params("words: missing"));
+        };
+        let secrets = self.profile_for_session(&pass)?;
+        if !words_match(&secrets.seed, said)? {
+            return Err(fail(-32051, "wrong_words", ""));
+        }
+        self.lock();
+        session::forget(&self.places, &secrets.instance).map_err(|e| fail(-32049, "profile_io", &format!("{:?}", e.kind())))?;
+        profile::remove(&self.places.profile)?;
         Ok(())
     }
 

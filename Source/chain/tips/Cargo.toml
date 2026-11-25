@@ -6,10 +6,15 @@ publish = false
 description = "What named operators of public Grin nodes say the tip of the chain is, asked over HTTPS: the built-in list of operators, one bounded request to a node's own API, the time the answer was given"
 
 [dependencies]
-rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
-webpki-roots = "1"
 ring = "0.17"
 serde_json = "1"
+
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+webpki-roots = "1"
+
+# In a page every connection goes through the wallet's gateway.
+[target.'cfg(target_os = "emscripten")'.dependencies]
+fly-web-dial = { path = "../../web/dial" }
 
 [dev-dependencies]
 getrandom = "0.2"

@@ -26,6 +26,11 @@ impl Broadcaster for Net {
         self.posted.borrow_mut().push(tx.to_vec());
         *self.answer.borrow()
     }
+    // with the owner's agreement to the direct way: marked, for the test to tell
+    fn post_tx_direct(&mut self, tx: &[u8]) -> Broadcast {
+        self.posted.borrow_mut().push([b"direct:".as_slice(), tx].concat());
+        *self.answer.borrow()
+    }
 }
 struct Time(Option<u64>);
 impl Clock for Time {
@@ -270,11 +275,20 @@ fn payments_through_json_only() {
     let tx = unhex(fin["tx"].as_str().unwrap());
     assert_eq!(*a.posted.borrow(), vec![tx.clone(), tx.clone()]);
     assert_eq!(a.b.core().signatures_made(), 1);
+    // K192: the agreement to the direct way goes with this one payment and
+    // only when it is given; the same stored bytes, nothing signed again
+    assert_eq!(rpc(&mut a, "paycore.send.broadcast", json!({"op": p["op"], "direct": true})).unwrap()["outcome"], "accepted");
+    assert_eq!(a.posted.borrow().last(), Some(&[b"direct:".as_slice(), &tx].concat()));
+    assert_eq!(rpc(&mut a, "paycore.send.broadcast", json!({"op": p["op"], "direct": false})).unwrap()["outcome"], "accepted");
+    assert_eq!(a.posted.borrow().last(), Some(&tx));
+    assert_eq!(kind(&rpc(&mut a, "paycore.send.broadcast", json!({"op": p["op"], "direct": "yes"})).unwrap_err()), "invalid_params");
+    assert_eq!((a.posted.borrow().len(), a.b.core().signatures_made()), (4, 1));
+    a.posted.borrow_mut().truncate(2);
     let st = rpc(&mut a, "paycore.send.status", json!({"op": p["op"]})).unwrap();
     assert_eq!(st["state"], "finalized");
     assert_eq!(
         st["broadcasts"],
-        json!({"accepted": 1, "rejected": 0, "unknown": 1})
+        json!({"accepted": 3, "rejected": 0, "unknown": 1})
     );
 
     let incoming = rpc(&mut b, "paycore.history", json!({})).unwrap()["incoming"][0].clone();
@@ -302,6 +316,32 @@ fn payments_through_json_only() {
     );
 
     assert_eq!(rpc(&mut b, "paycore.history", json!({})).unwrap()["incoming"][0]["status_rule"], "S8");
+
+    // K190: the history says in which block and against which tip, and the
+    // number of confirmations that makes "received" is the owner's to
+    // choose - one at least. It changes the word, never the money.
+    let h = rpc(&mut b, "paycore.history", json!({})).unwrap();
+    let (tip, kernel) = (h["tip_height"].as_u64().unwrap(), h["incoming"][0]["kernel_height"].as_u64().unwrap());
+    assert_eq!((tip - kernel + 1, h["k_conf"].as_u64()), (3, Some(3)));
+    let sent = rpc(&mut a, "paycore.history", json!({})).unwrap()["sends"][0].clone();
+    assert_eq!((sent["kernel_height"].as_u64(), sent["signed"].as_bool()), (Some(kernel), Some(true)));
+    let balance = rpc(&mut b, "paycore.balance", json!({})).unwrap();
+    assert_eq!(rpc(&mut b, "paycore.settings.confirmations", json!({"count": 4})).unwrap(), json!({"k_conf": 4}));
+    let h = rpc(&mut b, "paycore.history", json!({})).unwrap();
+    assert_eq!((h["k_conf"].as_u64(), h["incoming"][0]["status"].as_str(), h["incoming"][0]["status_rule"].as_str()), (Some(4), Some("preliminary"), Some("S6")));
+    assert_eq!(rpc(&mut b, "paycore.balance", json!({})).unwrap(), balance);
+    for count in [0u64, 1001] {
+        assert_eq!(kind(&rpc(&mut b, "paycore.settings.confirmations", json!({"count": count})).unwrap_err()), "invalid_params", "{count}");
+    }
+    assert_eq!(rpc(&mut b, "paycore.history", json!({})).unwrap()["k_conf"], 4, "a refused number changed the one in force");
+    rpc(&mut b, "paycore.settings.confirmations", json!({"count": 1})).unwrap();
+    assert_eq!(rpc(&mut b, "paycore.history", json!({})).unwrap()["incoming"][0]["status"], "confirmed");
+    rpc(&mut b, "paycore.settings.confirmations", json!({"count": 3})).unwrap();
+    // K191: the reply made to an incoming payment is given again as it was
+    assert_eq!(h["incoming"][0]["reply_kept"], true);
+    assert_eq!(rpc(&mut b, "paycore.receive.reply", json!({"slate_id": sid})).unwrap()["slate"], s2["slate"]);
+    assert_eq!(kind(&rpc(&mut b, "paycore.receive.reply", json!({"slate_id": "00".repeat(16)})).unwrap_err()), "not_found");
+    assert_eq!(rpc(&mut b, "paycore.balance", json!({})).unwrap(), balance);
 
     // A change of selected branch precedes the wallet's next sync step.
     let applied = b.b.core().tip().unwrap();

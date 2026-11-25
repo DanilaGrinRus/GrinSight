@@ -65,6 +65,8 @@ struct Mem {
     old_bare_below: u64,
     /// Requests that named a block: piece, height and first byte of the hash.
     old_since: Vec<(u64, u64, u8)>,
+    /// What the layer answers when it is asked for a starting point.
+    point: Option<Result<Vec<u8>, String>>,
 }
 impl Mem {
     fn tip(&self) -> Tip {
@@ -129,6 +131,9 @@ impl ChainFeed for Shared {
             bend(&mut old);
         }
         Ok(old)
+    }
+    fn point(&mut self) -> Result<Vec<u8>, String> {
+        self.0.borrow_mut().point.clone().unwrap_or_else(|| Err("no point here".to_string()))
     }
     fn old_outputs_since(&mut self, piece: u64, since: Tip) -> Result<OldOutputs, Unknown> {
         self.0.borrow_mut().old_since.push((piece, since.height, since.hash[0]));
@@ -335,6 +340,32 @@ fn a_step_that_does_not_fit_is_refused() {
     // and the wallet goes on from where it stood
     w.chain.borrow_mut().push(12, vec![]);
     assert_eq!(sync(&mut w)["tip_height"], 102);
+}
+
+/// K188: a starting point is the chain layer's to make. The wallet hands
+/// on the record as it came, or the layer's own reason there is none;
+/// without a chain layer it says so; a record that is not text is no
+/// point. Asking changes nothing in the wallet.
+#[test]
+fn a_starting_point_is_the_chain_layers_to_make() {
+    let mut w = wallet(true);
+    let balance = rpc(&mut w, "paycore.balance", json!({})).unwrap();
+    let record = r#"{"version":1,"height":40}"#;
+    w.chain.borrow_mut().point = Some(Ok(record.as_bytes().to_vec()));
+    assert_eq!(rpc(&mut w, "paycore.chain.point", json!({})).unwrap(), json!({ "point": record }));
+    w.chain.borrow_mut().point = Some(Err("not while the tip is unconfirmed".to_string()));
+    let refused = rpc(&mut w, "paycore.chain.point", json!({})).unwrap_err();
+    assert_eq!((refused["code"].as_i64(), refused["data"]["kind"].as_str()), (Some(-32033), Some("no_point")), "{refused}");
+    assert!(refused.to_string().contains("not while the tip is unconfirmed"), "{refused}");
+    for unfit in [Vec::new(), vec![0xff, 0xfe, 0x7b]] {
+        w.chain.borrow_mut().point = Some(Ok(unfit));
+        let refused = rpc(&mut w, "paycore.chain.point", json!({})).unwrap_err();
+        assert_eq!(refused["code"].as_i64(), Some(-32033), "{refused}");
+    }
+    assert_eq!(rpc(&mut w, "paycore.balance", json!({})).unwrap(), balance);
+    let mut alone = wallet(false);
+    let refused = rpc(&mut alone, "paycore.chain.point", json!({})).unwrap_err();
+    assert_eq!(refused["code"].as_i64(), Some(-32032), "{refused}");
 }
 
 fn search(w: &mut Wallet) -> Value {

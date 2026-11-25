@@ -129,6 +129,38 @@ export component Heading inherits Text {
     font-weight: 600;
 }
 
+// A small "?" next to a thing: what is said about it in full is shown
+// only to whoever asks (O41).
+export component Ask inherits Rectangle {
+    in-out property <bool> open: false;
+    width: 26px;
+    height: 26px;
+    border-radius: 13px;
+    border-width: 1px;
+    border-color: root.open ? Theme.accent : Theme.line;
+    background: touch.has-hover ? Theme.soft : transparent;
+    accessible-role: button;
+    accessible-label: @tr("What is this?");
+    accessible-action-default => { root.open = !root.open; }
+    Text { text: "?"; color: root.open ? Theme.accent : Theme.muted; font-size: 13px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
+    touch := TouchArea { clicked => { root.open = !root.open; } }
+}
+
+// A heading with its "?" and, for whoever asked, the words behind it.
+export component Explained inherits VerticalLayout {
+    in property <string> title;
+    in property <string> words;
+    in property <bool> small: false;
+    spacing: 6px;
+    HorizontalLayout {
+        spacing: 8px;
+        alignment: start;
+        Text { text: root.title; color: root.small ? Theme.muted : Theme.text; font-size: root.small ? 12px : 15px; font-weight: root.small ? 400 : 600; vertical-alignment: center; wrap: word-wrap; }
+        ask := Ask { }
+    }
+    if ask.open: Text { text: root.words; color: Theme.muted; font-size: 12px; wrap: word-wrap; }
+}
+
 export component Muted inherits Text {
     color: Theme.muted;
     font-size: 13px;

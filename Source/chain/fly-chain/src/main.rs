@@ -61,7 +61,7 @@ fn pipe() -> ExitCode {
     let mut worker = None;
     let served = serve(&mut std::io::stdin().lock(), &mut std::io::stdout().lock(), |config: Config| {
         let net = Net::from_tag(config.network).ok_or("a network this program does not know")?;
-        let (view, events, handle) = fly_chain::start(net, config.genesis, PathBuf::from(config.data_dir), config.peers, config.direct_post, config.tor_bridges, stop.clone())?;
+        let (view, events, handle) = fly_chain::start(net, config.genesis, PathBuf::from(config.data_dir), config.peers, fly_chain::Sending { direct_post: config.direct_post, tor_off: config.tor_off, tor_bridges: config.tor_bridges }, stop.clone())?;
         worker = Some(handle);
         Ok(Feed::new(view, events))
     });
@@ -167,7 +167,7 @@ fn run_trial(args: &[String], goal: Goal) -> ExitCode {
     };
     let stop = Arc::new(AtomicBool::new(false));
     let genesis = trial.net.genesis_hash();
-    let (view, events, handle) = match fly_chain::start(trial.net, genesis, trial.data.clone(), trial.peers.clone(), false, String::new(), stop.clone()) {
+    let (view, events, handle) = match fly_chain::start(trial.net, genesis, trial.data.clone(), trial.peers.clone(), fly_chain::Sending::default(), stop.clone()) {
         Ok(started) => started,
         Err(why) => {
             eprintln!("fly-chain: {why}");

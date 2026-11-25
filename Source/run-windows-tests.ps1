@@ -93,6 +93,24 @@ Pop-Location
 $secs = [int]((Get-Date) - $started).TotalSeconds
 Say "exit=$code seconds=$secs"
 $summary += "tor-bridges exit=$code seconds=$secs"
+Say "=== web/core ==="
+Push-Location (Join-Path $root 'web\core')
+$started = Get-Date
+cmd /c "cargo test --no-fail-fast 2>&1" | Out-File -FilePath $log -Append -Encoding utf8
+$code = $LASTEXITCODE
+Pop-Location
+$secs = [int]((Get-Date) - $started).TotalSeconds
+Say "exit=$code seconds=$secs"
+$summary += "web/core exit=$code seconds=$secs"
+Say "=== web/wallet ==="
+Push-Location (Join-Path $root 'web\wallet')
+$started = Get-Date
+cmd /c "cargo test --no-fail-fast 2>&1" | Out-File -FilePath $log -Append -Encoding utf8
+$code = $LASTEXITCODE
+Pop-Location
+$secs = [int]((Get-Date) - $started).TotalSeconds
+Say "exit=$code seconds=$secs"
+$summary += "web/wallet exit=$code seconds=$secs"
 # The interface: display rules (no dependencies), the window's link to the
 # wallet process, the window's own tests (offline set ui\vendor-crates)
 foreach ($run in @(@('safe-display', ''), @('host-link', ''), @('app', '--lib'))) {

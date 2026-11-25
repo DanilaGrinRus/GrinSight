@@ -23,9 +23,19 @@ const CALL_TIMEOUT: Duration = Duration::from_secs(30);
 /// Confirmations asked for while the chain layer cannot name its own number.
 const DEFAULT_K_CONF: u64 = 10;
 
+/// A chain layer that runs inside this program instead of in a process of
+/// its own: given the configuration and the longest wait for one answer, it
+/// starts the layer and hands back the conversation with it. It speaks the
+/// same protocol, over a pair of streams that never leave the program, so
+/// everything said about the chain process holds for it.
+pub type Inside = fn(&Config, Duration) -> Result<Starting, String>;
+
 /// The chain program as the host was started with it.
 #[derive(Clone)]
 pub struct ChainProgram {
+    /// The chain layer inside this program, where there are no processes
+    /// to start (the web wallet); then `program` names nothing.
+    pub inside: Option<Inside>,
     /// The chain program.
     pub program: PathBuf,
     /// Peers or nodes the user named.
@@ -34,11 +44,15 @@ pub struct ChainProgram {
     pub retry: Duration,
     /// The user agreed to send a transaction directly when Tor fails.
     pub direct_post: bool,
+    /// The user switched Tor off: no Tor is brought up, transactions go directly.
+    pub tor_off: bool,
 }
 
 /// The chain program together with what the open profile adds.
 #[derive(Clone)]
 pub struct ChainLauncher {
+    /// The chain layer inside this program, if that is where it runs.
+    pub inside: Option<Inside>,
     /// The chain program.
     pub program: PathBuf,
     /// Peers or nodes the user named.
@@ -53,6 +67,86 @@ pub struct ChainLauncher {
     pub retry: Duration,
     /// The user agreed to send a transaction directly when Tor fails.
     pub direct_post: bool,
+    /// The user switched Tor off: no Tor is brought up, transactions go directly.
+    pub tor_off: bool,
+}
+
+/// The reading end of a stream that never leaves the program. It ends when
+/// the writing end is dropped.
+pub struct Incoming {
+    from: std::sync::mpsc::Receiver<Vec<u8>>,
+    rest: std::collections::VecDeque<u8>,
+}
+
+/// The writing end of a stream that never leaves the program. Writing fails
+/// once the reading end is dropped.
+pub struct Outgoing {
+    to: std::sync::mpsc::Sender<Vec<u8>>,
+}
+
+impl std::io::Read for Incoming {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        if buf.is_empty() {
+            return Ok(0);
+        }
+        if self.rest.is_empty() {
+            match self.from.recv() {
+                Ok(bytes) => self.rest.extend(bytes),
+                // the other end is gone: the stream is over
+                Err(_) => return Ok(0),
+            }
+        }
+        let mut taken = 0usize;
+        for slot in buf.iter_mut() {
+            let Some(byte) = self.rest.pop_front() else { break };
+            *slot = byte;
+            taken = taken.saturating_add(1);
+        }
+        Ok(taken)
+    }
+}
+
+impl std::io::Write for Outgoing {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        if buf.is_empty() {
+            return Ok(0);
+        }
+        self.to
+            .send(buf.to_vec())
+            .map(|()| buf.len())
+            .map_err(|_| std::io::Error::new(std::io::ErrorKind::BrokenPipe, "nobody reads this any more"))
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+fn stream() -> (Outgoing, Incoming) {
+    let (to, from) = std::sync::mpsc::channel();
+    (Outgoing { to }, Incoming { from, rest: std::collections::VecDeque::new() })
+}
+
+/// Start a chain layer inside this program: `make` builds it from the
+/// configuration, on a thread of its own, and that thread answers the
+/// wallet as the chain process does (`serve`) until the wallet lets go of
+/// the conversation. `ended` runs on that thread when it is over. This is
+/// what an [`Inside`] function is made of.
+pub fn serve_inside<F, M, E>(config: &Config, timeout: Duration, make: M, ended: E) -> Result<Starting, String>
+where
+    F: ChainFeed,
+    M: FnOnce(Config) -> Result<F, String> + Send + 'static,
+    E: FnOnce() + Send + 'static,
+{
+    let (to_layer, mut asked) = stream();
+    let (mut answers, from_layer) = stream();
+    std::thread::Builder::new()
+        .name("fly-chain-inside".into())
+        .spawn(move || {
+            let _ = fly_paycore_bridge::chain_pipe::serve(&mut asked, &mut answers, make);
+            ended();
+        })
+        .map_err(|_| "the chain layer could not be started".to_string())?;
+    PipeChain::connect_begin(from_layer, to_layer, config, timeout)
 }
 
 /// The state of the chain process as last seen by the worker.
@@ -113,10 +207,15 @@ impl HostChain {
             peers: self.launcher.peers.clone(),
             start_timeout_secs: START_TIMEOUT_SECS,
             direct_post: self.launcher.direct_post,
+            tor_off: self.launcher.tor_off,
             // read at every start: a change is taken up when the process is next started
             tor_bridges: crate::tor_bridges::text(),
         };
-        match PipeChain::spawn_begin(&self.launcher.program, &config, CALL_TIMEOUT) {
+        let begun = match self.launcher.inside {
+            Some(inside) => inside(&config, CALL_TIMEOUT),
+            None => PipeChain::spawn_begin(&self.launcher.program, &config, CALL_TIMEOUT),
+        };
+        match begun {
             Ok(starting) => {
                 self.stage = Stage::Starting(starting);
                 update(&self.report, |r| {
@@ -197,6 +296,12 @@ impl ChainFeed for HostChain {
             None => Posted::Unknown,
         }
     }
+    fn post_direct(&mut self, tx: &[u8]) -> Posted {
+        match self.live() {
+            Some(chain) => chain.post_direct(tx),
+            None => Posted::Unknown,
+        }
+    }
     fn problem(&mut self) -> Option<String> {
         self.live()?.problem()
     }
@@ -206,7 +311,16 @@ impl ChainFeed for HostChain {
     fn old_outputs_since(&mut self, piece: u64, since: Tip) -> Result<OldOutputs, Unknown> {
         self.live().ok_or(Unknown)?.old_outputs_since(piece, since)
     }
+    fn point(&mut self) -> Result<Vec<u8>, String> {
+        match self.live() {
+            Some(chain) => chain.point(),
+            None => Err(NO_CHAIN_NOW.to_string()),
+        }
+    }
 }
+
+/// Said about a starting point when the chain process is not running.
+pub const NO_CHAIN_NOW: &str = "the chain process is not running now";
 
 /// One chain process behind the four ports the bridge has for the chain.
 /// Every answer is asked for when it is needed; nothing is remembered from
@@ -238,6 +352,12 @@ impl ChainFeed for Link {
             Err(_) => Posted::Unknown,
         }
     }
+    fn post_direct(&mut self, tx: &[u8]) -> Posted {
+        match self.0.try_borrow_mut() {
+            Ok(mut chain) => chain.post_direct(tx),
+            Err(_) => Posted::Unknown,
+        }
+    }
     fn problem(&mut self) -> Option<String> {
         self.0.try_borrow_mut().ok()?.problem()
     }
@@ -247,11 +367,24 @@ impl ChainFeed for Link {
     fn old_outputs_since(&mut self, piece: u64, since: Tip) -> Result<OldOutputs, Unknown> {
         self.0.try_borrow_mut().map_err(|_| Unknown)?.old_outputs_since(piece, since)
     }
+    fn point(&mut self) -> Result<Vec<u8>, String> {
+        match self.0.try_borrow_mut() {
+            Ok(mut chain) => chain.point(),
+            Err(_) => Err(NO_CHAIN_NOW.to_string()),
+        }
+    }
 }
 
 impl Broadcaster for Link {
     fn post_tx(&mut self, tx: &[u8]) -> Broadcast {
         match self.post(tx) {
+            Posted::Accepted => Broadcast::Accepted,
+            Posted::Rejected => Broadcast::Rejected,
+            Posted::Unknown => Broadcast::Unknown,
+        }
+    }
+    fn post_tx_direct(&mut self, tx: &[u8]) -> Broadcast {
+        match self.post_direct(tx) {
             Posted::Accepted => Broadcast::Accepted,
             Posted::Rejected => Broadcast::Rejected,
             Posted::Unknown => Broadcast::Unknown,
@@ -317,6 +450,7 @@ mod tests {
     fn a_chain_that_is_not_there_is_never_spoken_for() {
         let report = SharedChainReport::default();
         let launcher = ChainLauncher {
+            inside: None,
             program: std::env::temp_dir().join("no-such-chain-program"),
             peers: Vec::new(),
             data_dir: String::new(),
@@ -324,6 +458,7 @@ mod tests {
             genesis: [7; 32],
             retry: Duration::from_secs(3600),
             direct_post: false,
+            tor_off: false,
         };
         let mut link = Link::start(launcher, report.clone());
         let seen = |r: &SharedChainReport| r.lock().unwrap().clone();
@@ -335,6 +470,7 @@ mod tests {
         assert!(matches!(link.next(Some(at)), Err(Unknown)));
         assert!(matches!(link.post(b"tx"), Posted::Unknown));
         assert!(matches!(link.post_tx(b"tx"), Broadcast::Unknown));
+        assert!(matches!(link.post_tx_direct(b"tx"), Broadcast::Unknown));
         assert!(link.problem().is_none());
         assert!(matches!(link.old_outputs(0), Err(Unknown)), "no chain process, no \"there are none\"");
         assert!(matches!(link.chain_state(), ChainState::Unknown));
@@ -346,5 +482,106 @@ mod tests {
         drop(link);
         assert_eq!(seen(&report).phase, Phase::None);
         assert!(seen(&report).error.is_none());
+    }
+
+    struct Fixed;
+    impl ChainFeed for Fixed {
+        fn status(&mut self) -> Option<Status> {
+            Some(Status { level: Level::Behind, tip: None, selected: None, confirmed_time: None, k_conf: 12, rangeproofs_authenticated: false, provisional: true })
+        }
+        fn next(&mut self, _: Option<Tip>) -> Result<Step, Unknown> {
+            Ok(Step::Nothing)
+        }
+        fn post(&mut self, _: &[u8]) -> Posted {
+            Posted::Rejected
+        }
+        fn post_direct(&mut self, _: &[u8]) -> Posted {
+            Posted::Accepted
+        }
+    }
+
+    static ENDED: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+
+    fn inside_fixed(config: &Config, timeout: Duration) -> Result<Starting, String> {
+        // only the layer that started counts its end: the tests run side by side
+        let counted = config.network == 3;
+        serve_inside(
+            config,
+            timeout,
+            |config: Config| if config.network == 3 { Ok(Fixed) } else { Err("another network".to_string()) },
+            move || {
+                if counted {
+                    ENDED.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                }
+            },
+        )
+    }
+
+    fn inside(network: u8) -> ChainLauncher {
+        ChainLauncher {
+            inside: Some(inside_fixed),
+            program: PathBuf::new(),
+            peers: Vec::new(),
+            data_dir: String::new(),
+            network,
+            genesis: [7; 32],
+            retry: Duration::from_secs(3600),
+            direct_post: false,
+            tor_off: false,
+        }
+    }
+
+    fn until(mut done: impl FnMut() -> bool) -> bool {
+        let began = Instant::now();
+        while began.elapsed() < Duration::from_secs(20) {
+            if done() {
+                return true;
+            }
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        false
+    }
+
+    /// A chain layer inside the program is asked exactly as the chain
+    /// process is: nothing is said for it before it reports ready, its own
+    /// answers come through afterwards, and letting go of it ends it.
+    #[test]
+    fn a_chain_layer_inside_the_program_is_asked_like_the_process() {
+        let report = SharedChainReport::default();
+        let seen = |r: &SharedChainReport| r.lock().unwrap().clone();
+        let before = ENDED.load(std::sync::atomic::Ordering::SeqCst);
+        let mut link = Link::start(inside(3), report.clone());
+        assert_eq!(seen(&report).starts, 1);
+        assert!(until(|| link.status().is_some()), "{:?}", seen(&report));
+        assert_eq!(seen(&report).phase, Phase::Ready);
+        assert_eq!(link.k_conf(), 12);
+        let got = link.next(Some(Tip { height: 5, hash: [5; 32] }));
+        assert!(matches!(got, Ok(Step::Nothing)), "{got:?}");
+        // the layer's own answer, not a cautious one made up for it
+        assert!(matches!(link.post_tx(b"tx"), Broadcast::Rejected));
+        // K192: the agreement to the direct way reaches the layer as such
+        assert!(matches!(link.post_tx_direct(b"tx"), Broadcast::Accepted));
+        assert!(matches!(link.post_tx(b"tx"), Broadcast::Rejected), "the agreement was for that one");
+        drop(link);
+        assert!(until(|| ENDED.load(std::sync::atomic::Ordering::SeqCst) > before), "the layer goes on after the wallet let go of it");
+        assert_eq!(seen(&report).phase, Phase::None);
+    }
+
+    /// A layer that refuses to start is down with its own words, and is
+    /// spoken for as cautiously as a process that is not there.
+    #[test]
+    fn a_chain_layer_inside_that_refuses_is_down() {
+        let report = SharedChainReport::default();
+        let seen = |r: &SharedChainReport| r.lock().unwrap().clone();
+        let mut link = Link::start(inside(1), report.clone());
+        assert!(until(|| {
+            let _ = link.status();
+            seen(&report).phase == Phase::Down
+        }));
+        assert_eq!(seen(&report).error.as_deref(), Some("the chain process did not start: another network"));
+        assert!(link.status().is_none());
+        assert!(matches!(link.next(None), Err(Unknown)));
+        assert!(matches!(link.post_tx(b"tx"), Broadcast::Unknown));
+        assert_eq!(link.k_conf(), DEFAULT_K_CONF);
     }
 }

@@ -1,32 +1,32 @@
 <p align="center"><a href="README.md">English</a> · <b>Русский</b> · <a href="https://danilagrinrus.github.io/GrinSight/">Сайт</a></p>
 
 <p align="center">
-  <img src="assets/readme/hero.png" width="100%" alt="GrinSight 0.4.3: лёгкий кошелёк Grin, который проверяет цепь на вашем устройстве. Под заголовком — главное окно с образцовыми значениями: баланс, проверенная вершина, платежи, ждущие подписи.">
+  <img src="assets/readme/hero.png" width="100%" alt="GrinSight (на картинке окно версии 0.4.3): лёгкий кошелёк Grin, который проверяет цепь на вашем устройстве. Под заголовком — главное окно с образцовыми значениями: баланс, проверенная вершина, платежи, ждущие подписи.">
 </p>
 
 GrinSight — исследовательский лёгкий кошелёк для [Grin](https://grin.mw). Своя полная нода ему не нужна: он сам проверяет цепь заголовков от встроенной точки до вершины, сверяет вершину с публичными нодами, собирает и проверяет состояние, от которого зависят его выходы, и отправляет транзакции через собственный Tor. Ничего не подписано, независимого аудита человеком не было; что проверено и что нет — ниже.
 
 ## Загрузка
 
-Версия **0.4.3** — [все файлы и суммы SHA-256](https://github.com/DanilaGrinRus/GrinSight/releases/tag/v0.4.3).
+Версия **0.4.4** — [все файлы и суммы SHA-256](https://github.com/DanilaGrinRus/GrinSight/releases/tag/v0.4.4).
 
 | Платформа | Файл |
 |---|---|
-| **Windows 10/11 x64** — установщик, права администратора не нужны | [GrinSight-0.4.3-windows-x64-setup.exe](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.3/GrinSight-0.4.3-windows-x64-setup.exe) |
-| **Windows x64** — переносная одним файлом | [GrinSight-0.4.3-windows-x64-portable.exe](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.3/GrinSight-0.4.3-windows-x64-portable.exe) |
-| **Linux** — Debian 10+ / Ubuntu 20.04+ | [GrinSight-0.4.3-linux-amd64.deb](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.3/GrinSight-0.4.3-linux-amd64.deb) |
-| **Linux** — Fedora / RHEL 8+ | [GrinSight-0.4.3-linux-x86_64.rpm](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.3/GrinSight-0.4.3-linux-x86_64.rpm) |
-| **Linux** — любой с glibc 2.28+ | [GrinSight-0.4.3-linux-x86_64.tar.gz](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.3/GrinSight-0.4.3-linux-x86_64.tar.gz) |
-| **Android 8+** (arm64) — проверен только на эмуляторе | [GrinSight-0.4.3-android-arm64.apk](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.3/GrinSight-0.4.3-android-arm64.apk) |
-| **macOS 11+** — Apple silicon и Intel; без мостов Tor, на настоящем Mac не запускалась | [GrinSight-0.4.3-macos-universal.dmg](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.3/GrinSight-0.4.3-macos-universal.dmg) |
+| **Windows 10/11 x64** — установщик, права администратора не нужны | [GrinSight-0.4.4-windows-x64-setup.exe](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-windows-x64-setup.exe) |
+| **Windows x64** — переносная одним файлом | [GrinSight-0.4.4-windows-x64-portable.exe](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-windows-x64-portable.exe) |
+| **Linux** — Debian 10+ / Ubuntu 20.04+ | [GrinSight-0.4.4-linux-amd64.deb](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-linux-amd64.deb) |
+| **Linux** — Fedora / RHEL 8+ | [GrinSight-0.4.4-linux-x86_64.rpm](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-linux-x86_64.rpm) |
+| **Linux** — любой с glibc 2.28+ | [GrinSight-0.4.4-linux-x86_64.tar.gz](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-linux-x86_64.tar.gz) |
+| **Android 8+** (arm64) — проверен только на эмуляторе | [GrinSight-0.4.4-android-arm64.apk](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-android-arm64.apk) |
+| **macOS 11+** — Apple silicon и Intel; без мостов Tor, на настоящем Mac не запускалась | [GrinSight-0.4.4-macos-universal.dmg](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-macos-universal.dmg) |
 
 Проверьте файл перед запуском — сумма должна совпасть со строкой в `SHA256SUMS.txt`:
 
 ```powershell
-Get-FileHash .\GrinSight-0.4.3-windows-x64-setup.exe -Algorithm SHA256
+Get-FileHash .\GrinSight-0.4.4-windows-x64-setup.exe -Algorithm SHA256
 ```
 
-В Windows и Linux 0.4.3 ставится как **GrinSight Light**, рядом с GrinSight 0.4.2, если он у вас есть; кошелёк 0.4.2 она не подхватывает — восстановите его из слов.
+В Windows и Linux 0.4.4 ставится как **GrinSight Light**, рядом с GrinSight 0.4.2, если он у вас есть; кошелёк 0.4.2 она не подхватывает — восстановите его из слов.
 
 ## Сколько это занимает
 

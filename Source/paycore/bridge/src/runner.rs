@@ -46,7 +46,7 @@ pub struct Runner {
 /// close the receive drafts whose time has run out. Returns the
 /// notifications worth showing, as JSON-RPC notification texts, and whether
 /// the chain layer has more for the wallet than one round takes.
-fn round<D: Dir, G: Guard, K: Keychain>(bridge: &mut Bridge<D, G, K>) -> (Vec<String>, bool) {
+pub fn round<D: Dir, G: Guard, K: Keychain>(bridge: &mut Bridge<D, G, K>) -> (Vec<String>, bool) {
     let mut out = Vec::new();
     let mut more = false;
     for (method, list) in [

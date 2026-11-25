@@ -28,7 +28,7 @@ use grin_core::pow::Difficulty;
 use grin_p2p::handshake::Handshake;
 use grin_p2p::types::NetAdapter;
 use grin_p2p::{Capabilities, Peer, PeerAddr};
-use std::net::{Ipv4Addr, SocketAddr, TcpStream};
+use std::net::{Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 use std::sync::Arc;
@@ -83,9 +83,14 @@ pub struct Job {
     pub nodes: Vec<SocketAddr>,
 }
 
+/// Said when there is no Tor to send through: it did not come up, or the
+/// user switched it off. A try that ends so is not made with the next node.
+pub const TOR_DOWN: &str = "Tor did not come up";
+
 /// How a connection to a node is made.
 pub enum Dial {
     /// Through Tor, brought up under this directory when first needed.
+    #[cfg(not(target_os = "emscripten"))]
     Tor {
         /// The data directory of the chain process.
         dir: PathBuf,
@@ -95,6 +100,17 @@ pub enum Dial {
         /// any, Tor is reached through them only.
         bridges: String,
     },
+    /// A page of a browser has no Tor and no connection of its own: what
+    /// it sends goes through the wallet's gateway, which finds the address
+    /// of the name. The node sees the gateway's address, not the page's;
+    /// the gateway sees which node is reached and carries what it cannot
+    /// read (a secure channel) or what is public anyway (a transaction).
+    #[cfg(target_os = "emscripten")]
+    Gateway,
+    /// The user switched Tor off (K189): no Tor is brought up and nothing
+    /// is reached this way; every try ends as when Tor does not come up,
+    /// and the transaction goes over the program's own connections.
+    Off,
     /// Straight to the node: only in a test build, for nodes on this
     /// computer. `up` false: as if Tor could not be brought up.
     #[cfg(feature = "test-net")]
@@ -106,7 +122,10 @@ pub enum Dial {
 
 impl Dial {
     /// How this build reaches nodes for the data directory `dir`.
-    pub fn of(dir: PathBuf, bridges: String) -> Dial {
+    pub fn of(dir: PathBuf, bridges: String, off: bool) -> Dial {
+        if off {
+            return Dial::Off;
+        }
         #[cfg(feature = "test-net")]
         {
             let _ = bridges;
@@ -114,15 +133,24 @@ impl Dial {
                 up: !dir.join(TEST_NO_TOR_FILE).exists(),
             }
         }
-        #[cfg(not(feature = "test-net"))]
+        #[cfg(all(not(feature = "test-net"), not(target_os = "emscripten")))]
         {
             Dial::Tor { dir, tor: None, bridges }
+        }
+        #[cfg(all(not(feature = "test-net"), target_os = "emscripten"))]
+        {
+            let _ = (dir, bridges);
+            Dial::Gateway
         }
     }
 
     /// An address on this computer that leads to `host` at `port`.
     fn open(&mut self, host: &str, port: u16) -> Result<SocketAddr, String> {
         match self {
+            Dial::Off => Err(TOR_DOWN.to_string()),
+            #[cfg(target_os = "emscripten")]
+            Dial::Gateway => crate::net::lookup(host, Some(port)).into_iter().next().ok_or_else(|| "the gateway found no address of the node".to_string()),
+            #[cfg(not(target_os = "emscripten"))]
             Dial::Tor { dir, tor, bridges } => {
                 if tor.is_none() {
                     // lines that are not bridge lines stop Tor here: it is never reached
@@ -131,13 +159,13 @@ impl Dial {
                     let started = fly_chain_tor::Tor::start_through(dir, START_WITHIN, &chosen, &fly_chain_tor::own_program());
                     *tor = Some(started.map_err(|e| e.to_string())?);
                 }
-                let tor = tor.as_ref().ok_or("Tor did not come up")?;
+                let tor = tor.as_ref().ok_or(TOR_DOWN)?;
                 tor.bridge(host, port, REACH_WITHIN).map(|bridge| bridge.at).map_err(|e| e.to_string())
             }
             #[cfg(feature = "test-net")]
             Dial::Straight { up } => {
                 if !*up {
-                    return Err("Tor did not come up".to_string());
+                    return Err(TOR_DOWN.to_string());
                 }
                 use std::net::ToSocketAddrs;
                 (host, port)
@@ -233,7 +261,7 @@ fn send(setup: &mut Setup, job: &Job) -> Result<Way, String> {
         for source in &order {
             let at = match setup.dial.open(&source.host, source.port) {
                 Ok(at) => at,
-                Err(e) if e == "Tor did not come up" => return Err(e),
+                Err(e) if e == TOR_DOWN => return Err(e),
                 Err(e) => {
                     why = e;
                     continue;
@@ -253,7 +281,7 @@ fn send(setup: &mut Setup, job: &Job) -> Result<Way, String> {
     for to in from_turn(&job.nodes, job.turn).iter().take(TRIES) {
         let at = match setup.dial.open(&to.ip().to_string(), to.port()) {
             Ok(at) => at,
-            Err(e) if e == "Tor did not come up" => return Err(e),
+            Err(e) if e == TOR_DOWN => return Err(e),
             Err(e) => {
                 why = e;
                 continue;
@@ -269,7 +297,7 @@ fn send(setup: &mut Setup, job: &Job) -> Result<Way, String> {
 
 /// Hand `tx` as a stem transaction to the node behind `at`.
 fn stem(setup: &Setup, at: SocketAddr, tx: &Transaction) -> Result<(), String> {
-    let conn = TcpStream::connect_timeout(&at, REACH_WITHIN).map_err(|_| "no connection".to_string())?;
+    let conn = crate::net::connect(&at, REACH_WITHIN).map_err(|_| "no connection".to_string())?;
     let _ = conn.set_read_timeout(Some(CALL_WITHIN));
     // this process listens nowhere; it says so
     let nowhere = PeerAddr(SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), 0));
@@ -331,7 +359,7 @@ mod bridge_tests {
         for &chosen in cases {
             let dir = std::env::temp_dir().join(format!("fly-chain-send-bridges-{}-{}", std::process::id(), chosen.len()));
             assert!(std::fs::create_dir_all(&dir).is_ok());
-            let mut dial = Dial::of(dir.clone(), chosen.to_string());
+            let mut dial = Dial::of(dir.clone(), chosen.to_string(), false);
             let began = Instant::now();
             let got = dial.open("example.com", 80);
             assert_eq!(got, Err("the Tor bridges cannot be used".to_string()), "{chosen}");
@@ -340,5 +368,12 @@ mod bridge_tests {
             assert!(!dir.join(fly_chain_tor::DIR).join("cache").join("dir.sqlite3").exists());
             assert!(matches!(dial, Dial::Tor { tor: None, .. }));
         }
+        // K189: switched off by the owner, Tor is not started either, whatever the bridges
+        let dir = std::env::temp_dir().join(format!("fly-chain-send-off-{}", std::process::id()));
+        assert!(std::fs::create_dir_all(&dir).is_ok());
+        let mut off = Dial::of(dir.clone(), obfs4.to_string(), true);
+        assert_eq!(off.open("example.com", 80), Err(TOR_DOWN.to_string()));
+        assert!(matches!(off, Dial::Off));
+        assert!(!dir.join(fly_chain_tor::DIR).exists());
     }
 }

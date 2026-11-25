@@ -439,6 +439,7 @@ fn program(tag: &str, source: &Arc<RwLock<Source>>, peers: &[&Node]) -> (Temp, P
         peers: peers.iter().map(|node| node.addr.to_string()).collect(),
         start_timeout_secs: 30,
         direct_post: false,
+        tor_off: false,
         tor_bridges: String::new(),
     };
     let chain = PipeChain::spawn(std::path::Path::new(FLY), &config, Duration::from_secs(10)).unwrap();
@@ -575,6 +576,7 @@ fn a_wallet_that_names_its_block_is_spared_the_range_proofs() {
         peers: vec![node.addr.to_string()],
         start_timeout_secs: 30,
         direct_post: false,
+        tor_off: false,
         tor_bridges: String::new(),
     };
     let mut chain = PipeChain::spawn(std::path::Path::new(FLY), &config, Duration::from_secs(10)).unwrap();
@@ -691,6 +693,7 @@ fn more_nodes_are_asked_while_a_wallet_reads() {
         peers: nodes.iter().map(|node| node.addr.to_string()).collect(),
         start_timeout_secs: 30,
         direct_post: false,
+        tor_off: false,
         tor_bridges: String::new(),
     };
     let mut chain = PipeChain::spawn(std::path::Path::new(FLY), &config, Duration::from_secs(10)).unwrap();

@@ -349,6 +349,9 @@ fn write(dir: &Path, text: &str) -> Result<(), ProfileError> {
 fn publication_lock(dir: &Path) -> Result<File, ProfileError> {
     let file = OpenOptions::new().read(true).write(true).create(true)
         .truncate(false).open(dir.join("profile.publish.lock"))?;
+    // The browser's file system has no file locks and one program, on one
+    // thread: there is nobody to compete with at publication.
+    #[cfg(not(target_os = "emscripten"))]
     file.try_lock().map_err(|err| match err {
         fs::TryLockError::WouldBlock => ProfileError::Io(io::ErrorKind::WouldBlock),
         fs::TryLockError::Error(error) => error.into(),
@@ -372,6 +375,21 @@ pub fn replace(dir: &Path, text: &str) -> Result<(), ProfileError> {
         return Err(ProfileError::Missing);
     }
     write(dir, text)
+}
+
+/// Remove the file of the profile: the wallet is gone from this computer
+/// once this returns. A file that is not there is not an error - the
+/// removal may be the second try of one that was cut short.
+pub fn remove(dir: &Path) -> Result<(), ProfileError> {
+    let _publication = publication_lock(dir)?;
+    for name in [TMP, FILE] {
+        match fs::remove_file(dir.join(name)) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => return Err(ProfileError::Io(e.kind())),
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

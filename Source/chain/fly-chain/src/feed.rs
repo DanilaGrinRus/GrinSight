@@ -101,6 +101,16 @@ pub fn describe(view: &View) -> String {
 }
 
 impl Feed {
+    /// A finished transaction to the node's thread; `direct`: with the
+    /// owner's agreement to the direct way for this one (K192).
+    fn hand_over(&mut self, tx: &[u8], direct: bool) -> Posted {
+        // no answer in time is "unknown", never "refused"
+        let (reply, answer) = sync_channel(1);
+        if self.events.try_send(Event::Post { tx: tx.to_vec(), direct, reply }).is_err() {
+            return Posted::Unknown;
+        }
+        answer.recv_timeout(ANSWER_WITHIN).unwrap_or(Posted::Unknown)
+    }
     fn ask_old(&mut self, piece: u64, since: Option<Tip>) -> Result<OldOutputs, Unknown> {
         let (reply, answer) = sync_channel(1);
         self.events.try_send(Event::AskOld { piece, since, reply }).map_err(|_| Unknown)?;
@@ -146,12 +156,10 @@ impl ChainFeed for Feed {
         answer.recv_timeout(ANSWER_WITHIN).map_err(|_| Unknown)?
     }
     fn post(&mut self, tx: &[u8]) -> Posted {
-        // no answer in time is "unknown", never "refused"
-        let (reply, answer) = sync_channel(1);
-        if self.events.try_send(Event::Post { tx: tx.to_vec(), reply }).is_err() {
-            return Posted::Unknown;
-        }
-        answer.recv_timeout(ANSWER_WITHIN).unwrap_or(Posted::Unknown)
+        self.hand_over(tx, false)
+    }
+    fn post_direct(&mut self, tx: &[u8]) -> Posted {
+        self.hand_over(tx, true)
     }
     fn problem(&mut self) -> Option<String> {
         Some(plain_problem(&describe(&self.view())))
@@ -162,7 +170,29 @@ impl ChainFeed for Feed {
     fn old_outputs_since(&mut self, piece: u64, since: Tip) -> Result<OldOutputs, Unknown> {
         self.ask_old(piece, Some(since))
     }
+    /// K188: a point is made only of a chain whose tip the wallet is told
+    /// is selected, and not provisionally. What is asked of the node's
+    /// thread is the record alone; the decision is made here, from the
+    /// same view the wallet's status is made from.
+    fn point(&mut self) -> Result<Vec<u8>, String> {
+        let status = self.status();
+        match status {
+            Some(status) if status.selected.is_some() && !status.provisional => {}
+            Some(status) if status.selected.is_some() => return Err(POINT_PROVISIONAL.to_string()),
+            _ => return Err(POINT_UNSELECTED.to_string()),
+        }
+        let (reply, answer) = sync_channel(1);
+        self.events.try_send(Event::Point { reply }).map_err(|_| POINT_BUSY.to_string())?;
+        answer.recv_timeout(ANSWER_WITHIN).map_err(|_| POINT_BUSY.to_string())?
+    }
 }
+
+/// Why no starting point is made while the tip is not selected.
+pub const POINT_UNSELECTED: &str = "a starting point is made only when the tip is confirmed by public nodes; it is not yet";
+/// Why none is made on top of what nobody vouches for.
+pub const POINT_PROVISIONAL: &str = "a starting point is not made while what is confirmed is provisional: nobody vouches for the point this program started from, or a claim of more work went unsettled not long ago";
+/// The node's thread did not take the question or did not answer in time.
+pub const POINT_BUSY: &str = "the chain process is busy; ask again in a moment";
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
@@ -278,5 +308,80 @@ mod tests {
             ..view
         };
         assert_eq!(status(unasked).selected, None);
+    }
+
+    /// K188: the node's thread is asked for the record of a starting
+    /// point only while the wallet is told of a selected tip that is not
+    /// provisional; otherwise the reason is given and nothing is asked.
+    /// No answer from the thread is "busy", never a point.
+    #[test]
+    fn a_starting_point_is_made_only_of_a_selected_tip_that_is_vouched_for() {
+        let now_ms = crate::node::clock_ms();
+        let good = View {
+            clock: Some(fly_chain_tips::time::Time {
+                at: std::time::Instant::now(), low_ms: now_ms, high_ms: now_ms,
+            }),
+            ready: true,
+            height: 101,
+            hash: [7; 32],
+            caught_up: true,
+            selected: true,
+            point: crate::PointKind::Release,
+            blocks: Some(BlocksView {
+                height: 101,
+                hash: [7; 32],
+                at_tip: true,
+                ..BlocksView::default()
+            }),
+            ..View::default()
+        };
+        // what the thread is asked, and what comes of its answer
+        let ask = |view: View, answers: bool| -> (Result<Vec<u8>, String>, bool) {
+            let (events, inbox) = sync_channel(1);
+            let mut feed = Feed::new(Arc::new(Mutex::new(view)), events);
+            let node = std::thread::spawn(move || match inbox.recv_timeout(Duration::from_millis(300)) {
+                Ok(Event::Point { reply }) => {
+                    if answers {
+                        let _ = reply.try_send(Ok(b"record".to_vec()));
+                    } else {
+                        std::thread::sleep(ANSWER_WITHIN + Duration::from_millis(300));
+                    }
+                    true
+                }
+                _ => false,
+            });
+            let got = feed.point();
+            (got, node.join().unwrap())
+        };
+        assert_eq!(ask(good.clone(), true), (Ok(b"record".to_vec()), true));
+        let own = View { point: crate::PointKind::Own, ..good.clone() };
+        assert_eq!(ask(own, true), (Ok(b"record".to_vec()), true));
+
+        let provisional = Err(POINT_PROVISIONAL.to_string());
+        let development = View { point: crate::PointKind::Development, ..good.clone() };
+        assert_eq!(ask(development, true), (provisional.clone(), false));
+        let caveat = View { caveat: true, ..good.clone() };
+        assert_eq!(ask(caveat, true), (provisional, false));
+
+        let unselected = Err(POINT_UNSELECTED.to_string());
+        let unasked = View { selected: false, ..good.clone() };
+        assert_eq!(ask(unasked, true), (unselected.clone(), false));
+        let no_time = View { clock: None, ..good.clone() };
+        assert_eq!(ask(no_time, true), (unselected.clone(), false));
+        let behind = View {
+            blocks: Some(BlocksView { height: 100, hash: [6; 32], at_tip: false, ..BlocksView::default() }),
+            ..good.clone()
+        };
+        assert_eq!(ask(behind, true), (unselected.clone(), false));
+        let no_blocks = View { blocks: None, ..good.clone() };
+        assert_eq!(ask(no_blocks, true), (unselected, false));
+
+        // the thread took the question and said nothing
+        assert_eq!(ask(good.clone(), false), (Err(POINT_BUSY.to_string()), true));
+        // the thread has no room for the question
+        let (events, _inbox) = sync_channel(1);
+        events.try_send(Event::Heard { kernels: Vec::new() }).unwrap();
+        let mut feed = Feed::new(Arc::new(Mutex::new(good)), events);
+        assert_eq!(feed.point(), Err(POINT_BUSY.to_string()));
     }
 }

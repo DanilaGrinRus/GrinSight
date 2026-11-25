@@ -119,6 +119,9 @@ fn fail(code: i64, kind: &'static str, reason: &str) -> Fail {
     }
 }
 
+/// The most confirmations the owner can ask for before "received" (K190).
+pub const MAX_K_CONF: u64 = 1000;
+
 fn bad_params(reason: &str) -> Fail {
     fail(-32602, "invalid_params", reason)
 }
@@ -348,6 +351,10 @@ pub struct Bridge<D: Dir, G: Guard, K: Keychain> {
     /// Whether the last `paycore.chain.sync` ended with the chain layer
     /// saying "nothing new": the wallet has every block the layer has.
     at_tip: bool,
+    /// Confirmations after which an incoming payment is called received,
+    /// if the owner chose a number (K190): at least 1. A word about the
+    /// status only; it changes nothing about what can be spent.
+    k_conf_owner: Option<u64>,
     /// When each finished transaction was last handed to the chain layer
     /// and what the answer was. In memory only.
     posted: BTreeMap<[u8; 16], (Instant, Broadcast)>,
@@ -392,6 +399,7 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
             old_read_at: None,
             old_coming_for: OLD_COMING_FOR,
             at_tip: false,
+            k_conf_owner: None,
             posted: BTreeMap::new(),
             posted_invoices: BTreeMap::new(),
             broadcast_every: BROADCAST_EVERY,
@@ -592,7 +600,9 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
             }
             state => state,
         };
-        ports::PaymentBasis { state, k_conf: basis.k_conf.max(1), ..basis }
+        // how many confirmations make an incoming payment "received" is the
+        // owner's to say (K190); the chain layer's number stands until they do
+        ports::PaymentBasis { state, k_conf: self.k_conf_owner.unwrap_or(basis.k_conf).max(1), ..basis }
     }
 
     fn slate_in(&mut self, p: &Params<'_>) -> Result<Vec<u8>, Fail> {
@@ -671,6 +681,8 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
                             "invoice": self.core.send_is_invoice(&op),
                             "locked": self.core.send_locked(&op),
                             "deliver_to": self.core.delivery_contact(&op).map(|key| hex(&key)),
+                            "kernel_height": self.core.send_kernel_height(&op),
+                            "signed": self.core.send_result(&op).is_some(),
                         })
                     })
                     .collect();
@@ -685,10 +697,13 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
                             "slate_id": hex(&id),
                             "amount": value.to_string(),
                             "abandoned": abandoned,
+                            "kernel_height": self.core.incoming_kernel_height(&id),
+                            "reply_kept": self.core.incoming_reply(&id).is_some(),
                         })
                     })
                     .collect();
-                Ok(json!({ "sends": sends, "incoming": incoming }))
+                let k_conf = self.wallet_basis().k_conf;
+                Ok(json!({ "sends": sends, "incoming": incoming, "k_conf": k_conf, "tip_height": self.core.tip_height() }))
             }
 
             // ----- reading a slate before deciding (K119)
@@ -944,6 +959,16 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
                 "confirmed_time": self.ports.clock.confirmed_time(),
                 "tip_height": self.core.tip_height(),
             })),
+            // K188: a starting point made by the chain layer from the chain
+            // it verified; the reason there is none is the layer's own
+            "paycore.chain.point" => {
+                let feed = self.feed.as_mut().ok_or_else(no_chain)?;
+                match feed.point().map(String::from_utf8) {
+                    Ok(Ok(point)) if !point.is_empty() => Ok(json!({ "point": point })),
+                    Ok(_) => Err(fail(-32033, "no_point", "the starting point made is not text")),
+                    Err(why) => Err(fail(-32033, "no_point", &why)),
+                }
+            }
             // the search for outputs older than the wallet's blocks
             "paycore.search.start" => {
                 self.core.old_search_start()?;
@@ -1016,8 +1041,14 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
                 if fin.tx.is_empty() {
                     return Err(CoreError::Refused("the payee broadcasts a paid invoice").into());
                 }
-                // the same stored bytes every time; nothing is signed here
-                let outcome = self.ports.broadcaster.post_tx(&fin.tx);
+                // the same stored bytes every time; nothing is signed here.
+                // `direct`: the owner agrees that this one payment may go out
+                // from this computer's address if Tor fails to send it (K192)
+                let outcome = if p.flag("direct")? {
+                    self.ports.broadcaster.post_tx_direct(&fin.tx)
+                } else {
+                    self.ports.broadcaster.post_tx(&fin.tx)
+                };
                 self.core.send_broadcast_result(&op, outcome)?;
                 self.posted.insert(op, (Instant::now(), outcome));
                 Ok(json!({ "outcome": outcome_name(outcome) }))
@@ -1064,6 +1095,21 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
                     .observe_incoming(&id, state, k_conf)
                     .ok_or(CoreError::NotFound)?;
                 Ok(obs.to_json())
+            }
+            // K191: the reply made to an incoming payment, again, as it is kept
+            "paycore.receive.reply" => {
+                let id = p.bytes::<16>("slate_id")?;
+                let s2 = self.core.incoming_reply(&id).ok_or(CoreError::NotFound)?;
+                Ok(json!({ "slate": self.slate_out(&s2)? }))
+            }
+            // K190: how many confirmations make an incoming payment "received"
+            "paycore.settings.confirmations" => {
+                let count = p.amount("count")?;
+                if !(1..=MAX_K_CONF).contains(&count) {
+                    return Err(bad_params("count"));
+                }
+                self.k_conf_owner = Some(count);
+                Ok(json!({ "k_conf": count }))
             }
             "paycore.receive.abandon" => {
                 self.core.draft_abandon(&p.bytes::<16>("slate_id")?)?;

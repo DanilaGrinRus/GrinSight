@@ -221,8 +221,18 @@ where
 	H: MessageHandler,
 {
 	// Split out tcp stream out into separate reader/writer halves.
+	// GrinSight: in a browser module (wasm32-unknown-emscripten) the standard
+	// library cannot hold one connection twice; there the connection lives at
+	// the wallet's gateway and its bridge counts the holders (web/dial).
+	// Everywhere else this is the node's own code, unchanged.
+	#[cfg(not(target_os = "emscripten"))]
 	let reader = conn.try_clone().expect("clone conn for reader failed");
+	#[cfg(not(target_os = "emscripten"))]
 	let mut writer = conn.try_clone().expect("clone conn for writer failed");
+	#[cfg(target_os = "emscripten")]
+	let reader = fly_web_dial::again(&conn)?;
+	#[cfg(target_os = "emscripten")]
+	let mut writer = fly_web_dial::again(&conn)?;
 	let reader_stopped = stopped.clone();
 
 	let reader_tracker = tracker.clone();

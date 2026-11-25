@@ -54,16 +54,16 @@ const SAMPLE_WORDS: [&str; 24] = [
 
 /// Fills the windows over the main screen with sample values, for snapshots.
 fn fill_sample_sheets(app: &App) {
-    app.set_contact_names(model(vec![name("Аня"), name("Павел"), name("«Кофейня»")]));
+    app.set_contact_names(model(vec![name(tr("Anna", "Аня")), name(tr("Paul", "Павел")), name(tr("“Coffee shop”", "«Кофейня»"))]));
     app.set_address_full(SAMPLE_ADDRESS.into());
-    app.set_out_title("Передайте получателю".into());
-    app.set_out_note("Отправьте этот текст получателю любым способом. Он вставит его в свой кошелёк и пришлёт ответ — вставьте ответ ниже.".into());
+    app.set_out_title(tr("Hand it to the recipient", "Передайте получателю").into());
+    app.set_out_note(tr("Send this text to the recipient any way you like. They paste it into their wallet and send a reply back — paste the reply below.", "Отправьте этот текст получателю любым способом. Он вставит его в свой кошелёк и пришлёт ответ — вставьте ответ ниже.").into());
     app.set_out_text("BEGINSLATEPACK. 4H1qx1wHe668tFW yC2gfL8PPd8kSgv pcXQhyRkHbyKHZg GN75o7uWoT3dkib R2tj1fFGN2FoRLY GWmtgsneoXf7N4D uVWuyZSamPhfF1u AHRaYWvhF7jQvKx wNJAc7qmVm9JVcm NJLEw4k5BU7jY6S eb. ENDSLATEPACK.".into());
     app.set_out_wants_reply(true);
     app.set_sign_amount(amount(NANO / 2).into());
     app.set_sign_fee(amount(23_500_000).into());
     app.set_sign_total(amount((NANO / 2).saturating_add(23_500_000)).into());
-    app.set_sign_who(name("Аня"));
+    app.set_sign_who(name(tr("Anna", "Аня")));
     app.set_sign_who_note("".into());
     let groups: Vec<SharedString> = match address(SAMPLE_ADDRESS) {
         Ok(a) => a.groups.into_iter().map(SharedString::from).collect(),
@@ -71,17 +71,17 @@ fn fill_sample_sheets(app: &App) {
     };
     app.set_sign_who_groups(model(groups.clone()));
     app.set_sign_can_cancel(true);
-    app.set_rel_note("A payment of 0.50 GRIN was prepared before this wallet was restored from an older copy. The wallet no longer knows whether it was signed after that copy was taken, so it will not sign it and keeps the money in reserve.".into());
+    app.set_rel_note(tr("A payment of 0.50 GRIN was prepared before this wallet was restored from an older copy. The wallet no longer knows whether it was signed after that copy was taken, so it will not sign it and keeps the money in reserve.", "Платёж на 0.50 GRIN был подготовлен до того, как этот кошелёк восстановили из более старой копии. Кошелёк больше не знает, подписывали ли его после той копии, поэтому не подпишет его и держит деньги в резерве.").into());
     app.set_inv_amount(amount(NANO.saturating_mul(3) / 2).into());
     app.set_inv_fee(amount(23_500_000).into());
     app.set_inv_total(amount((NANO.saturating_mul(3) / 2).saturating_add(23_500_000)).into());
-    app.set_inv_until("The invoice can be paid before block 4117000.".into());
+    app.set_inv_until(tr("The invoice can be paid before block 4117000.", "Счёт можно оплатить до блока 4117000.").into());
     app.set_in_amount(amount(NANO).into());
-    app.set_in_from("Адрес не из ваших контактов".into());
-    app.set_in_from_note("Сверьте адрес с отправителем по другому каналу.".into());
+    app.set_in_from(tr("An address that is not in your contacts", "Адрес не из ваших контактов").into());
+    app.set_in_from_note(tr("Check the address with the sender some other way.", "Сверьте адрес с отправителем по другому каналу.").into());
     app.set_in_from_groups(model(groups));
     app.set_words(model(SAMPLE_WORDS.iter().map(|w| SharedString::from(*w)).collect()));
-    app.set_chat_name(name("Аня"));
+    app.set_chat_name(name(tr("Anna", "Аня")));
     let line = |mine: bool, text: &str, when: &str, state: &str, warn: bool| ChatLine {
         mine,
         text: fly_safe_display::foreign_text(text, fly_safe_display::MESSAGE_CHARS).text.into(),
@@ -90,15 +90,15 @@ fn fill_sample_sheets(app: &App) {
         warn,
     };
     app.set_chat_lines(model(vec![
-        line(false, "Привет! Скинешь 0.5 за обед?\nhttps://example.com — ссылка только текстом", "2 ч назад", "", false),
-        line(true, "Да, сейчас отправлю", "2 ч назад", "релей принял", false),
-        line(false, "Пришло, спасибо 🙂", "1 ч назад", "", false),
-        line(true, "Отлично", "только что", "ждёт релея", false),
-        line(true, "Это ушло, когда сеть лежала", "21.11.2026", "не отправлено: окно доставки закрылось", true),
+        line(false, tr("Hi! Can you send 0.5 for lunch?\nhttps://example.com — a link is shown as text only", "Привет! Скинешь 0.5 за обед?\nhttps://example.com — ссылка только текстом"), tr("2 h ago", "2 ч назад"), "", false),
+        line(true, tr("Sure, sending now", "Да, сейчас отправлю"), tr("2 h ago", "2 ч назад"), tr("accepted for delivery", "принято к доставке"), false),
+        line(false, tr("Got it, thanks 🙂", "Пришло, спасибо 🙂"), tr("1 h ago", "1 ч назад"), "", false),
+        line(true, tr("Great", "Отлично"), tr("just now", "только что"), tr("waiting to be delivered", "ждёт доставки"), false),
+        line(true, tr("This went out while the network was down", "Это ушло, когда сеть лежала"), "21.11.2026", tr("not sent: the delivery window closed", "не отправлено: окно доставки закрылось"), true),
     ]));
     app.set_all_ops(model(vec![
-        OpLine { who: name("Аня"), sub: "ждёт вашей подписи".into(), amount: format!("−{}", amount(NANO / 2)).into(), tone: 2, show: true },
-        OpLine { who: name("Павел"), sub: "в блоке 4 118 590".into(), amount: format!("+{}", amount(2 * NANO)).into(), tone: 1, show: false },
+        OpLine { who: name(tr("Anna", "Аня")), sub: tr("waiting for your signature", "ждёт вашей подписи").into(), amount: format!("−{}", amount(NANO / 2)).into(), tone: 2, show: true },
+        OpLine { who: name(tr("Paul", "Павел")), sub: tr("in block 4 118 590", "в блоке 4 118 590").into(), amount: format!("+{}", amount(2 * NANO)).into(), tone: 1, show: false },
     ]));
     app.set_identity_made(true);
     app.set_ask(model(vec![3, 11, 20]));
@@ -149,6 +149,82 @@ pub(crate) fn set_direct(on: bool) {
     DIRECT.store(on, std::sync::atomic::Ordering::Relaxed);
 }
 
+/// The two parts the owner can switch off (O42, K189): Tor - no payments
+/// to an address, no messages, transactions straight to the network - and
+/// Nostr - no messages and no payments to contacts. Off means the program
+/// of that part is not started at all.
+static TOR_OFF: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+static NOSTR_OFF: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Confirmations after which an incoming payment is called received, as
+/// the owner chose (K190); 0: not chosen, the wallet's own number stands.
+static CONFIRMATIONS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+pub(crate) fn set_confirmations(count: u64) {
+    CONFIRMATIONS.store(count.min(1000), std::sync::atomic::Ordering::Relaxed);
+}
+
+pub(crate) fn confirmations() -> u64 {
+    CONFIRMATIONS.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+pub(crate) fn set_tor_off(off: bool) {
+    TOR_OFF.store(off, std::sync::atomic::Ordering::Relaxed);
+}
+
+pub(crate) fn tor_off() -> bool {
+    TOR_OFF.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+pub(crate) fn set_nostr_off(off: bool) {
+    NOSTR_OFF.store(off, std::sync::atomic::Ordering::Relaxed);
+}
+
+pub(crate) fn nostr_off() -> bool {
+    NOSTR_OFF.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// The wallet process's arguments as the owner's choices make them, from
+/// the arguments the program has for everything switched on. Nostr off:
+/// no message program. Tor off: no message program either (it speaks
+/// through Tor), no program for the address, and the chain program is told
+/// to bring no Tor up. The consent to the direct way is passed as it is.
+pub(crate) fn chosen_args(base: &[String], direct: bool, tor_off: bool, nostr_off: bool) -> Vec<String> {
+    let mut out = Vec::with_capacity(base.len().saturating_add(2));
+    let mut it = base.iter();
+    while let Some(arg) = it.next() {
+        let dropped = match arg.as_str() {
+            "--transport" | "--relay" => tor_off || nostr_off,
+            "--onion" => tor_off,
+            "--chain-direct-post" | "--chain-no-tor" => {
+                // said anew below, never twice
+                continue;
+            }
+            _ => false,
+        };
+        if dropped {
+            // the value goes with its name
+            let _ = it.next();
+        } else {
+            out.push(arg.clone());
+        }
+    }
+    if out.iter().any(|a| a == "--chain") {
+        if tor_off {
+            out.push("--chain-no-tor".into());
+        }
+        if direct {
+            out.push("--chain-direct-post".into());
+        }
+    }
+    out
+}
+
+/// The same with the choices as they stand now.
+pub(crate) fn args_now(base: &[String]) -> Vec<String> {
+    chosen_args(base, direct(), tor_off(), nostr_off())
+}
+
 fn direct() -> bool {
     DIRECT.load(std::sync::atomic::Ordering::Relaxed)
 }
@@ -185,6 +261,13 @@ fn wire_settings(app: &App, path: Option<PathBuf>) {
             match line.trim() {
                 "lang=ru" => russian = true,
                 "direct=on" => set_direct(true),
+                "tor=off" => set_tor_off(true),
+                "nostr=off" => set_nostr_off(true),
+                word if word.starts_with("received=") => {
+                    if let Some(count) = word.strip_prefix("received=").and_then(|n| n.parse::<u64>().ok()).filter(|n| (1..=1000).contains(n)) {
+                        set_confirmations(count);
+                    }
+                }
                 "delivery=hand" => app.global::<Settings>().set_by_hand(true),
                 "theme=emerald" => app.global::<Theme>().set_name(ThemeName::Emerald),
                 "theme=ice" => app.global::<Theme>().set_name(ThemeName::Ice),
@@ -209,11 +292,15 @@ fn wire_settings(app: &App, path: Option<PathBuf>) {
         }
         if let Some(path) = &path {
             let text = format!(
-                "lang={}\ntheme={}\ndirect={}\ndelivery={}\n",
+                "lang={}\ntheme={}\ndirect={}\ndelivery={}\ntor={}\nnostr={}\n{}",
                 if russian { "ru" } else { "en" },
                 theme_word(app.global::<Theme>().get_name()),
                 if direct() { "on" } else { "off" },
-                if app.global::<Settings>().get_by_hand() { "hand" } else { "tor" }
+                if app.global::<Settings>().get_by_hand() { "hand" } else { "tor" },
+                if tor_off() { "off" } else { "on" },
+                if nostr_off() { "off" } else { "on" },
+                // only once chosen: until then the wallet's own number stands
+                if confirmations() == 0 { String::new() } else { format!("received={}\n", confirmations()) }
             );
             if let Some(dir) = path.parent() {
                 let _ = std::fs::create_dir_all(dir);
@@ -227,17 +314,27 @@ fn wire_settings(app: &App, path: Option<PathBuf>) {
 /// The scripts that pack the Windows installer, the APK and the Linux and
 /// macOS packages read it here, so the window and the package it came in
 /// cannot name different versions.
-pub const APP_VERSION: &str = "0.4.3";
+pub const APP_VERSION: &str = "0.4.4";
 
 /// Shows the synchronisation block and the troubles of this session.
 pub(crate) fn show_sync(app: &App, facts: &sync::Facts, journal: &sync::Journal) {
     let rows: Vec<SyncRow> = sync::rows(facts).into_iter().map(|r| SyncRow { label: r.label.into(), value: r.value.into(), tone: r.tone }).collect();
     app.set_sync_rows(model(rows));
+    // the stages of following the network, each as it stands, and what else the chain process says
+    let stages: Vec<SyncRow> = sync::stages(facts).into_iter().map(|r| SyncRow { label: r.label.into(), value: r.value.into(), tone: r.tone }).collect();
+    app.set_sync_stages(model(stages));
+    app.set_sync_rest(model(sync::chain_rest(facts).into_iter().map(SharedString::from).collect()));
     // the state of both Tors, said outright
     let (messages, transactions) = sync::tor_lines(facts, direct());
+    app.set_tor_on(!facts.tor_off);
+    app.set_nostr_on(!facts.nostr_off);
     app.set_tor_line(messages.0.into());
     app.set_tx_line(transactions.0.into());
     app.set_tx_good(transactions.1);
+    let tones = sync::tor_tones(facts);
+    app.set_tor_tone(tones.0);
+    app.set_tx_tone(tones.1);
+    app.set_addr_tone(tones.2);
     let address = sync::address_line(facts);
     app.set_addr_line(address.0.into());
     app.set_addr_good(address.1);
@@ -280,6 +377,8 @@ fn sample_facts() -> sync::Facts {
         confirmed_time: Some(1_795_480_000),
         k_conf: Some(10),
         search: Some(sync::Search { state: "done".into(), next: None, pieces: 310, found: 3, gone: 1 }),
+        tor_off: false,
+        nostr_off: false,
     }
 }
 
@@ -320,35 +419,37 @@ fn fill_sample(app: &App) {
     app.set_wallet_name(name("55555"));
     app.set_network("MAINNET".into());
     app.set_balance(amount(24_137_000_000).into());
-    app.set_balance_note(format!("можно тратить · в резерве {} · всего {}", amount(NANO / 2), amount(24_697_000_000)).into());
-    app.set_incoming(format!("Входит {} GRIN · ждёт блока", amount(60_000_000)).into());
-    app.set_verified("до вершины 4 118 626 · её подтвердили Grincoin.org и Grin.money".into());
+    app.set_balance_note(fill(tr("can be spent · in reserve {} · in all {}", "можно тратить · в резерве {} · всего {}"), &[&amount(NANO / 2), &amount(24_697_000_000)]).into());
+    app.set_incoming(fill(tr("Coming in: {} GRIN · waiting for a block", "Входит {} GRIN · ждёт блока"), &[&amount(60_000_000)]).into());
+    app.set_verified(tr("to the tip, 4 118 626 · confirmed by Grincoin.org and Grin.money", "до вершины 4 118 626 · её подтвердили Grincoin.org и Grin.money").into());
     let groups: Vec<SharedString> = match address(SAMPLE_ADDRESS) {
         Ok(a) => a.groups.into_iter().map(SharedString::from).collect(),
-        Err(_) => vec!["адрес с ошибкой".into()],
+        Err(_) => vec![tr("address with a mistake", "адрес с ошибкой").into()],
     };
     app.set_address_groups(model(groups));
     app.set_phrase("star-toad-swan-halo-mint-lamb".into());
 
     app.set_waiting(model(vec![
-        Waiting { who: name("Аня"), what: format!("ответила на платёж {} GRIN — нужна ваша подпись", amount(NANO / 2)).into(), action: "Подписать".into(), second: "".into() },
-        Waiting { who: "Входящий".into(), what: format!("{} GRIN от grin18z5…9h2ykv — принять?", amount(NANO)).into(), action: "Принять".into(), second: "Отклонить".into() },
+        Waiting { who: name(tr("Anna", "Аня")), what: fill(tr("replied to the payment of {} GRIN — your signature is needed", "ответила на платёж {} GRIN — нужна ваша подпись"), &[&amount(NANO / 2)]).into(), action: tr("Sign", "Подписать").into(), second: "".into() },
+        Waiting { who: tr("Incoming", "Входящий").into(), what: fill(tr("{} GRIN from grin18z5…9h2ykv — accept?", "{} GRIN от grin18z5…9h2ykv — принять?"), &[&amount(NANO)]).into(), action: tr("Accept", "Принять").into(), second: tr("Decline", "Отклонить").into() },
     ]));
     app.set_contacts(model(vec![
-        Contact { initial: "А".into(), name: name("Аня"), last: "ждёт подписи".into(), attention: true },
-        Contact { initial: "П".into(), name: name("Павел"), last: "Спасибо, дошло".into(), attention: false },
-        Contact { initial: "К".into(), name: name("«Кофейня»"), last: "счёт оплачен".into(), attention: false },
+        Contact { initial: tr("A", "А").into(), name: name(tr("Anna", "Аня")), last: tr("waiting for a signature", "ждёт подписи").into(), attention: true },
+        Contact { initial: tr("P", "П").into(), name: name(tr("Paul", "Павел")), last: tr("Thanks, it arrived", "Спасибо, дошло").into(), attention: false },
+        Contact { initial: tr("C", "К").into(), name: name(tr("“Coffee shop”", "«Кофейня»")), last: tr("invoice paid", "счёт оплачен").into(), attention: false },
     ]));
     app.set_ops(model(vec![
-        Op { who: name("Аня"), sub: "ждёт вашей подписи".into(), amount: format!("−{}", amount(NANO / 2)).into(), tone: 2, show: true },
-        Op { who: "Входящий".into(), sub: "в сети, ждёт блока".into(), amount: format!("+{}", amount(60_000_000)).into(), tone: 2, show: false },
-        Op { who: name("Павел"), sub: "в блоке 4 118 590 · доказательство".into(), amount: format!("+{}", amount(2_000_000_000)).into(), tone: 1, show: false },
-        Op { who: name("«Кофейня»"), sub: "счёт оплачен · в блоке 4 118 402".into(), amount: format!("−{}", amount(120_000_000)).into(), tone: 0, show: false },
+        Op { who: name(tr("Anna", "Аня")), sub: tr("waiting for your signature", "ждёт вашей подписи").into(), amount: format!("−{}", amount(NANO / 2)).into(), tone: 2, show: true },
+        Op { who: tr("Incoming", "Входящий").into(), sub: tr("in the network, waiting for a block", "в сети, ждёт блока").into(), amount: format!("+{}", amount(60_000_000)).into(), tone: 2, show: false },
+        Op { who: name(tr("Paul", "Павел")), sub: tr("in block 4 118 590 · proof", "в блоке 4 118 590 · доказательство").into(), amount: format!("+{}", amount(2_000_000_000)).into(), tone: 1, show: false },
+        Op { who: name(tr("“Coffee shop”", "«Кофейня»")), sub: tr("invoice paid · in block 4 118 402", "счёт оплачен · в блоке 4 118 402").into(), amount: format!("−{}", amount(120_000_000)).into(), tone: 0, show: false },
     ]));
-    app.set_tor_line("Tor подключён · сообщения и транзакции идут через него".into());
+    app.set_files_path(tr("C:\\Users\\you\\AppData\\Local\\GrinSightLight\\data", "C:\\Users\\вы\\AppData\\Local\\GrinSightLight\\data").into());
+    app.set_guard_path(tr("C:\\Users\\you\\AppData\\Local\\GrinSightLight\\guard", "C:\\Users\\вы\\AppData\\Local\\GrinSightLight\\guard").into());
+    app.set_tor_line(tr("Tor is connected · messages and transactions go through it", "Tor подключён · сообщения и транзакции идут через него").into());
     show_sync(app, &sample_facts(), &sample_journal());
     app.set_auto_known(true);
-    app.set_auto_receive(format!("до {} GRIN от контактов", amount(NANO)).into());
+    app.set_auto_receive(fill(tr("up to {} GRIN from contacts", "до {} GRIN от контактов"), &[&amount(NANO)]).into());
     let weak = app.as_weak();
     app.on_enter(move |_| {
         if let Some(app) = weak.upgrade() {
@@ -497,7 +598,7 @@ fn missing_host(app: &App) {
     app.set_live(true);
     app.set_verified_chip(SharedString::new());
     app.set_verified_good(false);
-    app.set_login_note(tr("Wallet process missing. Check the installation.", "Процесс кошелька отсутствует. Проверьте установку.").into());
+    app.set_login_note(tr("A part of the program is missing. Install it again.", "Не хватает части программы. Установите её заново.").into());
 }
 
 /// Opens the wallet window.
@@ -509,17 +610,16 @@ fn run_window(args: &Args) {
     app.global::<Device>().set_phone(cfg!(target_os = "android"));
     wire_settings(&app, settings_path(args));
     app.set_direct_post(direct());
-    let mut host_args = args.host_args.clone();
-    if direct() && host_args.iter().any(|a| a == "--chain") && !host_args.iter().any(|a| a == "--chain-direct-post") {
-        host_args.push("--chain-direct-post".into());
-    }
+    app.set_tor_on(!tor_off());
+    app.set_nostr_on(!nostr_off());
+    let host_args = args_now(&args.host_args);
     // The host lives as long as the window; dropping it locks the profile.
     let _live = match &args.host {
         Some(host) => match live::Live::start(&app, host, &host_args) {
             Ok(live) => Some(live),
             Err(err) => {
                 fill_common(&app);
-                app.set_login_note(format!("{} {err}", tr("The wallet process did not start:", "Процесс кошелька не запустился:")).into());
+                app.set_login_note(format!("{} {err}", tr("The wallet did not start:", "Кошелёк не запустился:")).into());
                 None
             }
         },
@@ -595,6 +695,24 @@ mod snapshot {
 
     pub const WIDTH: u32 = 1280;
     pub const HEIGHT: u32 = 960;
+    /// Pixels to a point in the pictures: 1, or 2 for pictures that go
+    /// into print (`GRINSIGHT_SNAPSHOT_SCALE=2`).
+    static SCALE: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(1);
+
+    fn scale() -> u32 {
+        SCALE.load(std::sync::atomic::Ordering::Relaxed)
+    }
+    /// Height of the pictures in points: the window's own, or enough for
+    /// the whole main screen (`GRINSIGHT_SNAPSHOT_TALL`).
+    static TALL: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+    fn height() -> u32 {
+        if TALL.load(std::sync::atomic::Ordering::Relaxed) {
+            1500
+        } else {
+            HEIGHT
+        }
+    }
 
     pub fn run(dir: &Path, args: &Args) -> Result<(), String> {
         std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
@@ -602,6 +720,11 @@ mod snapshot {
         slint::platform::set_platform(Box::new(Headless(window.clone()))).map_err(|e| e.to_string())?;
         let app = App::new().map_err(|e| e.to_string())?;
         // Kept until the pictures are drawn, then dropped: the host locks.
+        // the pictures are English unless asked otherwise: the guides are
+        // made in both languages from the same sample
+        let russian = std::env::var_os("GRINSIGHT_SNAPSHOT_RU").is_some();
+        app.global::<Settings>().set_russian(russian);
+        set_language(russian);
         let _host = match &args.host {
             Some(host) => Some(live::snapshot_fill(&app, host, &args.host_args)?),
             None => {
@@ -609,7 +732,12 @@ mod snapshot {
                 None
             }
         };
-        window.set_size(PhysicalSize::new(WIDTH, HEIGHT));
+        TALL.store(std::env::var_os("GRINSIGHT_SNAPSHOT_TALL").is_some(), std::sync::atomic::Ordering::Relaxed);
+        if std::env::var("GRINSIGHT_SNAPSHOT_SCALE").as_deref() == Ok("2") {
+            SCALE.store(2, std::sync::atomic::Ordering::Relaxed);
+            window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
+        }
+        window.set_size(PhysicalSize::new(WIDTH.saturating_mul(scale()), height().saturating_mul(scale())));
         app.show().map_err(|e| e.to_string())?;
         let themes = [
             (ThemeName::Emerald, "emerald"),
@@ -642,7 +770,7 @@ mod snapshot {
             app.set_sheet(0);
             app.set_create_step(0);
             // a phone-sized window: the same screens must fit 430 px
-            window.set_size(PhysicalSize::new(430, 930));
+            window.set_size(PhysicalSize::new(430u32.saturating_mul(scale()), 930u32.saturating_mul(scale())));
             app.global::<Device>().set_phone(true);
             app.set_has_profile(false);
             // the phone pictures in Russian: proves the bundled .po is used
@@ -661,9 +789,29 @@ mod snapshot {
             app.set_page(0);
             app.set_has_profile(true);
             app.global::<Device>().set_phone(false);
-            app.global::<Settings>().set_russian(false);
-            set_language(false);
-            window.set_size(PhysicalSize::new(WIDTH, HEIGHT));
+            app.global::<Settings>().set_russian(russian);
+            set_language(russian);
+            window.set_size(PhysicalSize::new(WIDTH.saturating_mul(scale()), height().saturating_mul(scale())));
+            // what stands under "Details", with a point just made (O38)
+            app.set_page(1);
+            app.set_sync_details(true);
+            app.set_point_good(true);
+            app.set_point_note(fill(tr("Your own starting point is made: block {}. The wallet starts from it at the next unlock.", "Своя стартовая точка сделана: блок {}. Кошелёк начнёт с неё со следующего входа."), &["4 115 760"]).into());
+            std::thread::sleep(std::time::Duration::from_millis(50));
+            slint::platform::update_timers_and_animations();
+            draw(&window, &dir.join("main-details.bmp"))?;
+            app.set_sync_details(false);
+            app.set_point_note(SharedString::new());
+            // with Tor switched off by the owner (O42): the main screen and the options
+            let off = sync::Facts { tor_off: true, transport: sync::Part::default(), onion: sync::Part::default(), ..sample_facts() };
+            show_sync(&app, &off, &sample_journal());
+            for (page, what) in [(1, "main-tor-off"), (0, "login-tor-off")] {
+                app.set_page(page);
+                std::thread::sleep(std::time::Duration::from_millis(50));
+                slint::platform::update_timers_and_animations();
+                draw(&window, &dir.join(format!("{what}.bmp")))?;
+            }
+            show_sync(&app, &sample_facts(), &sample_journal());
         }
         for (theme, name) in themes {
             app.global::<Theme>().set_name(theme);
@@ -678,8 +826,8 @@ mod snapshot {
     }
 
     pub fn draw(window: &Rc<MinimalSoftwareWindow>, path: &Path) -> Result<(), String> {
-        let w = usize::try_from(WIDTH).map_err(|e| e.to_string())?;
-        let h = usize::try_from(HEIGHT).map_err(|e| e.to_string())?;
+        let w = usize::try_from(WIDTH.saturating_mul(scale())).map_err(|e| e.to_string())?;
+        let h = usize::try_from(height().saturating_mul(scale())).map_err(|e| e.to_string())?;
         let mut pixels = vec![PremultipliedRgbaColor::default(); w.saturating_mul(h)];
         window.request_redraw();
         window.draw_if_needed(|renderer| {
@@ -1020,9 +1168,9 @@ mod scenario {
         run.check("the main screen names the version", app.get_app_version() == format!("v{APP_VERSION}").as_str(), &app.get_app_version());
         let rows = app.get_sync_rows();
         let first = rows.row_data(0).map(|r| r.value.to_string()).unwrap_or_default();
-        run.check("the path of synchronisation is shown; without a chain process it says so", rows.row_count() >= 5 && first == "не задан", &first);
+        run.check("the path of synchronisation is shown; without a chain process it says so", rows.row_count() >= 5 && first == "не задана", &first);
         let trouble = app.get_problems().row_data(0).map(|p| (p.what.to_string(), p.help.to_string(), p.open)).unwrap_or_default();
-        run.check("the trouble is listed with a line of help", trouble.0 == "Нет процесса цепи" && trouble.1.len() > 20 && trouble.2, &trouble.0);
+        run.check("the trouble is listed with a line of help", trouble.0 == "Нет проверки сети" && trouble.1.len() > 20 && trouble.2, &trouble.0);
         run.check("the Tor for the address says where it stands", app.get_addr_line() == "Tor для вашего адреса: не настроен — платежи на адрес передаются вручную" && !app.get_addr_good(), &app.get_addr_line());
         // Slatepack text as a file of the wallet's own folder, next to the profile
         let files = app.global::<ui::Files>();

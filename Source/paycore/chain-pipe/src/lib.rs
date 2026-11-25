@@ -34,7 +34,7 @@ pub mod wire;
 
 pub use wire::{Config, MAX_FRAME, VERSION};
 
-use fly_paycore_chain_port::{plain_problem, ChainFeed, OldOutputs, Posted, Status, Step, Tip, Unknown, MAX_TX_LEN};
+use fly_paycore_chain_port::{plain_problem, ChainFeed, OldOutputs, Posted, Status, Step, Tip, Unknown, MAX_POINT_LEN, MAX_TX_LEN};
 use fly_paycore_pipe_link::{read_frame, read_hello, write_failed, write_frame, write_ready, Cut, Link};
 use std::io::{self, Read, Write};
 use std::path::Path;
@@ -140,6 +140,25 @@ impl PipeChain {
     }
 }
 
+impl PipeChain {
+    /// A finished transaction to the chain process: plainly, or with the
+    /// owner's agreement to the direct way for this one (K192).
+    fn hand_over(&mut self, how: u8, tx: &[u8]) -> Posted {
+        if tx.is_empty() || tx.len() > MAX_TX_LEN {
+            // nothing was sent; "rejected" would claim a node's verdict
+            return Posted::Unknown;
+        }
+        match self.ask(how, tx) {
+            Some((wire::POSTED, body)) => match wire::posted_from(&body) {
+                Some(posted) => posted,
+                None => self.confused(Posted::Unknown),
+            },
+            Some(_) => self.confused(Posted::Unknown),
+            None => Posted::Unknown,
+        }
+    }
+}
+
 impl ChainFeed for PipeChain {
     fn status(&mut self) -> Option<Status> {
         match self.ask(wire::STATUS, &[]) {
@@ -181,18 +200,11 @@ impl ChainFeed for PipeChain {
     }
 
     fn post(&mut self, tx: &[u8]) -> Posted {
-        if tx.is_empty() || tx.len() > MAX_TX_LEN {
-            // nothing was sent; "rejected" would claim a node's verdict
-            return Posted::Unknown;
-        }
-        match self.ask(wire::POST, tx) {
-            Some((wire::POSTED, body)) => match wire::posted_from(&body) {
-                Some(posted) => posted,
-                None => self.confused(Posted::Unknown),
-            },
-            Some(_) => self.confused(Posted::Unknown),
-            None => Posted::Unknown,
-        }
+        self.hand_over(wire::POST, tx)
+    }
+
+    fn post_direct(&mut self, tx: &[u8]) -> Posted {
+        self.hand_over(wire::POST_DIRECT, tx)
     }
 
     fn problem(&mut self) -> Option<String> {
@@ -217,7 +229,27 @@ impl ChainFeed for PipeChain {
         let answer = self.ask(wire::OLD_SINCE, &wire::encode_old_since(piece, since));
         self.old_answer(answer, piece, true)
     }
+
+    fn point(&mut self) -> Result<Vec<u8>, String> {
+        let silent = || NO_POINT_ANSWER.to_string();
+        match self.ask(wire::POINT, &[]) {
+            Some((wire::POINT_IS, body)) if !body.is_empty() && body.len() <= MAX_POINT_LEN => Ok(body),
+            // whatever the other side wrote, only plain text is handed on
+            Some((wire::TEXT, body)) => match std::str::from_utf8(&body) {
+                Ok(text) if !text.is_empty() => Err(plain_problem(text)),
+                _ => self.confused(Err(silent())),
+            },
+            Some(_) => self.confused(Err(silent())),
+            None => Err(silent()),
+        }
+    }
 }
+
+/// Said when the chain process gave no answer about a starting point.
+pub const NO_POINT_ANSWER: &str = "the chain process did not answer";
+/// Said by the chain process when its layer made a record that cannot be
+/// handed over.
+pub const POINT_UNFIT: &str = "the starting point made cannot be handed over";
 
 impl PipeChain {
     /// The answer to a request for a piece of the old outputs.
@@ -287,6 +319,12 @@ where
                 }
                 write_frame(writer, wire::POSTED, &[wire::posted_code(feed.post(&body))], MAX_FRAME)?;
             }
+            wire::POST_DIRECT => {
+                if body.is_empty() || body.len() > MAX_TX_LEN {
+                    return Err(bad());
+                }
+                write_frame(writer, wire::POSTED, &[wire::posted_code(feed.post_direct(&body))], MAX_FRAME)?;
+            }
             wire::PROBLEM if body.is_empty() => match feed.problem().map(|p| plain_problem(&p)) {
                 Some(text) if !text.is_empty() => write_frame(writer, wire::TEXT, text.as_bytes(), MAX_FRAME)?,
                 _ => write_frame(writer, wire::NO_PROBLEM, &[], MAX_FRAME)?,
@@ -304,6 +342,24 @@ where
                 match feed.old_outputs_since(piece, since).ok().and_then(|old| wire::encode_old(&old, piece, true)) {
                     Some(bytes) => write_frame(writer, wire::OLD_ARE, &bytes, MAX_FRAME)?,
                     None => write_frame(writer, wire::UNKNOWN, &[], MAX_FRAME)?,
+                }
+            }
+            wire::POINT if body.is_empty() => {
+                // a record or the reason there is none: never an empty answer
+                let answer = feed.point().and_then(|record| {
+                    if record.is_empty() || record.len() > MAX_POINT_LEN {
+                        Err(POINT_UNFIT.to_string())
+                    } else {
+                        Ok(record)
+                    }
+                });
+                match answer {
+                    Ok(record) => write_frame(writer, wire::POINT_IS, &record, MAX_FRAME)?,
+                    Err(why) => {
+                        let text = plain_problem(&why);
+                        let text = if text.is_empty() { POINT_UNFIT } else { text.as_str() };
+                        write_frame(writer, wire::TEXT, text.as_bytes(), MAX_FRAME)?;
+                    }
                 }
             }
             _ => return Err(bad()),

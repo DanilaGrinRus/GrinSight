@@ -139,18 +139,21 @@ impl Setup {
     }
 
     fn listed(net: fly_chain_headers::Net, data_dir: &Path) -> Setup {
+        fn asker() -> Option<Asker> {
+            Asker::new().ok()
+        }
         use fly_chain_headers::Net;
         match net {
             Net::Main => Setup {
                 sources: source::mainnet(),
-                asker: Asker::new().ok(),
+                asker: asker(),
                 least_groups: source::MAINNET_GROUPS,
                 own: 0,
                 own_refused: 0,
             },
             Net::Test => Setup {
                 sources: source::testnet(),
-                asker: Asker::new().ok(),
+                asker: asker(),
                 least_groups: source::TESTNET_GROUPS,
                 own: 0,
                 own_refused: 0,

@@ -1831,6 +1831,23 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
         self.st.sends.get(&state::hex(op)).is_some_and(|s| s.invoice)
     }
 
+    /// The block an outgoing payment's kernel was seen in, if it was (K190).
+    pub fn send_kernel_height(&self, op: &OpId) -> Option<u64> {
+        self.st.sends.get(&state::hex(op))?.kernel_height
+    }
+
+    /// The block an incoming payment's kernel was seen in, if it was (K190).
+    pub fn incoming_kernel_height(&self, slate_id: &SlateId) -> Option<u64> {
+        self.st.drafts.get(&state::hex(slate_id))?.kernel_height
+    }
+
+    /// The reply this wallet made to an incoming payment (S2), as it is
+    /// kept: to be handed to the sender again (K191). Reads only.
+    pub fn incoming_reply(&self, slate_id: &SlateId) -> Option<Vec<u8>> {
+        let d = self.st.drafts.get(&state::hex(slate_id))?;
+        (!d.s2.is_empty()).then(|| d.s2.clone())
+    }
+
     /// Receive drafts and issued invoices: slate id, value, abandoned.
     pub fn incomings(&self) -> Vec<(SlateId, u64, bool)> {
         self.st

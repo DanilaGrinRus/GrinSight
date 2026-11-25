@@ -173,6 +173,7 @@ fn the_wallet_is_told_only_what_is_known() {
         peers: vec![node.addr.to_string()],
         start_timeout_secs: 30,
         direct_post: false,
+        tor_off: false,
         tor_bridges: String::new(),
     };
     let wait = Duration::from_secs(10);

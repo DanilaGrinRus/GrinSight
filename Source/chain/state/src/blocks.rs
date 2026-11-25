@@ -146,6 +146,10 @@ impl Blocks {
             .truncate(false)
             .open(dir.join(FILE_NAME))
             .map_err(BlocksError::Io)?;
+        // Inside a page the module's file system is the module's alone and the
+        // system gives no file locks there; one chain layer at a time is kept
+        // by the module that starts it (web/wallet).
+        #[cfg(not(target_os = "emscripten"))]
         if file.try_lock().is_err() {
             return Err(BlocksError::Busy);
         }

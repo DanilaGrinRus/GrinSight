@@ -1,7 +1,7 @@
 // The conversation with a contact, the list of all payments, and the
 // windows for the password and the words.
 import { Theme, Device } from "theme.slint";
-import { Card, Btn, Choice, Chip, Heading, Muted, Logo, Ground } from "parts.slint";
+import { Card, Btn, Choice, Chip, Heading, Muted, Logo, Ground, Ask, Explained } from "parts.slint";
 import { Field, Sheet, TextBox, PasswordAdvice } from "flows.slint";
 
 // One line of a conversation. `mine` decides the side and the look; the
@@ -64,7 +64,7 @@ export component ChatPage inherits Rectangle {
                     padding: 12px;
                     spacing: 8px;
                     alignment: end;
-                    if root.lines.length == 0: Muted { text: @tr("No messages yet. Messages travel over Tor and wait at a relay until the contact comes online."); horizontal-alignment: center; }
+                    if root.lines.length == 0: Muted { text: @tr("No messages yet. Messages travel over Tor and wait on a delivery server until the contact comes online."); horizontal-alignment: center; }
                     for l in root.lines: HorizontalLayout {
                         alignment: l.mine ? end : start;
                         Rectangle {
@@ -146,6 +146,9 @@ export component ChatPage inherits Rectangle {
 // Every payment, newest first.
 export component OpsPage inherits Rectangle {
     in property <[OpLine]> ops;
+    // confirmations after which an incoming payment is called received (K190)
+    in property <int> confirmations: 10;
+    callback set-confirmations(int);
     callback back();
     callback show(int);
     Ground { }
@@ -157,6 +160,25 @@ export component OpsPage inherits Rectangle {
             height: 46px;
             Btn { text: @tr("Back"); font-size: 13px; clicked => { root.back(); } }
             Heading { text: @tr("All payments"); font-size: 17px; vertical-alignment: center; horizontal-stretch: 1; }
+        }
+        Card {
+            VerticalLayout {
+                padding: 12px;
+                padding-left: 16px;
+                padding-right: 16px;
+                spacing: 6px;
+                HorizontalLayout {
+                    spacing: 8px;
+                    Text { text: @tr("Received after"); color: Theme.text; font-size: 13px; vertical-alignment: center; }
+                    Btn { text: "−"; font-size: 14px; min-height: 30px; min-width: 34px; clicked => { if (root.confirmations > 1) { root.set-confirmations(root.confirmations - 1); } } }
+                    Text { text: root.confirmations; color: Theme.text; font-family: "DejaVu Sans Mono"; font-size: 14px; font-weight: 700; vertical-alignment: center; horizontal-alignment: center; min-width: 30px; }
+                    Btn { text: "+"; font-size: 14px; min-height: 30px; min-width: 34px; clicked => { if (root.confirmations < 1000) { root.set-confirmations(root.confirmations + 1); } } }
+                    Text { text: @tr("confirmations"); color: Theme.text; font-size: 13px; vertical-alignment: center; }
+                    VerticalLayout { alignment: center; conf-ask := Ask { } }
+                    Rectangle { horizontal-stretch: 1; }
+                }
+                if conf-ask.open: Muted { text: @tr("A payment gets its first confirmation with the block it is in, and one more with every block after it. Here you choose how many make an incoming payment “received”: one at least. It is a word about the status only — it does not change what can be spent."); font-size: 12px; wrap: word-wrap; }
+            }
         }
         Card {
             vertical-stretch: 1;
@@ -184,18 +206,46 @@ export component OpsPage inherits Rectangle {
 }
 
 // The password and the words.
+// A path on this computer, whole, with a button that copies it.
+component PathLine inherits Rectangle {
+    in property <string> path;
+    property <bool> copied: false;
+    background: Theme.bg;
+    border-radius: 10px;
+    HorizontalLayout {
+        padding: 10px;
+        spacing: 8px;
+        Text { text: root.path; color: Theme.text; font-family: "DejaVu Sans Mono"; font-size: 12px; wrap: char-wrap; horizontal-stretch: 1; vertical-alignment: center; }
+        VerticalLayout {
+            alignment: center;
+            Btn { text: root.copied ? @tr("Copied") : @tr("Copy"); font-size: 12px; min-height: 28px; clicked => { hidden.select-all(); hidden.copy(); hidden.clear-selection(); root.copied = true; } }
+        }
+    }
+    hidden := TextInput { text: root.path; visible: false; width: 0px; height: 0px; }
+}
+
 export component SecuritySheet inherits Sheet {
     in property <bool> busy;
     in property <string> error;
     in property <string> done-note;
     callback change(string, string, string);
     callback words(string);
+    // deleting the wallet: the two places asked for, and the request (К187, О37)
+    in property <int> place-a;
+    in property <int> place-b;
+    callback delete(string, string, string);
+    // where the wallet keeps its files on this computer (O40)
+    in property <string> files-path;
+    in property <string> guard-path;
+    property <string> del-pw;
+    property <string> word-a;
+    property <string> word-b;
     property <string> old;
     property <string> new1;
     property <string> new2;
     property <string> pw;
     title: @tr("Password and words");
-    Heading { text: @tr("Change the password"); }
+    Explained { title: @tr("Change the password"); words: @tr("Any characters will do: letters of any language, digits, signs and spaces. Capital and small letters differ."); }
     Field { label: @tr("Current password"); secret: true; text <=> root.old; }
     Field { label: @tr("New password"); secret: true; text <=> root.new1; }
     Field { label: @tr("Once more"); secret: true; text <=> root.new2; }
@@ -223,6 +273,28 @@ export component SecuritySheet inherits Sheet {
             if (!root.busy) {
                 root.words(root.pw);
                 root.pw = "";
+            }
+        }
+    }
+    Rectangle { height: 1px; background: Theme.line; }
+    Explained { title: @tr("Where the wallet's files are"); words: @tr("Everything this wallet keeps on this computer is in the first folder. The 24 words are not there as text: without the password the files are of no use. The second folder holds a small file that guards against a wallet rolled back to an old copy."); }
+    PathLine { path: root.files-path; }
+    if root.guard-path != "": PathLine { path: root.guard-path; }
+    Rectangle { height: 1px; background: Theme.line; }
+    Heading { text: @tr("Delete the wallet"); }
+    Text { text: @tr("The wallet and everything it keeps are removed from this computer. After that only your 24 words bring the money back. To show that you have them, type the two words with these numbers."); color: Theme.warn; font-size: 13px; wrap: word-wrap; }
+    Field { label: @tr("Word number ") + root.place-a; text <=> root.word-a; }
+    Field { label: @tr("Word number ") + root.place-b; text <=> root.word-b; }
+    Field { label: @tr("Password"); secret: true; text <=> root.del-pw; }
+    Btn {
+        text: root.busy ? "…" : @tr("Delete the wallet for good");
+        height: 46px;
+        clicked => {
+            if (!root.busy) {
+                root.delete(root.del-pw, root.word-a, root.word-b);
+                root.del-pw = "";
+                root.word-a = "";
+                root.word-b = "";
             }
         }
     }
@@ -259,7 +331,7 @@ export component OwnSheet inherits Sheet {
     title: @tr("Own nodes and own point");
     Muted { text: @tr("Your own public nodes: one https:// address a line, up to 4. They are asked like the listed ones and get your transactions first, but they never count as an independent voice."); }
     TextBox { label: @tr("Own nodes"); hint: "https://node.example.org:3413"; text <=> root.nodes; box-height: 96px; }
-    Muted { text: @tr("Own starting point: paste the whole own-point.json that fly-chain point --kind own made. Leave empty for the built-in point."); }
+    Muted { text: @tr("Own starting point: an open wallet makes it under Connection → Details. A point made on another computer of yours can be pasted here whole. Leave empty for the built-in point."); }
     TextBox { label: @tr("Own point"); hint: "{ … }"; text <=> root.point; box-height: 110px; }
     if root.error != "": Text { text: root.error; color: Theme.warn; font-size: 14px; wrap: word-wrap; }
     if root.done-note != "": Text { text: root.done-note; color: Theme.accent; font-size: 14px; wrap: word-wrap; }

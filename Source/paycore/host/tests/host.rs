@@ -904,6 +904,32 @@ fn the_product_program_and_bad_input() {
         std::fs::read_to_string(only_dir(&t.0.join("p"), "chain-").join("told")).is_ok_and(|told| told.ends_with("\ndirect_post=1\n"))
     });
     assert_eq!(h.end(), (0, String::new()));
+    // K189: Tor switched off is passed on too, and only when it is; it goes
+    // with no program that needs Tor
+    assert!(!told.contains("tor_off"), "{told}");
+    let no_tor = || {
+        let mut command = Command::new(HOST);
+        command.arg("--profile").arg(t.0.join("p")).arg("--guard-dir").arg(t.0.join("p-guard")).arg("--chain").arg(CHAIN).arg("--chain-peer").arg(chain.peer()).arg("--chain-no-tor");
+        command
+    };
+    let mut h = Proc::spawn(no_tor());
+    h.ok("host.unlock", json!({"password": "pw"}));
+    wait_for("the chain process told that Tor is off", || {
+        std::fs::read_to_string(only_dir(&t.0.join("p"), "chain-").join("told")).is_ok_and(|told| told.ends_with("\ntor_off=1\ndirect_post=0\n"))
+    });
+    assert_eq!(h.end(), (0, String::new()));
+    for with in ["--onion", "--transport"] {
+        let mut command = no_tor();
+        command.arg(with).arg(CHAIN);
+        if with == "--transport" {
+            command.arg("--relay").arg("wss://relay.example");
+        }
+        let refused = command.output().unwrap();
+        assert!(!refused.status.success(), "{with}");
+        assert!(String::from_utf8_lossy(&refused.stderr).contains("--chain-no-tor goes with neither --transport nor --onion"), "{with}: {}", String::from_utf8_lossy(&refused.stderr));
+    }
+    let alone = Command::new(HOST).arg("--profile").arg(t.0.join("p")).arg("--guard-dir").arg(t.0.join("p-guard")).arg("--chain-no-tor").output().unwrap();
+    assert!(String::from_utf8_lossy(&alone.stderr).contains("--chain-no-tor needs --chain"));
     // the profile file asks for real work to try a password
     let file: Value = serde_json::from_slice(&std::fs::read(t.0.join("p").join("profile.json")).unwrap()).unwrap();
     assert_eq!((&file["kdf"], &file["log_n"], &file["network"]), (&json!("scrypt"), &json!(17), &json!("test")));

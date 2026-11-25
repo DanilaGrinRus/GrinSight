@@ -96,6 +96,31 @@ fn onion_dir(profile: &Path, instance: &[u8; 16]) -> PathBuf {
     profile.join(format!("onion-{}", hex(instance)))
 }
 
+/// Remove everything this wallet keeps on the computer besides the file of
+/// its profile: its journal, its tail guard, its chain files and both
+/// Tors' files with their keys. Only directories named by the wallet's own
+/// number are touched - nothing else in the profile's folder, and nothing
+/// of another wallet. What is not there is passed over, so a removal cut
+/// short can be done again. The profile's file goes last, by the caller:
+/// while it is there the removal can still be asked for and finished.
+pub(crate) fn forget(places: &Places, instance: &[u8; 16]) -> std::io::Result<()> {
+    let mine = [
+        onion_dir(&places.profile, instance),
+        transport_dir(&places.profile, instance),
+        chain_dir(&places.profile, instance),
+        journal_dir(&places.profile, instance),
+        places.guard_root.join(hex(instance)),
+    ];
+    for dir in mine {
+        match std::fs::remove_dir_all(&dir) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => return Err(e),
+        }
+    }
+    Ok(())
+}
+
 fn transport_dir(profile: &Path, instance: &[u8; 16]) -> PathBuf {
     profile.join(format!("transport-{}", hex(instance)))
 }
@@ -289,6 +314,7 @@ pub(crate) fn open(
                 .ok_or_else(|| other("the profile path is not text"))?
                 .to_string();
             let launcher = crate::chain::ChainLauncher {
+                inside: given.inside,
                 program: given.program.clone(),
                 peers: given.peers.clone(),
                 data_dir,
@@ -296,6 +322,7 @@ pub(crate) fn open(
                 genesis: identity.genesis,
                 retry: given.retry,
                 direct_post: given.direct_post,
+                tor_off: given.tor_off,
             };
             Some(crate::chain::Link::start(launcher, chain_report.clone()))
         }

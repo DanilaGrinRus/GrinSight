@@ -18,6 +18,45 @@ pub struct FsFile {
 /// Exclusive lock on the directory; released when dropped.
 pub struct FsLock {
     _file: File,
+    #[cfg(target_os = "emscripten")]
+    held: PathBuf,
+}
+
+/// In the browser's file system there are no file locks to take: the
+/// module is the only program that sees its files, so the single writer is
+/// kept within the module, by the directories it has locked. Two pages of
+/// one site are two modules; keeping them apart is the business of the
+/// storage the module's files are kept in, not of this lock.
+#[cfg(target_os = "emscripten")]
+mod held {
+    use std::collections::BTreeSet;
+    use std::path::{Path, PathBuf};
+    use std::sync::Mutex;
+
+    static HELD: Mutex<BTreeSet<PathBuf>> = Mutex::new(BTreeSet::new());
+
+    fn set() -> std::sync::MutexGuard<'static, BTreeSet<PathBuf>> {
+        match HELD.lock() {
+            Ok(set) => set,
+            Err(poisoned) => poisoned.into_inner(),
+        }
+    }
+
+    /// Whether the directory was free and is now taken.
+    pub(super) fn take(path: &Path) -> bool {
+        set().insert(path.to_path_buf())
+    }
+
+    pub(super) fn give_back(path: &Path) {
+        set().remove(path);
+    }
+}
+
+#[cfg(target_os = "emscripten")]
+impl Drop for FsLock {
+    fn drop(&mut self) {
+        held::give_back(&self.held);
+    }
 }
 
 const LOCK_NAME: &str = "lock";
@@ -81,6 +120,18 @@ impl Dir for FsDir {
         let mut o = options();
         o.create(true);
         let file = o.open(self.path.join(LOCK_NAME))?;
+        #[cfg(target_os = "emscripten")]
+        {
+            if held::take(&self.path) {
+                Ok(FsLock {
+                    _file: file,
+                    held: self.path.clone(),
+                })
+            } else {
+                Err(io::Error::new(io::ErrorKind::WouldBlock, "journal is locked"))
+            }
+        }
+        #[cfg(not(target_os = "emscripten"))]
         match file.try_lock() {
             Ok(()) => Ok(FsLock { _file: file }),
             Err(fs::TryLockError::WouldBlock) => Err(io::Error::new(

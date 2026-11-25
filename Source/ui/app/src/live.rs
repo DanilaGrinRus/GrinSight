@@ -60,8 +60,11 @@ impl Drop for Live {
 enum OpRef {
     /// A payment prepared by hand that waits for the recipient's reply.
     Send(String),
-    /// An incoming payment answered in this run of the window.
+    /// An incoming payment this wallet answered: the reply is kept (K191).
     Reply(String),
+    /// A payment this wallet signed: its final text is kept (K191).
+    /// `waiting`: signed and not in a block yet.
+    Signed { op: String, waiting: bool },
     None,
 }
 
@@ -201,6 +204,9 @@ enum Wait {
     Locked(String),
     /// An incoming payment through the transport.
     Incoming(Incoming),
+    /// A signed payment the network check could not send: Tor did not
+    /// come up. The owner chooses what to do (O45, K192).
+    Unsent(String),
 }
 
 /// One outgoing operation, as the wallet's history gives it.
@@ -218,6 +224,53 @@ struct SendRow {
     locked: bool,
     /// The contact it was sent to, when it went through the transport.
     to: Option<String>,
+    /// The block its kernel was seen in.
+    kernel_height: Option<u64>,
+    /// The wallet signed it and keeps the final text.
+    signed: bool,
+}
+
+/// An incoming payment as the wallet lists it.
+#[derive(Clone, Debug, Default)]
+struct IncomingRow {
+    value: u64,
+    abandoned: bool,
+    status: String,
+    slate_id: String,
+    /// The block its kernel was seen in.
+    kernel_height: Option<u64>,
+    /// The reply made to it is kept by the wallet.
+    reply_kept: bool,
+}
+
+/// How many confirmations a payment seen in block `kernel` has when the
+/// wallet stands at block `tip`: the block it is in counts as the first.
+fn confirmations(kernel: Option<u64>, tip: Option<u64>) -> Option<u64> {
+    let (kernel, tip) = (kernel?, tip?);
+    Some(tip.checked_sub(kernel)?.saturating_add(1))
+}
+
+/// The line under an incoming payment (K190): the word the wallet gives
+/// it, and how many confirmations it has of how many it needs.
+///
+/// While the wallet is catching up with the tip it vouches for no status,
+/// and a payment that is in a block is not said to be unconfirmed (O44):
+/// the line says where it is and that the wallet is catching up.
+fn incoming_words(row: &IncomingRow, tip: Option<u64>, k_conf: u64, catching_up: bool) -> (String, i32) {
+    if row.abandoned {
+        return (tr("abandoned", "брошен").into(), 0);
+    }
+    if catching_up && row.status != "confirmed" && row.kernel_height.is_some() {
+        return (tr("in a block · the wallet is catching up with the tip", "в блоке · кошелёк догоняет вершину").into(), 0);
+    }
+    let have = confirmations(row.kernel_height, tip);
+    match (row.status.as_str(), have) {
+        ("confirmed", Some(have)) => (fill(tr("received · confirmations: {}", "получено · подтверждений: {}"), &[&crate::sync::spaced(have)]), 1),
+        ("confirmed", None) => (tr("received", "получено").into(), 1),
+        ("preliminary", Some(have)) if k_conf > 0 => (fill(tr("in a block · confirmations: {} of {}", "в блоке · подтверждений: {} из {}"), &[&crate::sync::spaced(have), &crate::sync::spaced(k_conf)]), 2),
+        ("preliminary", _) => (tr("preliminary", "предварительно").into(), 2),
+        _ => (tr("not in a block yet", "ещё не в блоке").into(), 2),
+    }
 }
 
 /// What a payment waits for from the user, if anything. Every payment that
@@ -236,6 +289,17 @@ fn wait_of(row: &SendRow) -> Option<Wait> {
     } else {
         Wait::Reply(row.op.clone())
     })
+}
+
+/// What the wallet is asked to send a signed payment to the network again:
+/// plainly, or with the owner's agreement to the direct way for this one
+/// payment (K192). The agreement is said only when it was given.
+fn resend_params(op: &str, direct: bool) -> Value {
+    if direct {
+        json!({ "op": op, "direct": true })
+    } else {
+        json!({ "op": op })
+    }
 }
 
 /// What the wallet is asked to let a payment go: an ordinary cancel, or -
@@ -321,6 +385,13 @@ struct Flow {
     /// without `--chain-direct-post`.
     program: std::path::PathBuf,
     base_args: Vec<String>,
+    /// The owner switched a part on or off in an open wallet (O42): once
+    /// the wallet is locked its process is started anew without that part.
+    restart_after_lock: bool,
+    /// The signed payment whose text is open and can be sent to the network again.
+    resend: Option<String>,
+    /// For that start: where the wallet process's notifications go.
+    notes: Option<Arc<Mutex<VecDeque<Value>>>>,
     /// The profile folder, if the arguments name one.
     profile: Option<std::path::PathBuf>,
     /// the program for Tor bridges stands next to the wallet's programs
@@ -453,6 +524,7 @@ fn say(err: &CallError) -> String {
     match err {
         CallError::Rpc { name, message, .. } => match name.as_str() {
             "wrong_password" => tr("Wrong password", "Пароль не подошёл").into(),
+            "wrong_words" => tr("The words do not match this wallet's. Nothing was deleted.", "Слова не совпали со словами этого кошелька. Ничего не удалено.").into(),
             "no_profile" => tr("There is no wallet in this folder", "В этом каталоге нет кошелька").into(),
             "profile_exists" => tr("There is a wallet here already — a new one is not made over it", "Здесь уже есть кошелёк — поверх него новый не создаётся").into(),
             "already_unlocked" => tr("The wallet is already open", "Кошелёк уже открыт").into(),
@@ -471,10 +543,39 @@ fn say(err: &CallError) -> String {
             "unknown_outcome" => tr("The signature may have happened, there is no result. This payment is not signed again — follow it in the payments", "Подпись могла состояться, результата нет. Повторно этот платёж не подписывается — следите за ним в операциях").into(),
             "no_mailbox" => tr("Delivery over Tor is not set up — send by hand", "Доставка через Tor не настроена — отправьте вручную").into(),
             "no_chain" => tr("No connection to the chain", "Нет связи с цепью").into(),
+            "no_point" => no_point(message).into(),
             _ => tr("The wallet refused", "Кошелёк отказал").into(),
         },
         CallError::Timeout => tr("The wallet did not answer in time", "Кошелёк не ответил вовремя").into(),
-        CallError::Gone => tr("The wallet process is not running", "Процесс кошелька не работает").into(),
+        CallError::Gone => tr("The wallet is not running", "Кошелёк не работает").into(),
+    }
+}
+
+/// Why no starting point was made (K188, O38). The reason is the chain
+/// program's own; it is matched here and never shown as it came.
+fn no_point(reason: &str) -> &'static str {
+    if reason.contains("only when the tip is confirmed") {
+        tr(
+            "A point can be made once the wallet stands at the confirmed tip. Wait until synchronisation is over. Nothing was changed.",
+            "Точку можно сделать, когда кошелёк стоит у подтверждённой вершины. Дождитесь конца синхронизации. Ничего не изменено.",
+        )
+    } else if reason.contains("provisional") {
+        tr(
+            "No point can be made now: the tip is confirmed only with a caveat. Try later. Nothing was changed.",
+            "Сейчас точку сделать нельзя: вершина подтверждена с оговоркой. Попробуйте позже. Ничего не изменено.",
+        )
+    } else if reason.contains("no new starting point can be made yet") {
+        tr(
+            "A new point would be too close to the one the wallet started from. Try again in about half a day. Nothing was changed.",
+            "Новая точка оказалась бы слишком близко к той, с которой кошелёк начал. Попробуйте примерно через полдня. Ничего не изменено.",
+        )
+    } else if reason.contains("busy") || reason.contains("did not answer") || reason.contains("not running") {
+        tr(
+            "The network check is busy. Try again in a minute. Nothing was changed.",
+            "Проверка сети занята. Попробуйте ещё раз через минуту. Ничего не изменено.",
+        )
+    } else {
+        tr("The point could not be made. Nothing was changed.", "Точку сделать не удалось. Ничего не изменено.")
     }
 }
 
@@ -484,8 +585,8 @@ fn say(err: &CallError) -> String {
 fn refused(reason: &str) -> &'static str {
     match reason {
         "the search for old outputs is not over" => tr(
-            "The wallet is still searching the chain for your old money (see Synchronisation → Search for old outputs). Sending opens when the search is over: until then the balance is not final.",
-            "Кошелёк ещё ищет в цепи ваши давние деньги (см. «Синхронизация» → «Поиск давних выходов»). Отправка откроется, когда поиск закончится: до тех пор баланс не окончательный.",
+            "The wallet is still searching the chain for your old money (see Connection → Search for old money). Sending opens when the search is over: until then the balance is not final.",
+            "Кошелёк ещё ищет в цепи ваши давние деньги (см. «Связь» → «Поиск давних денег»). Отправка откроется, когда поиск закончится: до тех пор баланс не окончательный.",
         ),
         "chain state unknown" => tr(
             "The wallet has not taken its first block yet. Wait until the main screen says “Verified”.",
@@ -554,6 +655,8 @@ type Said = (bool, u64, String, String);
 /// What the screens show, gathered off the window's thread.
 #[derive(Default)]
 struct View {
+    /// Where the wallet process keeps the rollback guards, as it says.
+    guard_dir: String,
     testnet: Option<bool>,
     balance: Option<(u64, u64, u64, bool)>,
     address: Option<String>,
@@ -566,7 +669,11 @@ struct View {
     transport_ready: bool,
     sends: Vec<SendRow>,
     /// Amount, abandoned, status, slate id.
-    incoming: Vec<(u64, bool, String, String)>,
+    incoming: Vec<IncomingRow>,
+    /// Confirmations after which an incoming payment is "received", as the wallet goes by.
+    k_conf: u64,
+    /// The wallet's block when the payments were listed.
+    history_tip: Option<u64>,
     contacts: Vec<ContactRec>,
     auto_on: Option<bool>,
     /// Payments that arrived at the wallet's address through Tor and wait
@@ -606,6 +713,8 @@ fn gather_from(
     mut call: impl FnMut(&str, Value) -> Result<Value, CallError>,
 ) -> View {
     let mut view = View { testnet: known, ..View::default() };
+    view.sync.tor_off = crate::tor_off();
+    view.sync.nostr_off = crate::nostr_off();
     if let Ok(info) = call("paycore.info", json!({})) {
         view.auto_on = match info.get("auto_receive_since") {
             Some(Value::Null) => Some(false),
@@ -655,6 +764,7 @@ fn gather_from(
             }
         };
         view.sync.answered = true;
+        view.guard_dir = status.get("guard_dir").and_then(Value::as_str).map(str::to_string).unwrap_or_default();
         view.sync.chain = part("chain");
         // the chain process describes its whole state: room for all of it
         view.sync.chain.problem = status.get("chain").and_then(|c| c.get("problem")).and_then(Value::as_str).map(|s| foreign_line(s, 700).text).unwrap_or_default();
@@ -731,7 +841,18 @@ fn gather_from(
             gone: count("gone").unwrap_or(0),
         });
     }
-    if let Ok(h) = call("paycore.history", json!({})) {
+    // K190: the owner's number of confirmations for "received" is told to
+    // the wallet whenever the wallet goes by another one
+    let mut history = call("paycore.history", json!({}));
+    let wanted = crate::confirmations();
+    if let (Ok(h), true) = (&history, wanted != 0) {
+        if h.get("k_conf").and_then(Value::as_u64) != Some(wanted) && call("paycore.settings.confirmations", json!({ "count": wanted })).is_ok() {
+            history = call("paycore.history", json!({}));
+        }
+    }
+    if let Ok(h) = history {
+        view.k_conf = h.get("k_conf").and_then(Value::as_u64).unwrap_or(0);
+        view.history_tip = h.get("tip_height").and_then(Value::as_u64);
         for send in h.get("sends").and_then(Value::as_array).into_iter().flatten() {
             view.sends.push(SendRow {
                 op: text(send, "op").unwrap_or_default(),
@@ -742,10 +863,19 @@ fn gather_from(
                 invoice: send.get("invoice").and_then(Value::as_bool) == Some(true),
                 locked: send.get("locked").and_then(Value::as_bool) == Some(true),
                 to: text(send, "deliver_to"),
+                kernel_height: send.get("kernel_height").and_then(Value::as_u64),
+                signed: send.get("signed").and_then(Value::as_bool) == Some(true),
             });
         }
         for inc in h.get("incoming").and_then(Value::as_array).into_iter().flatten() {
-            view.incoming.push((nano(field(inc, "amount")), inc.get("abandoned").and_then(Value::as_bool).unwrap_or(false), text(inc, "status").unwrap_or_default(), text(inc, "slate_id").unwrap_or_default()));
+            view.incoming.push(IncomingRow {
+                value: nano(field(inc, "amount")),
+                abandoned: inc.get("abandoned").and_then(Value::as_bool).unwrap_or(false),
+                status: text(inc, "status").unwrap_or_default(),
+                slate_id: text(inc, "slate_id").unwrap_or_default(),
+                kernel_height: inc.get("kernel_height").and_then(Value::as_u64),
+                reply_kept: inc.get("reply_kept").and_then(Value::as_bool) == Some(true),
+            });
         }
     }
     if let Ok(c) = call("paycore.contacts.list", json!({})) {
@@ -795,21 +925,21 @@ pub(crate) fn chain_chip(chain: Option<(&str, Option<u64>, Option<u64>)>, config
         Some(("at_tip", tip, _)) if searching => (
             tr("SEARCHING", "ИДЁТ ПОИСК"),
             false,
-            fill(tr("the chain is checked to block {} · your old outputs are still being looked for: the amount can grow, sending opens when the search ends", "цепь проверена до блока {} · ваши давние выходы ещё ищутся: сумма может вырасти, отправка откроется, когда поиск закончится"), &[&block(tip)]),
+            fill(tr("the chain is checked to block {} · your old money is still being looked for: the amount can grow, sending opens when the search ends", "цепь проверена до блока {} · ваши давние деньги ещё ищутся: сумма может вырасти, отправка откроется, когда поиск закончится"), &[&block(tip)]),
         ),
         Some(("at_tip", tip, _)) => (tr("VERIFIED", "ПРОВЕРЕНО"), true, fill(tr("the wallet is at tip {} · chosen by public nodes of different operators", "кошелёк на вершине {} · её выбрали публичные ноды разных операторов"), &[&block(tip)])),
         // behind, and the tip to catch up with is not chosen yet
         Some(("behind", tip, None)) => (
             tr("CATCHING UP", "ДОГОНЯЕТ"),
             false,
-            fill(tr("the wallet is at block {} · the tip is not chosen yet: waiting for the chain process and public nodes. Sending opens at the tip", "кошелёк на блоке {} · вершина ещё не выбрана: ждём процесс цепи и публичные ноды. Отправка откроется на вершине"), &[&block(tip)]),
+            fill(tr("the wallet is at block {} · the tip is not chosen yet: waiting for the network check and public nodes. Sending opens at the tip", "кошелёк на блоке {} · вершина ещё не выбрана: ждём проверку сети и публичные ноды. Отправка откроется на вершине"), &[&block(tip)]),
         ),
         Some(("behind", tip, Some(selected))) => (
             tr("CATCHING UP", "ДОГОНЯЕТ"),
             false,
             fill(tr("the wallet is at block {} of {} · {} to go. Sending opens at the tip", "кошелёк на блоке {} из {} · осталось {}. Отправка откроется на вершине"), &[&block(tip), &selected.to_string(), &selected.saturating_sub(tip.unwrap_or(0)).to_string()]),
         ),
-        Some(_) if !configured => (tr("NO CHAIN", "НЕТ ЦЕПИ"), false, tr("no chain process set: nothing is known about the chain", "процесс цепи не задан: о цепи ничего не известно").into()),
+        Some(_) if !configured => (tr("NO CHAIN", "НЕТ ЦЕПИ"), false, tr("the part that checks the network is missing: nothing is known about the chain", "нет части программы, которая проверяет сеть: о цепи ничего не известно").into()),
         Some(_) => (tr("CHECKING", "ПРОВЕРЯЕТСЯ"), false, tr("the chain is still being checked", "цепь ещё проверяется").into()),
         None => (tr("NO DATA", "НЕТ ДАННЫХ"), false, tr("the wallet said nothing about the chain", "кошелёк не ответил о цепи").into()),
     }
@@ -879,6 +1009,13 @@ fn apply(app: &App, view: View) {
         f.journal.clone()
     });
     crate::show_sync(app, &view.sync, &journal);
+    if view.k_conf > 0 {
+        app.set_confirmations(i32::try_from(view.k_conf).unwrap_or(i32::MAX));
+    }
+    // where the files are (O40): the folder of the profile, and the guards;
+    // both are this program's own words and are shown whole, to be copied
+    app.set_files_path(own_dir().map(|d| d.to_string_lossy().into_owned()).unwrap_or_default().into());
+    app.set_guard_path(view.guard_dir.clone().into());
     // a change that is on its way is not painted over by an older answer
     if !with(|f| f.auto_pending) {
         show_auto(app, view.auto_on);
@@ -898,8 +1035,14 @@ fn apply(app: &App, view: View) {
         let mut ops = Vec::new();
         let mut refs: Vec<OpRef> = Vec::new();
         let mut waits = Vec::new();
+        let unsent = !view.sync.tor_off && crate::sync::not_sent(&view.sync).is_some();
         for row in &view.sends {
             let (sub, tone) = send_state(&row.state, row.invoice, row.locked);
+            // in a block: how deep it lies by now (K190)
+            let sub = match confirmations(row.kernel_height, view.history_tip).filter(|_| row.state == "confirmed") {
+                Some(have) => fill(tr("in a block · confirmations: {}", "в блоке · подтверждений: {}"), &[&crate::sync::spaced(have)]),
+                None => sub.to_string(),
+            };
             let who = if row.invoice {
                 tr("Invoice paid", "Оплата счёта").into()
             } else {
@@ -907,26 +1050,29 @@ fn apply(app: &App, view: View) {
             };
             ops.push(Op { who: who.into(), sub: sub.into(), amount: format!("−{}", amount(row.amount.saturating_add(row.fee))).into(), tone, show: false });
             // the text of a payment that still waits for its reply can be shown again
-            refs.push(if row.state == "prepared" && !row.locked && !row.invoice && row.to.is_none() { OpRef::Send(row.op.clone()) } else { OpRef::None });
+            refs.push(if row.state == "prepared" && !row.locked && !row.invoice && row.to.is_none() {
+                OpRef::Send(row.op.clone())
+            } else if row.signed {
+                // every signed payment keeps its final text (K191)
+                OpRef::Signed { op: row.op.clone(), waiting: row.state == "finalized" && !row.invoice }
+            } else {
+                OpRef::None
+            });
             waits.extend(wait_of(row));
+            // signed, and the network check says it could not send: the owner is asked
+            if unsent && row.state == "finalized" && !row.invoice {
+                waits.push(Wait::Unsent(row.op.clone()));
+            }
         }
         f.locked_amounts = view.sends.iter().filter(|row| row.locked).map(|row| (row.op.clone(), row.amount)).collect();
-        for (value, abandoned, status, slate_id) in &view.incoming {
-            // the reply made in this run of the window is still at hand
-            refs.push(if !*abandoned && f.replies.contains_key(slate_id) { OpRef::Reply(slate_id.clone()) } else { OpRef::None });
-            let (label, tone) = if *abandoned {
-                (tr("abandoned", "брошен"), 0)
-            } else {
-                match status.as_str() {
-                    "confirmed" => (tr("confirmed", "подтверждён"), 1),
-                    "preliminary" => (tr("preliminary", "предварительно"), 2),
-                    _ => (tr("not confirmed", "не подтверждён"), 2),
-                }
-            };
+        for row in &view.incoming {
+            // the reply made to it is kept by the wallet and can be shown again
+            refs.push(if !row.abandoned && row.reply_kept { OpRef::Reply(row.slate_id.clone()) } else { OpRef::None });
+            let (label, tone) = incoming_words(row, view.history_tip, view.k_conf, view.sync.state.as_deref() != Some("at_tip"));
             ops.push(Op {
                 who: tr("Incoming", "Входящий").into(),
                 sub: label.into(),
-                amount: format!("+{}", amount(*value)).into(),
+                amount: format!("+{}", amount(row.value)).into(),
                 tone,
                 show: false,
             });
@@ -971,6 +1117,10 @@ fn apply(app: &App, view: View) {
                 Wait::Locked(op) => {
                     let value = view.sends.iter().find(|s| &s.op == op).map_or(0, |s| s.amount);
                     Waiting { who: tr("Payment", "Платёж").into(), what: fill(tr("of {} GRIN was prepared before the wallet was restored from an older copy — it cannot be signed, the money is reserved", "{} GRIN подготовлен до восстановления кошелька из старой копии — подписать его нельзя, деньги в резерве"), &[&amount(value)]).into(), action: tr("What to do", "Что делать").into(), second: "".into() }
+                }
+                Wait::Unsent(op) => {
+                    let value = view.sends.iter().find(|s| &s.op == op).map_or(0, |s| s.amount);
+                    Waiting { who: tr("Payment", "Платёж").into(), what: fill(tr("of {} GRIN is signed, but Tor did not come up and it has not gone to the network — choose what to do", "{} GRIN подписан, но Tor не поднялся и в сеть он не ушёл — выберите, что делать"), &[&amount(value)]).into(), action: tr("What to do", "Что делать").into(), second: "".into() }
                 }
                 // through Tor nobody vouches for the sender, and their wallet
                 // waits for the answer in an open connection: said in the row
@@ -1085,9 +1235,9 @@ fn text_notice(shown: &fly_safe_display::Shown) -> &'static str {
 fn chat_line(out: bool, at: u64, words: &str, state: &str, now: u64) -> ChatLine {
     let (state, warn) = match (out, state) {
         (false, _) => ("", false),
-        (true, "relay_accepted") => (tr("a relay accepted it", "релей принял"), false),
+        (true, "relay_accepted") => (tr("accepted for delivery", "принято к доставке"), false),
         (true, "expired") => (tr("not sent: the delivery window closed", "не отправлено: окно доставки закрылось"), true),
-        (true, _) => (tr("waiting for a relay", "ждёт релея"), false),
+        (true, _) => (tr("waiting to be delivered", "ждёт доставки"), false),
     };
     let shown = foreign_text(words, MESSAGE_CHARS);
     let notice = text_notice(&shown);
@@ -1354,6 +1504,9 @@ fn show_out(app: &App, title: &str, note: &str, out: &str, wants_reply: bool) {
     app.set_out_text(out.into());
     app.set_out_wants_reply(wants_reply);
     app.set_out_can_tor(false);
+    app.set_out_can_resend(false);
+    app.set_out_can_direct(false);
+    app.set_out_resend_note(SharedString::new());
     app.set_out_waiting(false);
     with(|f| f.tor_wait = None);
     app.set_sheet_busy(false);
@@ -1702,6 +1855,7 @@ fn wire_sheets(app: &App) {
         app.set_wait_note(SharedString::new());
         match (wait, yes) {
             (Wait::Sign(op), _) => open_sign(&app, SendFlow { op, held: true, s2: None, slate_id: None }),
+            (Wait::Unsent(op), _) => show_signed(&app, op, true),
             (Wait::Reply(op), true) => reopen_by_hand(&app, op),
             (Wait::Reply(op), false) | (Wait::Sent(op), _) => cancel_op(&app, op, false, true),
             (Wait::Locked(op), _) => {
@@ -1790,6 +1944,35 @@ fn reopen_by_hand(app: &App, op: String) {
             app.set_out_can_tor(can_tor);
         },
     );
+}
+
+/// What to do with a payment that is signed and has not got into a block
+/// (O43): said next to its text.
+#[allow(non_snake_case)]
+fn WAITING_NOTE() -> &'static str {
+    tr(
+        "Signed, not in a block yet. The wallet keeps sending it through Tor by itself. If Tor does not come up, choose below: wait for Tor and try again; send this one payment directly — the node then sees the address of your device; or switch Tor off for everything, so that you are not asked again. This text can be passed to the recipient as proof that you signed. A signed payment cannot be cancelled.",
+        "Подписан, но в блок ещё не попал. Кошелёк сам отправляет его через Tor снова. Если Tor не поднимается, выберите ниже: ждать Tor и попробовать ещё раз; отправить этот один платёж напрямую — тогда нода увидит адрес вашего устройства; или выключить Tor для всех операций, чтобы не выбирать каждый раз. Этот текст можно передать получателю как подтверждение вашей подписи. Отменить подписанный платёж нельзя.",
+    )
+}
+
+/// The final text of a payment this wallet signed (K191), and - while it
+/// waits for a block - what can be done about it.
+fn show_signed(app: &App, op: String, waiting: bool) {
+    let Some(client) = client() else { return };
+    let asked = op.clone();
+    spawn(app, move || client.call("paycore.send.result", json!({ "op": asked }), QUICK), move |app, out| {
+        let Some(slate) = out.ok().and_then(|v| text(&v, "slate")).filter(|t| !t.is_empty()) else {
+            return app.set_wait_note(tr("The wallet did not give the payment's text", "Кошелёк не выдал текст платежа").into());
+        };
+        let note = if waiting { WAITING_NOTE() } else { tr("The final text of this payment, with your signature.", "Итоговый текст этого платежа, с вашей подписью.") };
+        show_out(app, tr("Signed payment", "Подписанный платёж"), note, &slate, false);
+        with(|f| f.resend = waiting.then_some(op));
+        app.set_out_can_resend(waiting);
+        // the direct way is a choice only while Tor is in use
+        app.set_out_can_direct(waiting && !crate::tor_off());
+        app.set_out_resend_note(SharedString::new());
+    });
 }
 
 // ----- the conversation, the key for messages, auto-receive, the password
@@ -1938,13 +2121,60 @@ fn wire_more(app: &App) {
                 app.set_page(1);
                 reopen_by_hand(&app, op);
             }
-            OpRef::Reply(slate_id) => {
-                let Some(reply) = with(|f| f.replies.get(&slate_id).cloned()) else { return };
+            OpRef::Signed { op, waiting } => {
                 app.set_page(1);
+                show_signed(&app, op, waiting);
+            }
+            OpRef::Reply(slate_id) => {
+                app.set_page(1);
+                let Some(reply) = with(|f| f.replies.get(&slate_id).cloned()) else {
+                    // not answered in this run of the window: the wallet keeps it
+                    let Some(client) = client() else { return };
+                    spawn(&app, move || client.call("paycore.receive.reply", json!({ "slate_id": slate_id }), QUICK), |app, out| match out.ok().and_then(|v| text(&v, "slate")) {
+                        Some(reply) => show_out(app, tr("Reply to the sender", "Ответ отправителю"), tr("The reply you made to this payment, if the sender lost it.", "Ваш ответ на этот платёж — если отправитель его потерял."), &reply, false),
+                        None => app.set_wait_note(tr("The wallet did not give the payment's text", "Кошелёк не выдал текст платежа").into()),
+                    });
+                    return;
+                };
                 show_out(&app, tr("Reply to the sender", "Ответ отправителю"), tr("The reply you made to this payment, if the sender lost it.", "Ваш ответ на этот платёж, если отправитель его потерял."), &reply, false);
             }
             OpRef::None => {}
         }
+    });
+    let weak = app.as_weak();
+    app.on_out_tor_off(move || {
+        let Some(app) = weak.upgrade() else { return };
+        // the same switch as on the main screen: the wallet locks, starts
+        // without Tor, and the payment goes directly once it is open again
+        app.set_sheet(0);
+        app.invoke_switch_tor(false);
+    });
+    let weak = app.as_weak();
+    app.on_out_resend(move |direct| {
+        let Some(app) = weak.upgrade() else { return };
+        let (Some(op), Some(client)) = (with(|f| f.resend.clone()), client()) else { return };
+        app.set_out_resend_note(tr("Sending…", "Отправляю…").into());
+        // the same stored transaction; nothing is signed again. `direct`:
+        // the owner's agreement to the direct way for this one payment (K192)
+        spawn(&app, move || client.call("paycore.send.broadcast", resend_params(&op, direct), SIGN), move |app, out| {
+            let said = match out.as_ref().ok().and_then(|v| v.get("outcome")).and_then(Value::as_str) {
+                Some("accepted") => tr("The network took it. It will show as in a block once it is.", "Сеть приняла. Когда попадёт в блок, это будет видно в операциях."),
+                Some("rejected") => tr("The network refused it. Look at the payment's state in the payments.", "Сеть отказала. Посмотрите состояние платежа в операциях."),
+                Some(_) if direct => tr("Handed over with your agreement to send it directly. If Tor does not send it, it goes straight to the network.", "Передан с вашим согласием на прямую отправку. Если Tor его не отправит, он уйдёт в сеть напрямую."),
+                Some(_) => tr("Handed over; the answer is not known yet. The wallet keeps trying.", "Передан; ответ пока неизвестен. Кошелёк продолжает попытки."),
+                None => tr("Could not be sent now. The wallet keeps trying.", "Сейчас отправить не удалось. Кошелёк продолжает попытки."),
+            };
+            app.set_out_resend_note(said.into());
+        });
+    });
+    let weak = app.as_weak();
+    app.on_set_confirmations(move |count| {
+        let Some(app) = weak.upgrade() else { return };
+        let count = u64::try_from(count).unwrap_or(1).clamp(1, 1000);
+        crate::set_confirmations(count);
+        app.set_confirmations(i32::try_from(count).unwrap_or(1));
+        app.global::<crate::ui::Settings>().invoke_save();
+        refresh(&app);
     });
     let weak = app.as_weak();
     app.on_chat_pay(move || {
@@ -2009,6 +2239,48 @@ fn wire_more(app: &App) {
                 app.set_sheet_busy(false);
                 match out {
                     Ok(_) => app.set_security_note(tr("The password is changed.", "Пароль изменён.").into()),
+                    Err(e) => app.set_sheet_error(say(&e).into()),
+                }
+            },
+        );
+    });
+    // Deleting the wallet: the host asks for the password and two of the
+    // 24 words by number; the window only says which two and passes on
+    // what was typed. The numbers change with every try.
+    delete_places(app);
+    let weak = app.as_weak();
+    app.on_delete_wallet(move |password, first, second| {
+        let Some(app) = weak.upgrade() else { return };
+        let mut password = password.to_string();
+        let (first, second) = (first.trim().to_lowercase(), second.trim().to_lowercase());
+        let one_word = |w: &str| !w.is_empty() && w.chars().all(|c| c.is_ascii_lowercase());
+        if !one_word(&first) || !one_word(&second) {
+            password.zeroize();
+            app.set_sheet_error(tr("Type one word in each of the two fields", "Введите по одному слову в каждое из двух полей").into());
+            return;
+        }
+        let Some(client) = client() else { return };
+        let mut words = format!("{} {first} {} {second}", app.get_delete_place_a(), app.get_delete_place_b());
+        app.set_sheet_busy(true);
+        app.set_sheet_error(SharedString::new());
+        app.set_security_note(SharedString::new());
+        spawn(
+            &app,
+            move || {
+                let done = client.call_secrets("host.profile.delete", json!({}), &[("password", &password), ("words", &words)], SLOW);
+                password.zeroize();
+                words.zeroize();
+                done
+            },
+            |app, out| {
+                app.set_sheet_busy(false);
+                delete_places(app);
+                match out {
+                    Ok(_) => {
+                        // the wallet is gone: back to the first screen, as for a computer with no wallet
+                        app.invoke_leave();
+                        app.set_has_profile(false);
+                    }
                     Err(e) => app.set_sheet_error(say(&e).into()),
                 }
             },
@@ -2118,6 +2390,23 @@ fn sync_own_at(profile: &Path) -> std::io::Result<()> {
     Ok(())
 }
 
+/// Two different places among the 24 words, new each time: which words a
+/// person has to type to delete the wallet. Not a secret, only not always
+/// the same two, so they are taken from the clock.
+fn delete_places(app: &App) {
+    let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.subsec_nanos());
+    let (a, b) = two_places(nanos);
+    app.set_delete_place_a(a);
+    app.set_delete_place_b(b);
+}
+
+/// Two different numbers from 1 to 24 out of one number.
+fn two_places(from: u32) -> (i32, i32) {
+    let first = from % 24;
+    let second = (first.saturating_add(1).saturating_add((from / 24) % 23)) % 24;
+    (i32::try_from(first.saturating_add(1)).unwrap_or(1), i32::try_from(second.saturating_add(1)).unwrap_or(2))
+}
+
 /// The notes under «Chain starting point» and «Own nodes».
 fn own_notes(app: &App) {
     let Some(dir) = own_dir() else { return };
@@ -2144,17 +2433,39 @@ fn check_nodes(text: &str) -> Result<String, &'static str> {
     Ok(lines.iter().map(|l| format!("{l}\n")).collect())
 }
 
-/// The point the chain program wrote (`fly-chain point --kind own`): a JSON
-/// object; the chain process checks it when it starts.
+/// Longest starting point taken: the longest the chain program reads.
+const MAX_POINT: usize = 64 * 1024;
+
+/// A starting point the chain program made: a JSON object; the chain
+/// program checks it when it starts.
 fn check_point(text: &str) -> Result<String, &'static str> {
     let t = text.trim();
-    if t.len() > 8192 {
+    if t.len() >= MAX_POINT {
         return Err(tr("The point is too long", "Точка слишком длинная"));
     }
     match serde_json::from_str::<Value>(t) {
         Ok(v) if v.is_object() => Ok(format!("{t}\n")),
-        _ => Err(tr("Paste the whole own-point.json made by fly-chain point --kind own", "Вставьте целиком own-point.json, который сделал fly-chain point --kind own")),
+        _ => Err(tr("This is not a starting point: paste it whole, from { to }", "Это не стартовая точка: вставьте её целиком, от { до }")),
     }
+}
+
+/// Keep the starting point the wallet's chain program made (O38): next to
+/// the profile, where a pasted one goes, in place of the one before. The
+/// block it stands at comes back, for the note.
+fn keep_point(dir: &Path, made: &str) -> Result<u64, &'static str> {
+    let unfit = tr("The point made could not be read. Nothing was changed.", "Сделанную точку не удалось прочитать. Ничего не изменено.");
+    let point = check_point(made).map_err(|_| unfit)?;
+    let height = serde_json::from_str::<Value>(&point).ok().and_then(|v| v.get("height").and_then(Value::as_u64)).ok_or(unfit)?;
+    let unwritten = tr("The point could not be saved. Nothing was changed.", "Точку не удалось сохранить. Ничего не изменено.");
+    std::fs::create_dir_all(dir).map_err(|_| unwritten)?;
+    // whole or not at all: the file read at the next unlock is never half a point
+    let fresh = dir.join(format!("{OWN_POINT}.new"));
+    std::fs::write(&fresh, &point).map_err(|_| unwritten)?;
+    std::fs::rename(&fresh, dir.join(OWN_POINT)).map_err(|_| {
+        let _ = std::fs::remove_file(&fresh);
+        unwritten
+    })?;
+    Ok(height)
 }
 
 /// Android: the service starts the wallet process; it reads the choice from
@@ -2165,7 +2476,7 @@ fn respawn_host(app: &App, _direct: bool, _notes: Arc<Mutex<VecDeque<Value>>>) {
     if let Some(client) = client() {
         spawn(app, move || client.call("service.restart", json!({}), SLOW), |app, out| {
             if let Err(e) = out {
-                app.set_login_note(format!("{} {e}", tr("The wallet process did not start:", "Процесс кошелька не запустился:")).into());
+                app.set_login_note(format!("{} {e}", tr("The wallet did not start:", "Кошелёк не запустился:")).into());
             }
         });
     }
@@ -2175,11 +2486,9 @@ fn respawn_host(app: &App, _direct: bool, _notes: Arc<Mutex<VecDeque<Value>>>) {
 /// Only while the wallet is locked: the login screen.
 #[cfg(not(target_os = "android"))]
 fn respawn_host(app: &App, direct: bool, notes: Arc<Mutex<VecDeque<Value>>>) {
-    let (program, mut args) = with(|f| (f.program.clone(), f.base_args.clone()));
-    // the flag belongs to the chain process: without one the host refuses it
-    if direct && args.iter().any(|a| a == "--chain") {
-        args.push("--chain-direct-post".into());
-    }
+    let (program, base) = with(|f| (f.program.clone(), f.base_args.clone()));
+    // the flags belong to the chain process: without one the host refuses them
+    let args = crate::chosen_args(&base, direct, crate::tor_off(), crate::nostr_off());
     end_session();
     with(|f| f.client = None);
     HOST.with(|h| drop(h.borrow_mut().take()));
@@ -2189,11 +2498,55 @@ fn respawn_host(app: &App, direct: bool, notes: Arc<Mutex<VecDeque<Value>>>) {
             HOST.with(|h| *h.borrow_mut() = Some(host));
             with(|f| f.client = Some(client));
         }
-        Err(err) => app.set_login_note(format!("{} {err}", tr("The wallet process did not start:", "Процесс кошелька не запустился:")).into()),
+        Err(err) => app.set_login_note(format!("{} {err}", tr("The wallet did not start:", "Кошелёк не запустился:")).into()),
     }
 }
 
+/// A part switched on or off (O42). On the login screen the wallet process
+/// is started anew at once; in an open wallet the wallet is locked first,
+/// and its process is started anew when the lock is through - so the part
+/// is gone, or back, before the password is asked for again.
+fn switch_part(app: &App, notes: &Arc<Mutex<VecDeque<Value>>>) {
+    app.global::<crate::ui::Settings>().invoke_save();
+    app.set_tor_on(!crate::tor_off());
+    app.set_nostr_on(!crate::nostr_off());
+    if app.get_busy() {
+        return;
+    }
+    if app.get_page() == 0 {
+        respawn_host(app, crate::direct(), notes.clone());
+    } else {
+        with(|f| f.restart_after_lock = true);
+        app.invoke_leave();
+    }
+}
+
+/// After a lock: the start that a switched part was waiting for, if any.
+fn restart_if_switched(app: &App) -> bool {
+    let Some(notes) = with(|f| if std::mem::take(&mut f.restart_after_lock) { f.notes.clone() } else { None }) else {
+        return false;
+    };
+    respawn_host(app, crate::direct(), notes);
+    with(|f| f.lock_unconfirmed = false);
+    app.set_login_error(SharedString::new());
+    true
+}
+
 fn wire_options(app: &App, notes: Arc<Mutex<VecDeque<Value>>>) {
+    let weak = app.as_weak();
+    let for_tor = notes.clone();
+    app.on_switch_tor(move |on| {
+        let Some(app) = weak.upgrade() else { return };
+        crate::set_tor_off(!on);
+        switch_part(&app, &for_tor);
+    });
+    let weak = app.as_weak();
+    let for_nostr = notes.clone();
+    app.on_switch_nostr(move |on| {
+        let Some(app) = weak.upgrade() else { return };
+        crate::set_nostr_off(!on);
+        switch_part(&app, &for_nostr);
+    });
     let weak = app.as_weak();
     app.on_direct_changed(move |on| {
         let Some(app) = weak.upgrade() else { return };
@@ -2202,6 +2555,38 @@ fn wire_options(app: &App, notes: Arc<Mutex<VecDeque<Value>>>) {
         if app.get_page() == 0 && !app.get_busy() {
             respawn_host(&app, on, notes.clone());
         }
+    });
+    let weak = app.as_weak();
+    app.on_make_point(move || {
+        let Some(app) = weak.upgrade() else { return };
+        if app.get_point_busy() {
+            return;
+        }
+        let Some(client) = client() else { return };
+        app.set_point_busy(true);
+        app.set_point_note(SharedString::new());
+        spawn(&app, move || client.call("paycore.chain.point", json!({}), QUICK), |app, out| {
+            app.set_point_busy(false);
+            let kept = match out {
+                Ok(answer) => match (own_dir(), text(&answer, "point")) {
+                    (Some(dir), Some(point)) => keep_point(&dir, &point).map_err(str::to_string),
+                    _ => Err(no_point("").to_string()),
+                },
+                Err(err) => Err(say(&err)),
+            };
+            let kept = kept.and_then(|height| match sync_own_files() {
+                Ok(()) => Ok(height),
+                Err(_) => Err(tr("The point is saved, but could not be handed to the network check. Open the wallet again.", "Точка сохранена, но передать её проверке сети не удалось. Откройте кошелёк заново.").to_string()),
+            });
+            app.set_point_good(kept.is_ok());
+            match kept {
+                Ok(height) => {
+                    own_notes(app);
+                    app.set_point_note(fill(tr("Your own starting point is made: block {}. The wallet starts from it at the next unlock.", "Своя стартовая точка сделана: блок {}. Кошелёк начнёт с неё со следующего входа."), &[&crate::sync::spaced(height)]).into());
+                }
+                Err(why) => app.set_point_note(why.into()),
+            }
+        });
     });
     let weak = app.as_weak();
     app.on_open_own(move || {
@@ -2250,7 +2635,7 @@ fn wire_options(app: &App, notes: Arc<Mutex<VecDeque<Value>>>) {
         crate::fill_common(&app);
         own_notes(&app);
         app.set_sheet_error(SharedString::new());
-        app.set_security_note(tr("Saved. The chain process reads it at the next unlock.", "Сохранено. Процесс цепи прочтёт это при следующем входе.").into());
+        app.set_security_note(tr("Saved. It takes effect at the next unlock.", "Сохранено. Начнёт действовать при следующем входе.").into());
     });
 }
 
@@ -2604,7 +2989,9 @@ impl Live {
         with(|f| {
             f.client = Some(first.clone());
             f.program = program.to_path_buf();
-            f.base_args = args.iter().filter(|a| a.as_str() != "--chain-direct-post").cloned().collect();
+            // everything switched on: what is switched off is taken out at each start
+            f.base_args = crate::chosen_args(args, false, false, false);
+            f.notes = Some(notes.clone());
             f.profile = args.iter().position(|a| a == "--profile").and_then(|i| args.get(i.saturating_add(1))).map(std::path::PathBuf::from);
             f.tor_program = tor_program_present(args);
         });
@@ -2723,12 +3110,18 @@ impl Live {
                 let unavailable = tr("Wallet lock was not confirmed. Retry before opening.", "Кошелёк не подтвердил блокировку. При входе она будет повторена.");
                 let Some(client) = client() else {
                     app.set_busy(false);
-                    app.set_login_error(unavailable.into());
+                    if !restart_if_switched(&app) {
+                        app.set_login_error(unavailable.into());
+                    }
                     return;
                 };
                 app.set_busy(true);
                 spawn(&app, move || client.call("host.lock", json!({}), SLOW), move |app, receipt| {
                     app.set_busy(false);
+                    // a process started anew holds no open wallet: that is a lock too
+                    if restart_if_switched(app) {
+                        return;
+                    }
                     if receipt.is_ok() {
                         with(|f| f.lock_unconfirmed = false);
                     } else {
@@ -2788,6 +3181,53 @@ mod password_tests {
 mod option_tests {
     use super::*;
     use std::fs;
+    /// O38: the point the wallet's chain program made is kept whole where
+    /// a pasted one goes, in place of the one before; one that is not a
+    /// point leaves the one before as it was. A real point is longer than
+    /// 8 KB and is taken.
+    #[test]
+    fn a_point_the_wallet_made_is_kept_whole_or_not_at_all() -> std::io::Result<()> {
+        let dir = std::env::temp_dir().join(format!("fly-keep-point-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        let real = format!(r#"{{"version":1,"height":4115520,"context":"{}"}}"#, "7".repeat(9300));
+        assert_eq!(keep_point(&dir, &real), Ok(4_115_520));
+        assert_eq!(fs::read_to_string(dir.join(OWN_POINT))?, format!("{real}\n"));
+        let later = r#"{"height":4116240}"#;
+        assert_eq!(keep_point(&dir, &format!("  {later}\n")), Ok(4_116_240));
+        assert_eq!(fs::read_to_string(dir.join(OWN_POINT))?, format!("{later}\n"));
+        let longest = format!(r#"{{"height":5,"context":"{}"}}"#, "7".repeat(MAX_POINT));
+        for unfit in ["", "not a point", "[1,2]", r#"{"height":"high"}"#, r#"{"hash":"ab"}"#, r#"{"height":4116240"#, longest.as_str()] {
+            assert!(keep_point(&dir, unfit).is_err(), "{}", unfit.len());
+            assert_eq!(fs::read_to_string(dir.join(OWN_POINT))?, format!("{later}\n"), "{}", unfit.len());
+        }
+        assert_eq!(fs::read_dir(&dir)?.count(), 1, "something else was left in the folder");
+        fs::remove_dir_all(&dir)
+    }
+
+    /// Each reason the chain program gives for making no point is told
+    /// apart, in the window's own words, and each says nothing changed.
+    #[test]
+    fn why_no_point_was_made_is_said_plainly() {
+        let said = [
+            "a starting point is made only when the tip is confirmed by public nodes; it is not yet",
+            "a starting point is not made while what is confirmed is provisional: nobody vouches",
+            "no new starting point can be made yet: it would be at block 20",
+            "the chain process is busy; ask again in a moment",
+            "something never heard before",
+        ]
+        .map(no_point);
+        let mut different: Vec<&str> = said.to_vec();
+        different.sort_unstable();
+        different.dedup();
+        assert_eq!(different.len(), said.len());
+        assert_eq!(no_point("the chain process did not answer"), said[3]);
+        assert_eq!(no_point("the chain process is not running now"), said[3]);
+        for line in said {
+            assert!(line.ends_with(tr("Nothing was changed.", "Ничего не изменено.")), "{line}");
+            assert!(!line.contains("provisional") && !line.contains("chain process"), "{line}");
+        }
+    }
+
     #[test]
     fn first_unlock_installs_options_and_read_failure_preserves_the_point() -> std::io::Result<()> {
         let dir = std::env::temp_dir().join(format!("fly-first-unlock-options-{}", std::process::id()));
@@ -2840,7 +3280,7 @@ mod signing_tests {
             assert_eq!(line.warn, !expected.is_empty());
         }
         assert_eq!(chat_line(true, 10, "Desk 3", "relay_accepted", 11).state.as_str(),
-                   tr("a relay accepted it", "релей принял"));
+                   tr("accepted for delivery", "принято к доставке"));
     }
 
     #[test]
@@ -3135,7 +3575,7 @@ mod snapshot_tests {
         slint::platform::set_platform(Box::new(crate::keys_tests::Plain(window)))?;
         let app = App::new()?;
         let row = |op: &str, state: &str, to: Option<&str>, invoice: bool, locked: bool| SendRow {
-            op: op.into(), state: state.into(), amount: 1_000_000_000, fee: 23_000_000, held: false, invoice, locked, to: to.map(str::to_string),
+            op: op.into(), state: state.into(), amount: 1_000_000_000, fee: 23_000_000, held: false, invoice, locked, to: to.map(str::to_string), kernel_height: None, signed: false,
         };
         apply(&app, View {
             sends: vec![
@@ -3145,7 +3585,7 @@ mod snapshot_tests {
                 row("d", "prepared", None, true, false),
                 row("e", "prepared", None, false, true),
             ],
-            incoming: vec![(5, false, "confirmed".into(), "f".into())],
+            incoming: vec![IncomingRow { value: 5, status: "confirmed".into(), slate_id: "f".into(), ..IncomingRow::default() }],
             ..View::default()
         });
         // the newest first: the incoming payment, then e, d, c, b, a
@@ -3253,6 +3693,8 @@ mod snapshot_tests {
             invoice: false,
             locked,
             to: to.map(str::to_string),
+            kernel_height: None,
+            signed: false,
         };
         let kind = |row: &SendRow| match wait_of(row) {
             None => "none",
@@ -3261,6 +3703,7 @@ mod snapshot_tests {
             Some(Wait::Sent(_)) => "sent",
             Some(Wait::Locked(_)) => "locked",
             Some(Wait::Incoming(_)) => "incoming",
+            Some(Wait::Unsent(_)) => "unsent",
         };
         assert_eq!(kind(&row("prepared", false, false, None)), "reply");
         assert_eq!(kind(&row("prepared", false, false, Some("bb"))), "sent");
@@ -3312,5 +3755,78 @@ mod snapshot_tests {
         let seen = view.balance.zip(view.chain).map(|(b, c)| (b.0, c.0));
         assert!(matches!(seen, Some((7, ref s)) if s == "behind")
              || matches!(seen, Some((0, ref s)) if s == "at_tip"), "{seen:?}");
+    }
+
+    /// The two words asked for are always two different ones among the 24.
+    #[test]
+    fn the_two_words_asked_for_are_different_and_among_the_24() {
+        let mut seen = std::collections::BTreeSet::new();
+        for from in (0..5000u32).chain([u32::MAX, u32::MAX - 1, 999_999_999]) {
+            let (a, b) = super::two_places(from);
+            assert!((1..=24).contains(&a) && (1..=24).contains(&b) && a != b, "{from}: {a} {b}");
+            seen.insert((a, b));
+        }
+        // not always the same two
+        assert!(seen.len() > 400, "{}", seen.len());
+    }
+}
+
+#[cfg(test)]
+mod part_tests {
+    /// O42, K189: what is switched off is not started. Nostr off takes the
+    /// message program out; Tor off takes out the message program and the
+    /// program for the address and tells the chain program to bring no Tor
+    /// up; the consent to the direct way is passed as it stands; nothing is
+    /// said twice, and nothing about the chain without a chain program.
+    #[test]
+    fn what_is_switched_off_is_not_started() {
+        let v = |words: &[&str]| -> Vec<String> { words.iter().map(|w| (*w).to_string()).collect() };
+        let all = v(&["--profile", "p", "--chain", "c", "--onion", "o", "--transport", "m", "--relay", "wss://r"]);
+        assert_eq!(crate::chosen_args(&all, false, false, false), all);
+        assert_eq!(crate::chosen_args(&all, true, false, false), v(&["--profile", "p", "--chain", "c", "--onion", "o", "--transport", "m", "--relay", "wss://r", "--chain-direct-post"]));
+        assert_eq!(crate::chosen_args(&all, false, false, true), v(&["--profile", "p", "--chain", "c", "--onion", "o"]));
+        assert_eq!(crate::chosen_args(&all, false, true, false), v(&["--profile", "p", "--chain", "c", "--chain-no-tor"]));
+        assert_eq!(crate::chosen_args(&all, true, true, true), v(&["--profile", "p", "--chain", "c", "--chain-no-tor", "--chain-direct-post"]));
+        // from arguments that already carry the flags: once, and only what is chosen now
+        let flagged = v(&["--profile", "p", "--chain", "c", "--chain-no-tor", "--chain-direct-post", "--onion", "o"]);
+        assert_eq!(crate::chosen_args(&flagged, false, false, false), v(&["--profile", "p", "--chain", "c", "--onion", "o"]));
+        assert_eq!(crate::chosen_args(&flagged, true, true, false), v(&["--profile", "p", "--chain", "c", "--chain-no-tor", "--chain-direct-post"]));
+        // no chain program: nothing is said about it
+        let bare = v(&["--profile", "p", "--transport", "m", "--relay", "wss://r"]);
+        assert_eq!(crate::chosen_args(&bare, true, true, false), v(&["--profile", "p"]));
+        // a name at the very end, without its value, is dropped alone
+        assert_eq!(crate::chosen_args(&v(&["--profile", "p", "--onion"]), false, true, false), v(&["--profile", "p"]));
+    }
+}
+
+#[cfg(test)]
+mod payment_line_tests {
+    use super::*;
+
+    /// K190: the block a payment is in counts as its first confirmation;
+    /// an incoming payment says how many it has of how many make it
+    /// "received", and nothing is counted without both blocks.
+    #[test]
+    fn confirmations_are_counted_and_said() {
+        assert_eq!(confirmations(Some(100), Some(100)), Some(1));
+        assert_eq!(confirmations(Some(100), Some(109)), Some(10));
+        assert_eq!(confirmations(Some(101), Some(100)), None, "a block above the tip");
+        assert_eq!(confirmations(None, Some(100)), None);
+        assert_eq!(confirmations(Some(100), None), None);
+        let row = |status: &str, kernel: Option<u64>| IncomingRow { value: 5, status: status.into(), slate_id: "a".into(), kernel_height: kernel, ..IncomingRow::default() };
+        assert_eq!(incoming_words(&row("preliminary", Some(100)), Some(102), 10, false), ("in a block · confirmations: 3 of 10".into(), 2));
+        assert_eq!(incoming_words(&row("confirmed", Some(100)), Some(111), 10, false), ("received · confirmations: 12".into(), 1));
+        assert_eq!(incoming_words(&row("confirmed", None), Some(111), 10, false), ("received".into(), 1));
+        assert_eq!(incoming_words(&row("preliminary", None), Some(111), 10, false), ("preliminary".into(), 2));
+        assert_eq!(incoming_words(&row("not_confirmed", Some(100)), Some(111), 10, false), ("not in a block yet".into(), 2));
+        // O44: catching up is not "unconfirmed" for a payment that is in a block
+        assert_eq!(incoming_words(&row("preliminary", Some(100)), Some(102), 10, true), ("in a block · the wallet is catching up with the tip".into(), 0));
+        assert_eq!(incoming_words(&row("not_confirmed", None), Some(102), 10, true), ("not in a block yet".into(), 2));
+        assert_eq!(incoming_words(&row("confirmed", Some(100)), Some(111), 10, true).1, 1);
+        // K192: the agreement to the direct way is said only when given
+        assert_eq!(resend_params("ab", false), json!({ "op": "ab" }));
+        assert_eq!(resend_params("ab", true), json!({ "op": "ab", "direct": true }));
+        let gone = IncomingRow { abandoned: true, ..row("confirmed", Some(100)) };
+        assert_eq!(incoming_words(&gone, Some(111), 10, false), ("abandoned".into(), 0));
     }
 }

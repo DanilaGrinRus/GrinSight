@@ -49,6 +49,7 @@ fn config(dir: &Path, peer: Option<&str>) -> Config {
         peers: peer.map(str::to_string).into_iter().collect(),
         start_timeout_secs: 10,
         direct_post: false,
+        tor_off: false,
         tor_bridges: String::new(),
     }
 }

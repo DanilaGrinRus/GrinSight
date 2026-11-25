@@ -50,14 +50,17 @@ Seed, ключи, контексты подписи, ключ журнала, к
 | `paycore.info` | — | `api_version`, пределы, `tip_height`, `auto_receive_since` |
 | `paycore.balance` | — | `spendable`, `reserved`, `immature` |
 | `paycore.address` | — | `address` |
-| `paycore.history` | — | `sends[]`, `incoming[]`. В каждой записи `sends[]` есть `invoice`: `true` — это оплата счёта, её транзакцию завершает и отправляет в сеть тот, кто выставил счёт (K139); `locked`: `true` — операция подготовлена и заблокирована после обнаруженного отката (K142); `deliver_to` — ключ контакта, которому ушёл S1, или `null`, если платёж передаётся вручную (K143) |
+| `paycore.history` | — | `sends[]`, `incoming[]` |
 | `paycore.slate.read` | `slate` | `stage` (`S1`…`I3`, `unknown`), `slate_id`, `amount`, `fee`, `ttl_cutoff_height`, `sender_address`, `receiver_address`: что slate говорит о себе — для окна, где человек решает (K119). Ничего не подписывает и не записывает; сумма и комиссия — слова другой стороны. Ноль не называется: `null` (ответ получателя их не повторяет) |
 | `paycore.send.prepare` | `amount`, `ttl_cutoff_height?`, `proof_to?`, `late?`, `replaces?`, `not_a_repeat?`, `deliver_to?` | `op`, `slate` (S1); с `deliver_to` ещё `delivery`. `deliver_to` (ключ контакта, hex) не сочетается с `replaces` и `not_a_repeat`. Подготовка ничего не публикует |
 | `paycore.send.finalize` | `op`, `slate` (S2) | `tx`, `slate` (S3), `excess`, `payment_proof` |
-| `paycore.send.cancel` | `op`, необязательно `release_locked` | —. Обычная отмена подготовленной операции: резерв снят, контекст закрыт, состояние `cancelled`. Операцию, заблокированную после обнаруженного отката, обычная отмена не берёт (`refused`): она могла быть подписана в утерянной части журнала. С `release_locked: true` — и только для такой операции — резерв снимается по явному слову пользователя, состояние `released`, не `cancelled` (K142) |
+| `paycore.send.cancel` | `op` | — |
 | `paycore.send.status` | `op` | `state`, `reserve`, `conflict`, `broadcasts`, `delivery` (или `null`), `reply_held` |
 | `paycore.send.finalize_held` | `op` | как у `finalize`: подпись с ответом, который пришёл сам; вызывается после подтверждения пользователем |
 | `paycore.chain.sync` | — | идёт за слоем цепи от позиции кошелька, не больше 64 шагов за вызов. `chain[]` — пусто, если ничего не изменилось, иначе одна запись `{applied, rolled_back, reanchored, tip_height}`; `tip_height`; `more` — шаги ещё есть; `unknown` — слой не смог ответить (это не «ничего нового»). Когда слой ответил «ничего нового» и идёт поиск давних выходов, в том же вызове читаются куски — не больше 64 и не дольше секунды; тогда в `chain[]` добавляется запись `{search: …}` с тем же, что отвечает `paycore.search.status`, а `more` говорит, что куски ещё есть |
+| `paycore.settings.confirmations` | `count` (1–1000) | сколько подтверждений делают входящий платёж «полученным» (K190): `{k_conf}`; иное число — `invalid_params`. Только слово о статусе. `paycore.history` отдаёт действующее `k_conf`, `tip_height`, у платежей — `kernel_height`, `signed`, `reply_kept` |
+| `paycore.receive.reply` | `slate_id` | ответ, который кошелёк дал на входящий платёж, снова — как хранится (K191): `{slate}`; незнакомый — `not_found`. Ничего не меняет |
+| `paycore.chain.point` | — | запись стартовой точки, которую слой цепи сделал из проверенной им цепи (спецификация, 7.33, K188): `{point}` — текст записи как пришёл. Нет точки — ошибка `no_point` с причиной слоя цепи. В кошельке ничего не меняется |
 | `paycore.search.start` | — | начать поиск давних выходов с первого куска (спецификация, 7.19); ответ как у `status` |
 | `paycore.search.status` | — | `state`: `none` — поиска не было, `reading`, `done`; для двух последних `next` (номер следующего куска или `null`), `pieces`, `found` — сколько выходов поиск добавил, `gone` — сколько выходов кошелька он нашёл потраченными |
 | `paycore.wallet.chain_status` | — | Состояние применённой кошельком вершины. `at_tip` требует совпадения высоты и хеша с выбором сети в одном снимке. |
@@ -69,21 +72,20 @@ Seed, ключи, контексты подписи, ключ журнала, к
 | `paycore.delivery.receive` | — | `events[]`: до 16 входящих сообщений за вызов, см. ниже |
 | `paycore.delivery.reply` | `id`, `slate` (S2) | `sent`: ответ на входящий платёж, одобренный вручную |
 | `paycore.delivery.ack` | `id` | — : входящее сообщение больше не нужно |
-| `paycore.send.review` | `op` | Сумма, комиссия и ключ получателя из своей подготовленной операции. При отсутствии адреса в S1 возвращается `null`. Ещё `slate_id` и `slate` — сохранённый текст S1 как он был выдан: чтобы платёж, переданный вручную, можно было продолжить или передать заново из любого окна (K143). |
+| `paycore.send.review` | `op` | Сумма, комиссия и ключ получателя из своей подготовленной операции. При отсутствии адреса в S1 возвращается `null`. |
 | `paycore.send.result` | `op` | как у `finalize`, без подписи |
-| `paycore.send.broadcast` | `op` | `outcome`: `accepted` / `rejected` / `unknown` |
+| `paycore.send.broadcast` | `op`; необязательно `direct` (`true`/`false`) | `outcome`: `accepted` / `rejected` / `unknown`. С `direct: true` те же сохранённые байты передаются слою цепи с согласием владельца: если Tor этот платёж не отправит, он уйдёт напрямую — только он (K192). Ничего не подписывается заново |
 | `paycore.receive.draft` | `slate` (S1) | `slate` (S2) |
 | `paycore.receive.auto` | `slate`, `min_amount?` | `slate` (S2) |
 | `paycore.receive.set_auto` | `on` | `auto_receive_since` |
 | `paycore.receive.status` | `slate_id` | `status`, `status_rule`, `known`, `spent`, `reserve`, `conflict` |
 | `paycore.receive.abandon` | `slate_id` | — |
-| `paycore.receive.expire` | — | `closed`. Закрывает черновики приёма старше 7 суток подтверждённого времени. Рабочий поток профиля вызывает это сам в каждом круге (K144) |
+| `paycore.receive.expire` | — | `closed` |
 | `paycore.invoice.issue` | `amount` | `slate_id`, `slate` (I1) |
 | `paycore.invoice.finalize` | `slate_id`, `slate` (I2) | как у `send.finalize` |
-| `paycore.invoice.review` | `slate` (I1) | Что возьмёт оплата по счёту кошелька: `slate_id`, `amount`, `fee` (комиссия входов, которые были бы потрачены сейчас), `ttl_cutoff_height` (0 — без срока), `paid_op` (`null` или операция, которой этот счёт уже оплачен, — тогда числа прежние). Только читает: ничего не резервирует, не подписывает и не записывает; отказывает во всём, в чём до подписи отказала бы оплата (K138) |
-| `paycore.invoice.pay` | `slate` (I1), `max_amount`, необязательно `max_fee` | `op`, `slate` (I2). `max_amount` и `max_fee` — то, с чем согласился пользователь: если счёт просит больше или комиссия выбранных в момент оплаты входов выше `max_fee`, ничего не подписывается (`refused`). Без `max_fee` держится только сумма. Тот же I1 повторно — прежний I2, без второй подписи |
+| `paycore.invoice.pay` | `slate` (I1), `max_amount` | `op`, `slate` (I2) |
 
-Состояния отправки: `prepared`, `cancelled`, `released` (резерв заблокированной после отката операции снят пользователем; подпись могла существовать), `unknown`, `finalized`, `confirmed`, `contested`, `dead`.
+Состояния отправки: `prepared`, `cancelled`, `unknown`, `finalized`, `confirmed`, `contested`, `dead`.
 
 Состояния доставки (`delivery`): `queued`, `waiting_relay`, `relay_accepted`, `expired`, `queue_busy`, `queue_full`. Они описывают только судьбу конверта: `relay_accepted` не значит ни «получено», ни «оплачено», и на `state` не влияет.
 
@@ -123,11 +125,6 @@ Seed, ключи, контексты подписи, ключ журнала, к
 | `paycore.messages.summary` | — | `conversations[]`: `key`, `count`, `last_at`, `last_dir` |
 | `paycore.transport.status` | — | `identity`, `running`, `error` |
 | `paycore.transport.restart` | — | `running`, `error` |
-| `paycore.onion.status` | — | `phase` (`none`, `starting`, `up`, `listening`, `failed`), `problem`, `min_amount`, `sends[]` (`op`, `state`: `posted` или `failed`, `reason`), `asks[]` (`id`, `slate`, `slate_id`, `amount`, `claimed_sender`, `known_sender`, `left_secs`): Tor для адреса кошелька, отправки на адрес и платежи, ждущие слова пользователя (7.25) |
-| `paycore.onion.send` | `op` | `op`, `state: "posted"`: отправить подготовленный платёж, названный адресом, onion-сервису этого адреса (K151). Ничего не подписывает. Ошибки: `no_onion`, `refused` с причиной |
-| `paycore.onion.pump` | — | `onion[]` — события (`reply_held`, `reply_signed`, `tor_failed`, `needs_approval`, `payment_answered`, `ask_expired`, `dropped`, `asked_version`). Вызывается рабочим потоком в каждом круге |
-| `paycore.onion.accept` | `id` | `slate`, `slate_id`: пользователь согласился принять ждущий платёж; ответ подписывается и уходит отправителю в ждущее соединение (K154). После срока — `refused`, ничего не подписано |
-| `paycore.onion.decline` | `id` | — : пользователь отказал; отправителю уходит отказ |
 
 Правила ядра:
 
@@ -181,6 +178,7 @@ runner.stop();                            // возвращается, когд�
 | −32030 | `codec` | порт `SlateCodec` не принял текст |
 | −32031 | `no_mailbox` | у хоста нет транспорта сообщений |
 | −32032 | `no_chain` | у хоста нет слоя цепи |
+| −32033 | `no_point` | слой цепи не сделал стартовую точку; `reason` — его причина (английский текст, для сопоставления, не для показа) |
 | −32602, −32601, −32600, −32700 | стандартные JSON-RPC | параметры, метод, запрос, разбор |
 
 `unknown_outcome` интерфейс показывает отдельным состоянием, а не обычной ошибкой с кнопкой «повторить».
@@ -223,6 +221,7 @@ runner.stop();                            // возвращается, когд�
 | `two_profiles_pay_through_two_transport_processes` | топология v0.2 с подставным транспортом: у каждого профиля обработчик и свой процесс транспорта, запущенный фабрикой; платёж доходит до подписи; блокировка завершает процесс |
 | `a_profile_that_does_not_open_starts_no_worker` | ошибка открытия не оставляет потока; запросы во время блокировки получают `Stopped` |
 | `the_wallet_follows_the_chain_layer` | без слоя цепи — `no_chain`; слой, который ничего не знает, — `unknown`, позиция на месте; точка отсчёта, блоки, свой выход найден; у вершины — ни одной записи в журнал; длинная догонка — кусками по 64 шага; реорганизация откатывает и ведёт по новой ветви |
+| `a_starting_point_is_the_chain_layers_to_make` | запись слоя цепи отдаётся как пришла; отказ слоя — `no_point` с его причиной; пустая запись и запись не текстом — `no_point`; без слоя цепи — `no_chain`; баланс тот же |
 | `a_step_that_does_not_fit_is_refused` | блок не над позицией, шаг назад вверх, негодный rangeproof: шаг отклонён, позиция и баланс не изменились |
 
 Тринадцать намеренных поломок правил доставки и две — обработчика профиля — каждая роняет эти тесты. Третья поломка обработчика (не проверять флаг остановки) тестами не ловится: поведение остаётся верным, блокировка лишь дожидается запросов, уже стоявших в очереди.

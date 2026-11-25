@@ -28,6 +28,7 @@ pub mod accept;
 pub mod adapter;
 pub mod feed;
 pub mod follow;
+pub mod net;
 pub mod node;
 pub mod old;
 pub mod post;
@@ -92,6 +93,31 @@ pub struct Point {
 
 /// The starting point this program uses for `net`.
 ///
+/// The record of a starting point made from a verified header chain, at
+/// the header nodes give their state out at now: a wallet that starts
+/// from it can collect the state at once, and the header is too deep to
+/// be taken back (K188). The record has to pass the check a starting
+/// point passes when the program starts, and to be of that height; why
+/// none can be made is said in words for the user.
+pub fn point_from(chain: &fly_chain_headers::chain::HeaderChain, made: u64) -> Result<Vec<u8>, String> {
+    let tip = chain.tip().height;
+    let at = node::archive_height(tip);
+    let record = match chain.record_at(at, made) {
+        Ok(Some(record)) => record,
+        Ok(None) => {
+            return Err(format!(
+                "no new starting point can be made yet: it would be at block {at}, and it has to be at least three above the point this program started from ({}); the tip is {tip}",
+                chain.start().height()
+            ))
+        }
+        Err(_) => return Err("the header file cannot be read".to_string()),
+    };
+    match fly_chain_headers::checkpoint::check(&record, chain.net()) {
+        Ok(start) if start.height() == at => Ok(record),
+        _ => Err("the starting point made does not pass its own check".to_string()),
+    }
+}
+
 /// A point the user left in the data directory (`own-point.json`) comes
 /// first; if it is there and does not pass its check, nothing is started -
 /// the user meant to use it. Otherwise, for the two real networks, the
@@ -143,6 +169,17 @@ pub fn starting_point(net: Net, data_dir: &Path) -> Result<Point, String> {
             .map_err(|_| "the test network needs a starting point in the data directory".to_string()),
     }
 }
+/// How the user wants transactions sent.
+#[derive(Clone, Debug, Default)]
+pub struct Sending {
+    /// The user agreed that a transaction Tor fails to send goes out from
+    /// this computer's address.
+    pub direct_post: bool,
+    /// The user switched Tor off (K189).
+    pub tor_off: bool,
+    /// Tor bridges the user chose, one a line; empty for none.
+    pub tor_bridges: String,
+}
 
 /// Start the node on a thread of its own. `genesis` is the genesis hash the
 /// caller expects for `net`; a mismatch means caller and program disagree
@@ -154,8 +191,7 @@ pub fn start(
     genesis: [u8; 32],
     data_dir: PathBuf,
     peers: Vec<String>,
-    direct_post: bool,
-    tor_bridges: String,
+    sending: Sending,
     stop: Arc<AtomicBool>,
 ) -> Result<(SharedView, SyncSender<Event>, JoinHandle<()>), String> {
     let point = starting_point(net, &data_dir)?;
@@ -174,8 +210,9 @@ pub fn start(
         peers,
         record: point.record,
         point: point.kind,
-        direct_post,
-        tor_bridges,
+        direct_post: sending.direct_post,
+        tor_off: sending.tor_off,
+        tor_bridges: sending.tor_bridges,
     };
     let shared = view.clone();
     let (events, inbox) = std::sync::mpsc::sync_channel::<Event>(256);

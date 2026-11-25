@@ -10,6 +10,12 @@ pub trait Broadcaster {
     /// Post the serialized transaction. A timeout or a lost connection is
     /// `Broadcast::Unknown`, never `Rejected`.
     fn post_tx(&mut self, tx: &[u8]) -> Broadcast;
+    /// The same, with the owner's agreement that this one transaction may
+    /// go out from this computer's address if it cannot be sent privately
+    /// (K192). Without a way to say so it is posted as always.
+    fn post_tx_direct(&mut self, tx: &[u8]) -> Broadcast {
+        self.post_tx(tx)
+    }
 }
 
 /// Time the wallet may rely on (specification 7.2: confirmed time).

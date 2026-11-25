@@ -2,7 +2,7 @@
 // send, receive, sign, add a contact. Text from others reaches these only
 // after `fly-safe-display` (О1–О8); the signing window follows О10.
 import { Theme, Device, Files, Qr } from "theme.slint";
-import { Card, Btn, Choice, Chip, Heading, Muted, Logo, Ground } from "parts.slint";
+import { Card, Btn, Choice, Chip, Heading, Muted, Logo, Ground, Ask, Explained } from "parts.slint";
 
 // One line of input with a label and a hint.
 export component Field inherits VerticalLayout {
@@ -404,6 +404,7 @@ export component CreatePage inherits Rectangle {
                 spacing: 14px;
                 first := Field { label: @tr("Password"); hint: @tr("Choose a password"); secret: true; text <=> root.pw1; accepted => { second.focus-it(); } }
                 second := Field { label: @tr("Once more"); hint: @tr("Repeat the password"); secret: true; text <=> root.pw2; accepted => { root.make(root.pw1, root.pw2); } }
+                Explained { small: true; title: @tr("Which characters a password may have"); words: @tr("Any characters will do: letters of any language, digits, signs and spaces. Capital and small letters differ."); }
                 PasswordAdvice { password: root.pw1; }
             }
             if step == 0: Btn {
@@ -499,6 +500,7 @@ export component RestorePage inherits Rectangle {
             TextBox { label: @tr("24 words, separated by spaces"); hint: "word word word …"; text <=> root.words; box-height: 110px; }
             r1 := Field { label: @tr("New password"); hint: @tr("Password for ") + Device.of-this; secret: true; text <=> root.pw1; accepted => { r2.focus-it(); } }
             r2 := Field { label: @tr("Once more"); hint: @tr("Repeat the password"); secret: true; text <=> root.pw2; }
+            Explained { small: true; title: @tr("Which characters a password may have"); words: @tr("Any characters will do: letters of any language, digits, signs and spaces. Capital and small letters differ."); }
             PasswordAdvice { password: root.pw1; }
             Btn {
                 text: root.busy ? @tr("Restoring…") : @tr("Restore");
@@ -568,6 +570,14 @@ export component SlateSheet inherits Sheet {
     in property <string> error;
     callback reply(string);
     callback tor();
+    // a signed payment that waits for a block can be sent to the network again (O43)
+    in property <bool> can-resend;
+    // sending this one payment directly is a choice while Tor is in use (K192)
+    in property <bool> can-direct;
+    in property <string> resend-note;
+    callback resend(bool);
+    callback tor-off();
+    property <bool> direct-asked: false;
     property <string> back-text;
     if root.waiting: Rectangle {
         border-radius: 10px;
@@ -583,6 +593,26 @@ export component SlateSheet inherits Sheet {
     Muted { text: root.note; font-size: 14px; }
     TextBox { label: @tr("Pass on this text"); read-only: true; with-files: true; with-qr: true; text: root.out; }
     if root.can-tor: Btn { text: root.busy ? @tr("Sending…") : @tr("Send over Tor to the address"); height: 44px; clicked => { if (!root.busy) { root.tor(); } } }
+    if root.can-resend: Btn { text: root.can-direct ? @tr("Wait for Tor: send through Tor again") : @tr("Send to the network again"); height: 44px; clicked => { root.direct-asked = false; root.resend(false); } }
+    if root.can-resend && root.can-direct && !root.direct-asked: Btn { text: @tr("Send this payment directly"); height: 44px; clicked => { root.direct-asked = true; } }
+    if root.can-resend && root.can-direct && root.direct-asked: Rectangle {
+        background: Theme.bg;
+        border-radius: 10px;
+        VerticalLayout {
+            padding: 12px;
+            spacing: 10px;
+            Text { text: @tr("Send this one payment without Tor? The node that takes it sees the address of your device. Other payments still go through Tor."); color: Theme.warn; font-size: 12px; wrap: word-wrap; }
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+                Btn { text: @tr("Send it directly"); primary: true; font-size: 12px; min-height: 30px; clicked => { root.direct-asked = false; root.resend(true); } }
+                Btn { text: @tr("Cancel"); font-size: 12px; min-height: 30px; clicked => { root.direct-asked = false; } }
+            }
+        }
+    }
+    if root.can-resend && root.can-direct: Btn { text: @tr("Switch Tor off for all payments"); height: 44px; clicked => { root.tor-off(); } }
+    if root.can-resend && root.can-direct: Muted { text: @tr("Switching Tor off locks the wallet and asks for the password again; after that payments go directly until you switch Tor back on."); font-size: 12px; wrap: word-wrap; }
+    if root.can-resend && root.resend-note != "": Muted { text: root.resend-note; font-size: 12px; wrap: word-wrap; }
     if root.wants-reply: TextBox { with-files: true; label: @tr("The recipient's reply"); hint: @tr("paste the BEGINSLATEPACK… ENDSLATEPACK. text here"); text <=> root.back-text; box-height: 110px; }
     if root.error != "": Text { text: root.error; color: Theme.warn; font-size: 14px; wrap: word-wrap; }
     if root.wants-reply: Btn { text: root.busy ? @tr("Checking…") : @tr("Next"); primary: true; height: 50px; clicked => { if (!root.busy) { root.reply(root.back-text); } } }

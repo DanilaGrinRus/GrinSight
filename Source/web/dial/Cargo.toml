@@ -1,0 +1,10 @@
+[package]
+name = "fly-web-dial"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Connections of the web wallet: an ordinary TcpStream whose socket lives at the gateway, reached over one WebSocket (wasm32-unknown-emscripten only)"
+
+[dependencies]
+
+[workspace]

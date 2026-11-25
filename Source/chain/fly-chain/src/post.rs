@@ -224,9 +224,41 @@ struct Sent {
     seen: bool,
     /// The height of the block it is in.
     mined: Option<u64>,
+    /// The owner agreed that this one transaction goes out from this
+    /// computer's address if Tor fails to send it (K192).
+    direct: bool,
 }
 
 impl Sent {
+    /// From now on over this program's own connections, `peers`: the stem
+    /// to one of them, or the announcement to all once the stem's time is
+    /// up. Nothing if it is in a block, was seen in a node's pool, or there
+    /// is nobody connected.
+    fn go_direct(&mut self, now: Instant, peers: &[SocketAddr]) -> Option<Do> {
+        if peers.is_empty() || self.mined.is_some() || self.seen {
+            return None;
+        }
+        let spread = self.excesses.first().and_then(|excess| excess.last()).copied().map_or(0, usize::from);
+        let to = spread.checked_rem(peers.len()).and_then(|at| peers.get(at)).copied()?;
+        self.route = Route::Direct;
+        Some(match self.stage {
+            Stage::Stem { .. } => {
+                self.stage = Stage::Stem { at: now };
+                Do::Stem {
+                    to,
+                    tx: Box::new(self.tx.clone()),
+                }
+            }
+            Stage::Open { .. } => {
+                self.stage = Stage::Open { at: now, asked: None };
+                Do::Announce {
+                    to: peers.to_vec(),
+                    tx: Box::new(self.tx.clone()),
+                }
+            }
+        })
+    }
+
     /// A try through Tor, now.
     fn through_tor(&mut self, fluff: bool) -> Do {
         let tries = match self.route {
@@ -398,10 +430,34 @@ impl Outbox {
             },
             seen: false,
             mined: None,
+            direct: false,
         };
         let todo = sent.through_tor(false);
         self.sent.push(sent);
         (Posted::Unknown, Some(todo))
+    }
+
+    /// K192: the owner agrees that this one transaction - one this program
+    /// keeps track of - goes out from this computer's address when Tor
+    /// fails to send it. If a try through Tor has failed already and none
+    /// is under way, it goes over the program's own connections at once;
+    /// otherwise when the try under way fails. A transaction that Tor does
+    /// send is not sent directly as well. Says whether the transaction is
+    /// one this program keeps track of.
+    pub fn agree_direct(&mut self, bytes: &[u8], now: Instant, peers: &[SocketAddr]) -> (bool, Option<Do>) {
+        let Ok(tx) = read(bytes) else {
+            return (false, None);
+        };
+        let known = excesses(&tx);
+        let Some(sent) = self.sent.iter_mut().find(|sent| sent.excesses == known) else {
+            return (false, None);
+        };
+        sent.direct = true;
+        let todo = match sent.route {
+            Route::Tor { busy: false, failed: Some(_), .. } => sent.go_direct(now, peers),
+            _ => None,
+        };
+        (true, todo)
     }
 
     /// How a try through Tor for the transaction with these kernels went.
@@ -433,26 +489,11 @@ impl Outbox {
                     failed: Some(now),
                     tries,
                 };
-                if direct && !peers.is_empty() && sent.mined.is_none() && !sent.seen {
-                    sent.route = Route::Direct;
-                    let spread = sent.excesses.first().and_then(|excess| excess.last()).copied().map_or(0, usize::from);
-                    let to = spread.checked_rem(peers.len()).and_then(|at| peers.get(at)).copied()?;
-                    return Some(match sent.stage {
-                        Stage::Stem { .. } => {
-                            sent.stage = Stage::Stem { at: now };
-                            Do::Stem {
-                                to,
-                                tx: Box::new(sent.tx.clone()),
-                            }
-                        }
-                        Stage::Open { .. } => {
-                            sent.stage = Stage::Open { at: now, asked: None };
-                            Do::Announce {
-                                to: peers.to_vec(),
-                                tx: Box::new(sent.tx.clone()),
-                            }
-                        }
-                    });
+                // the direct way: agreed to for everything, or for this one (K192)
+                if direct || sent.direct {
+                    if let Some(todo) = sent.go_direct(now, peers) {
+                        return Some(todo);
+                    }
                 }
                 self.trouble = Some(why);
                 None

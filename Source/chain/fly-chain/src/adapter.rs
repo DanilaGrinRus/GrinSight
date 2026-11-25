@@ -83,10 +83,18 @@ pub enum Event {
         /// Where the answer goes.
         reply: SyncSender<Result<fly_paycore_chain_port::OldOutputs, fly_paycore_chain_port::Unknown>>,
     },
+    /// The wallet asks for a starting point made from this chain (K188).
+    Point {
+        /// Where the record, or why there is none, goes.
+        reply: SyncSender<Result<Vec<u8>, String>>,
+    },
     /// The wallet hands a finished transaction over.
     Post {
         /// The transaction, as the wallet serialized it.
         tx: Vec<u8>,
+        /// The owner agreed that this one goes out from this computer's
+        /// address if Tor fails to send it (K192).
+        direct: bool,
         /// Where the answer goes.
         reply: SyncSender<fly_paycore_chain_port::Posted>,
     },

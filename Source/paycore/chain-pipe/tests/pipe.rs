@@ -17,6 +17,7 @@ fn config() -> Config {
         peers: vec!["203.0.113.5:13414".into(), "node.example:3413".into()],
         start_timeout_secs: 2,
         direct_post: false,
+        tor_off: false,
         tor_bridges: String::new(),
     }
 }
@@ -61,6 +62,7 @@ struct Script {
     posts: Vec<Posted>,
     problems: Vec<Option<String>>,
     old: Vec<Result<OldOutputs, Unknown>>,
+    points: Vec<Result<Vec<u8>, String>>,
 }
 fn old(outputs: usize, next: Option<u64>, pieces: u64) -> OldOutputs {
     OldOutputs {
@@ -93,11 +95,19 @@ impl ChainFeed for Script {
         self.asked.lock().unwrap().push(format!("post {} {}", tx.len(), tx[0]));
         self.posts.remove(0)
     }
+    fn post_direct(&mut self, tx: &[u8]) -> Posted {
+        self.asked.lock().unwrap().push(format!("post-direct {} {}", tx.len(), tx[0]));
+        self.posts.remove(0)
+    }
     fn problem(&mut self) -> Option<String> {
         if self.problems.is_empty() {
             return None;
         }
         self.problems.remove(0)
+    }
+    fn point(&mut self) -> Result<Vec<u8>, String> {
+        self.asked.lock().unwrap().push("point".into());
+        self.points.remove(0)
     }
 }
 
@@ -148,6 +158,7 @@ fn every_answer_crosses_and_comes_back() {
                 posts: vec![Posted::Accepted, Posted::Rejected, Posted::Unknown],
                 problems: vec![Some(format!("peer said: no\n\u{1b}[31mway\u{7} \u{e9}{}", "x".repeat(500))), Some(String::new()), None],
                 old: Vec::new(),
+                points: Vec::new(),
             })
         })
     });
@@ -286,6 +297,15 @@ fn the_wire_form_is_exact_and_bounded() {
     let mut longer = bytes.clone();
     longer.push(0);
     assert_eq!(Config::decode(&longer), None);
+    // Tor switched off (K189) is the byte before it: yes or no, nothing else
+    let off = Config { tor_off: true, ..c.clone() };
+    let bytes = off.encode().unwrap();
+    assert_eq!(Config::decode(&bytes), Some(off));
+    let at = bytes.len() - 2;
+    assert_eq!((bytes[at], c.encode().unwrap()[at]), (1, 0));
+    let mut odd = bytes.clone();
+    odd[at] = 2;
+    assert_eq!(Config::decode(&odd), None, "neither on nor off");
     // Tor bridges cross as they were given; more than the message carries does not cross
     let lines = "obfs4 192.0.2.55:38114 316E643333645F6D79216558614D3931657A5F5F cert=abc iat-mode=0\n198.51.100.25:443 7DD62766BF2052432051D7B7E08A22F7E34A4543";
     let bridged = Config { tor_bridges: lines.into(), ..c.clone() };
@@ -481,6 +501,149 @@ fn old_outputs_cross_and_come_back() {
     drop(c);
     server.join().unwrap().unwrap();
     assert_eq!(*asked.lock().unwrap(), ["old 0", "old 7", "old 8", "old 4611", "old 9"]);
+}
+
+/// K192: the owner's agreement to the direct way for one transaction
+/// crosses the pipe with that transaction and with no other; the answer
+/// comes back as for any transaction; a layer that knows no such
+/// difference posts it as always; silence is "unknown".
+#[test]
+fn the_agreement_to_the_direct_way_crosses_with_its_transaction() {
+    let e = ends();
+    let asked = Arc::new(Mutex::new(Vec::new()));
+    let asked2 = asked.clone();
+    let (mut sr, mut sw) = (e.server_reads, e.server_writes);
+    let server = std::thread::spawn(move || {
+        serve(&mut sr, &mut sw, move |_c: Config| {
+            Ok(Script {
+                asked: asked2,
+                posts: vec![Posted::Unknown, Posted::Accepted, Posted::Rejected, Posted::Unknown],
+                ..Script::default()
+            })
+        })
+    });
+    let mut c = PipeChain::connect(e.client_reads, e.client_writes, &config(), Duration::from_secs(5)).unwrap();
+    assert_eq!(c.post(&[7, 1]), Posted::Unknown);
+    assert_eq!(c.post_direct(&[7, 1]), Posted::Accepted);
+    assert_eq!(c.post_direct(&[8, 1, 2]), Posted::Rejected);
+    assert_eq!(c.post(&[8, 1, 2]), Posted::Unknown);
+    // nothing is sent for what cannot be a transaction
+    assert_eq!(c.post_direct(&[]), Posted::Unknown);
+    assert!(c.alive());
+    drop(c);
+    server.join().unwrap().unwrap();
+    assert_eq!(*asked.lock().unwrap(), ["post 2 7", "post-direct 2 7", "post-direct 3 8", "post 3 8"]);
+
+    // a layer that knows no such difference: the transaction is posted as always
+    struct Plain(Arc<Mutex<Vec<u8>>>);
+    impl ChainFeed for Plain {
+        fn status(&mut self) -> Option<Status> {
+            None
+        }
+        fn next(&mut self, _at: Option<Tip>) -> Result<Step, Unknown> {
+            Err(Unknown)
+        }
+        fn post(&mut self, tx: &[u8]) -> Posted {
+            self.0.lock().unwrap().extend_from_slice(tx);
+            Posted::Accepted
+        }
+    }
+    let seen = Arc::new(Mutex::new(Vec::new()));
+    assert_eq!(Plain(seen.clone()).post_direct(&[5, 6]), Posted::Accepted);
+    assert_eq!(*seen.lock().unwrap(), [5, 6]);
+    // silence, and an answer to another question
+    let mut c = raw_peer(vec![], true);
+    assert_eq!(c.post_direct(&[1]), Posted::Unknown);
+    let mut c = raw_peer(vec![frame(0x88, &[])], false);
+    assert_eq!(c.post_direct(&[1]), Posted::Unknown);
+    assert!(!c.alive());
+}
+
+/// K188: a starting point the chain layer made crosses the pipe as it is;
+/// the reason there is none crosses as plain text; a record that cannot
+/// be one - empty, or longer than a record may be - is never handed on,
+/// from either side; and a layer that makes no points says so.
+#[test]
+fn a_starting_point_or_the_reason_there_is_none_crosses() {
+    use fly_paycore_chain_pipe::{NO_POINT_ANSWER, POINT_UNFIT};
+    use fly_paycore_chain_port::MAX_POINT_LEN;
+    let e = ends();
+    let asked = Arc::new(Mutex::new(Vec::new()));
+    let asked2 = asked.clone();
+    let record = br#"{"height":40,"hash":"ab"}"#.to_vec();
+    let longest = vec![b'x'; MAX_POINT_LEN];
+    let script = vec![
+        Ok(record.clone()),
+        Err("not yet: the tip is not confirmed\u{7}\n".to_string()),
+        Ok(longest.clone()),
+        Ok(Vec::new()),
+        Ok(vec![b'x'; MAX_POINT_LEN + 1]),
+        Err(String::new()),
+    ];
+    let (mut sr, mut sw) = (e.server_reads, e.server_writes);
+    let server = std::thread::spawn(move || {
+        serve(&mut sr, &mut sw, move |_c: Config| {
+            Ok(Script {
+                asked: asked2,
+                points: script,
+                ..Script::default()
+            })
+        })
+    });
+    let mut c = PipeChain::connect(e.client_reads, e.client_writes, &config(), Duration::from_secs(5)).unwrap();
+    assert_eq!(c.point(), Ok(record));
+    assert_eq!(c.point(), Err("not yet: the tip is not confirmed??".to_string()));
+    assert_eq!(c.point(), Ok(longest));
+    assert_eq!(c.point(), Err(POINT_UNFIT.to_string()), "an empty record was handed on");
+    assert_eq!(c.point(), Err(POINT_UNFIT.to_string()), "a record longer than one may be was handed on");
+    assert_eq!(c.point(), Err(POINT_UNFIT.to_string()), "a refusal without a reason");
+    assert!(c.alive(), "a refusal is an answer, not a failure of the pipe");
+    drop(c);
+    server.join().unwrap().unwrap();
+    assert_eq!(asked.lock().unwrap().len(), 6);
+
+    // the other side is anybody: what it sends as a point is held to the same
+    for (what, answer) in [
+        ("an empty record", frame(0x8B, &[])),
+        ("a record too long", frame(0x8B, &vec![b'x'; MAX_POINT_LEN + 1])),
+        ("a reason that is not text", frame(0x87, &[0xff, 0xfe])),
+        ("an empty reason", frame(0x87, &[])),
+        ("an answer to another question", frame(0x88, &[])),
+    ] {
+        let mut c = raw_peer(vec![answer], false);
+        assert_eq!(c.point(), Err(NO_POINT_ANSWER.to_string()), "{what}");
+        assert!(!c.alive(), "{what}: the conversation went on");
+    }
+    // and the reason it gives is shown only as plain text
+    let mut c = raw_peer(vec![frame(0x87, b"why\x07\x1b[31m")], false);
+    assert_eq!(c.point(), Err("why??[31m".to_string()));
+    // silence is not a point
+    let mut c = raw_peer(vec![], true);
+    assert_eq!(c.point(), Err(NO_POINT_ANSWER.to_string()));
+
+    // a layer that makes no points
+    struct Plain;
+    impl ChainFeed for Plain {
+        fn status(&mut self) -> Option<Status> {
+            None
+        }
+        fn next(&mut self, _at: Option<Tip>) -> Result<Step, Unknown> {
+            Err(Unknown)
+        }
+        fn post(&mut self, _tx: &[u8]) -> Posted {
+            Posted::Unknown
+        }
+    }
+    let mut input = frame(0x10, &config().encode().unwrap());
+    input.extend_from_slice(&frame(0x07, &[]));
+    let mut out = Vec::new();
+    assert!(serve(&mut input.as_slice(), &mut out, |_c: Config| Ok(Plain)).is_ok());
+    assert_eq!(out, [frame(0x90, &[VERSION]), frame(0x87, b"this chain layer makes no starting points")].concat());
+    // what the layer says is made plain before it leaves the process
+    let mut out = Vec::new();
+    let said = |_c: Config| Ok(Script { points: vec![Err("a\u{7}b".to_string())], ..Script::default() });
+    assert!(serve(&mut input.as_slice(), &mut out, said).is_ok());
+    assert_eq!(out, [frame(0x90, &[VERSION]), frame(0x87, b"a?b")].concat());
 }
 
 /// The same piece without range proofs.
@@ -719,10 +882,12 @@ fn the_server_stops_on_requests_it_does_not_understand() {
         ("an unknown request", frame(0x44, &[])),
         ("\"status\" with a payload", frame(0x01, &[1])),
         ("\"problem\" with a payload", frame(0x04, &[1])),
+        ("\"point\" with a payload", frame(0x07, &[1])),
         ("a position cut short", frame(0x02, &[1, 5, 0, 0])),
         ("a position with a tail", frame(0x02, &[0, 1])),
         ("no position at all", frame(0x02, &[])),
         ("an empty transaction", frame(0x03, &[])),
+        ("an empty transaction with the agreement", frame(0x08, &[])),
         ("a piece without a number", frame(0x05, &[])),
         ("a piece number cut short", frame(0x05, &[1; 7])),
         ("a piece number with a tail", frame(0x05, &[0; 9])),

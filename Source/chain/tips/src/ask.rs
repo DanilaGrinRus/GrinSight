@@ -15,9 +15,10 @@ use rustls::client::Resumption;
 use rustls::pki_types::pem::PemObject;
 use rustls::pki_types::{CertificateDer, ServerName};
 use rustls::{CertificateError, ClientConfig, ClientConnection, RootCertStore, StreamOwned};
-use std::fmt;
 use std::io::{self, ErrorKind, Read, Write};
-use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
+use std::net::{SocketAddr, TcpStream};
+#[cfg(not(target_os = "emscripten"))]
+use std::net::ToSocketAddrs;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -28,65 +29,7 @@ pub const AGENT: &str = "GrinSight-Fly/0.2";
 /// How many addresses of one name are tried.
 const MAX_ADDRESSES: usize = 4;
 
-/// What one source answered.
-#[derive(Debug, Clone, Copy)]
-pub struct Answer {
-    /// The tip the node named.
-    pub said: Said,
-    /// The time the server wrote on the answer, in seconds since 1970.
-    pub date: Option<u64>,
-    /// The moment the question was written, after the secure channel was
-    /// up. The server wrote its time after this.
-    pub sent: Instant,
-    /// The moment the answer was read to its end. The server wrote its
-    /// time before this.
-    pub got: Instant,
-    /// The address that answered.
-    pub peer: SocketAddr,
-}
-
-/// Why there is no answer.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Failure {
-    /// The name has no address.
-    Name,
-    /// No address of the name took the connection.
-    Connect,
-    /// The server's certificate does not hold; the words say how. A clock
-    /// of this computer that is far off shows up here.
-    Certificate(&'static str),
-    /// The secure channel failed otherwise.
-    Secure,
-    /// The connection broke.
-    Broken,
-    /// The allowed time ran out.
-    Late,
-    /// The server answered with another status than success.
-    Status(u16),
-    /// The answer is longer than is read from a stranger.
-    TooLong,
-    /// The answer is not what a Grin node writes; the words say where.
-    Format(&'static str),
-    /// The node answered that it will not or cannot say.
-    Refused,
-}
-
-impl fmt::Display for Failure {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Failure::Name => write!(f, "the name has no address"),
-            Failure::Connect => write!(f, "no connection"),
-            Failure::Certificate(how) => write!(f, "the certificate {how}"),
-            Failure::Secure => write!(f, "the secure channel failed"),
-            Failure::Broken => write!(f, "the connection broke"),
-            Failure::Late => write!(f, "no answer in time"),
-            Failure::Status(code) => write!(f, "status {code}"),
-            Failure::TooLong => write!(f, "the answer is too long"),
-            Failure::Format(what) => write!(f, "not a node's answer: {what}"),
-            Failure::Refused => write!(f, "the node would not say"),
-        }
-    }
-}
+pub use crate::asked::{Answer, Failure};
 
 /// Asks sources, authenticating them against one set of certificate
 /// authorities.
@@ -210,7 +153,7 @@ impl Asker {
             if wait.is_zero() {
                 return Err(Failure::Late);
             }
-            if let Ok(socket) = TcpStream::connect_timeout(address, wait) {
+            if let Ok(socket) = dial(address, wait) {
                 connected = Some((socket, *address));
                 break;
             }
@@ -290,12 +233,39 @@ fn not_said(e: NotSaid) -> Failure {
 /// IPv4 first: the networks in the list were recorded from them, and an
 /// IPv6 route that leads nowhere is the commoner trouble. Nothing if the
 /// name has no address. The system takes its own time over this.
+#[cfg(not(target_os = "emscripten"))]
 pub fn addresses(source: &Source) -> Vec<SocketAddr> {
     let found = (source.host.as_str(), source.port)
         .to_socket_addrs()
         .map(Iterator::collect)
         .unwrap_or_default();
     v4_first(found)
+}
+
+/// The addresses of a source's name. A page of a browser cannot look a
+/// name up for itself: the wallet's gateway does, and gives IPv4 only.
+/// Whatever address it gives, the node has to prove the name.
+#[cfg(target_os = "emscripten")]
+pub fn addresses(source: &Source) -> Vec<SocketAddr> {
+    fly_web_dial::lookup(&source.host)
+        .unwrap_or_default()
+        .into_iter()
+        .map(|ip| SocketAddr::new(ip.into(), source.port))
+        .collect()
+}
+
+/// A connection to `address`, waited for no longer than `wait`.
+#[cfg(not(target_os = "emscripten"))]
+fn dial(address: &SocketAddr, wait: Duration) -> io::Result<TcpStream> {
+    TcpStream::connect_timeout(address, wait)
+}
+
+/// A connection to `address`, waited for no longer than `wait`: in a page
+/// of a browser it goes through the wallet's gateway, which carries the
+/// bytes of the secure channel and can read none of them.
+#[cfg(target_os = "emscripten")]
+fn dial(address: &SocketAddr, wait: Duration) -> io::Result<TcpStream> {
+    fly_web_dial::connect(address, wait)
 }
 
 /// The same addresses, those of IPv4 before those of IPv6, each kind in

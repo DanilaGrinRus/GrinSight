@@ -1,5 +1,5 @@
 import { Theme, ThemeName, Device, Settings, Files, Qr } from "theme.slint";
-import { Card, Btn, Chip, Heading, Muted, Logo, Ground } from "parts.slint";
+import { Card, Btn, Chip, Heading, Muted, Logo, Ground, Ask, Explained } from "parts.slint";
 import { ChatPage, OpsPage, SecuritySheet, WordsSheet, OwnSheet, TorSheet, ChatLine, OpLine } from "pages.slint";
 import { AddressLine, CreatePage, RestorePage, SendSheet, SlateSheet, SignSheet, ReceiveSheet, IncomingSheet, InvoiceSheet, ReleaseSheet, ContactSheet } from "flows.slint";
 
@@ -56,9 +56,10 @@ component SyncCard inherits Card {
     // what the chain process says about itself, a statement to a line
     in property <[string]> words;
     VerticalLayout {
+        alignment: start;
         padding: 18px;
         spacing: 7px;
-        Heading { text: @tr("Synchronisation"); }
+        Heading { text: @tr("Details"); }
         for r in root.rows: HorizontalLayout {
             spacing: 10px;
             Muted { text: r.label; font-size: 12px; width: 132px; vertical-alignment: top; }
@@ -74,7 +75,7 @@ component SyncCard inherits Card {
             }
         }
         if root.words.length > 0: Rectangle { height: 1px; background: Theme.line; }
-        if root.words.length > 0: Muted { text: @tr("What the processes say"); font-size: 12px; font-weight: 600; }
+        if root.words.length > 0: Muted { text: @tr("What the program reports"); font-size: 12px; font-weight: 600; }
         for w in root.words: Text { text: w; color: Theme.muted; font-family: "DejaVu Sans Mono"; font-size: 11px; wrap: word-wrap; }
     }
 }
@@ -84,6 +85,7 @@ component ProblemsCard inherits Card {
     in property <[Problem]> problems;
     in property <string> more;
     VerticalLayout {
+        alignment: start;
         padding: 18px;
         spacing: 8px;
         Heading { text: @tr("Problems"); }
@@ -127,15 +129,27 @@ component Toggle inherits Rectangle {
 component OptionRow inherits Rectangle {
     in property <string> title;
     in property <string> note;
+    // what the choice is for, in plain words (О36)
+    in property <string> why;
+    // the words of `why` are shown to whoever pressed the "?" (O41)
+    in-out property <bool> asked: false;
     in property <bool> last: false;
     HorizontalLayout {
-        padding: 14px;
-        spacing: 12px;
+        padding: 10px;
+        padding-left: 14px;
+        padding-right: 14px;
+        spacing: 10px;
         VerticalLayout {
             alignment: center;
             spacing: 2px;
-            Text { text: root.title; color: Theme.text; font-size: 14px; font-weight: 600; wrap: word-wrap; }
-            Muted { text: root.note; font-size: 12px; }
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+                Text { text: root.title; color: Theme.text; font-size: 14px; font-weight: 600; wrap: word-wrap; vertical-alignment: center; }
+                if root.why != "": Ask { open <=> root.asked; }
+            }
+            if root.note != "": Muted { text: root.note; font-size: 12px; }
+            if root.why != "" && root.asked: Text { text: root.why; color: Theme.muted; font-size: 12px; wrap: word-wrap; }
         }
         @children
     }
@@ -146,6 +160,11 @@ component Login inherits Rectangle {
     in-out property <bool> options-open: true;
     in-out property <bool> testnet: false;
     in-out property <bool> direct-post: false;
+    // the two parts that can be switched off (O42)
+    in property <bool> tor-on: true;
+    in property <bool> nostr-on: true;
+    callback switch-tor(bool);
+    callback switch-nostr(bool);
     in property <string> start-point;
     in property <string> own-nodes;
     in property <string> version;
@@ -272,7 +291,8 @@ component Login inherits Rectangle {
                 VerticalLayout {
                     OptionRow {
                         title: @tr("Network");
-                        note: root.has-profile && root.live ? @tr("The network was chosen when the wallet was made") : @tr("For a new wallet. Testnet — for trying without real money");
+                        why: @tr("Mainnet is real GRIN. Testnet is practice coins that are worth nothing.");
+                        note: root.has-profile && root.live ? @tr("The network was chosen when the wallet was made") : @tr("For a new wallet");
                         HorizontalLayout {
                             alignment: center;
                             spacing: 4px;
@@ -280,26 +300,36 @@ component Login inherits Rectangle {
                             Btn { text: "Testnet"; font-size: 12px; primary: root.testnet; clicked => { root.testnet = true; } }
                         }
                     }
+                    // one row and one window for both: they are set together (О34)
                     OptionRow {
-                        title: @tr("Chain starting point");
-                        note: root.start-point;
-                        VerticalLayout { alignment: center; Btn { text: @tr("Own point"); font-size: 13px; clicked => { root.options(); } } }
-                    }
-                    OptionRow {
-                        title: @tr("Own nodes");
-                        note: root.own-nodes;
+                        title: @tr("Own nodes and own point");
+                        why: @tr("Usually not needed. Own nodes: servers of yours the wallet also asks. Own point: the place in the chain the wallet starts checking from.");
+                        note: root.start-point + "\n" + root.own-nodes;
                         VerticalLayout { alignment: center; Btn { text: @tr("Set"); font-size: 13px; clicked => { root.options(); } } }
                     }
                     OptionRow {
-                        title: @tr("How Tor is reached");
-                        note: root.tor-way;
-                        VerticalLayout { alignment: center; Btn { text: @tr("Bridges"); font-size: 13px; clicked => { root.tor-options(); } } }
+                        title: "Tor";
+                        why: @tr("Tor hides where you are on the network. Bridges are for places where Tor is blocked. Off: nothing of Tor is started — no payments to an address and no messages, and a transaction goes to the network directly, so the node sees your address.");
+                        note: root.tor-on ? root.tor-way : @tr("Off · nodes will see the IP of ") + Device.of-this;
+                        HorizontalLayout {
+                            spacing: 10px;
+                            alignment: end;
+                            if root.tor-on: VerticalLayout { alignment: center; Btn { text: @tr("Bridges"); font-size: 13px; clicked => { root.tor-options(); } } }
+                            VerticalLayout { alignment: center; Toggle { on: root.tor-on; label: "Tor"; toggled(v) => { root.switch-tor(v); } } }
+                        }
+                    }
+                    if root.tor-on: OptionRow {
+                        title: @tr("Send directly if Tor fails");
+                        why: @tr("On: if Tor does not work, a payment goes out without it and the node sees your address. Off: the wallet waits for Tor.");
+                        note: (root.direct-post ? @tr("On") : @tr("Off")) + @tr(" · nodes will see the IP of ") + Device.of-this;
+                        VerticalLayout { alignment: center; Toggle { on: root.direct-post; label: @tr("Send directly"); toggled(v) => { root.direct-post = v; root.direct-changed(v); } } }
                     }
                     OptionRow {
-                        title: @tr("Send directly if Tor fails");
-                        note: (root.direct-post ? @tr("On") : @tr("Off")) + @tr(" · nodes will see the IP of ") + Device.of-this;
+                        title: @tr("Messages (Nostr)");
+                        why: @tr("Messages and payments to saved contacts travel through Nostr servers, over Tor. Off: the program for them is not started; payments go by hand or to an address.");
+                        note: !root.nostr-on ? @tr("Off · payments to contacts go by hand") : root.tor-on ? @tr("On") : @tr("Do not work without Tor");
                         last: true;
-                        VerticalLayout { alignment: center; Toggle { on: root.direct-post; label: @tr("Send directly"); toggled(v) => { root.direct-post = v; root.direct-changed(v); } } }
+                        VerticalLayout { alignment: center; Toggle { on: root.nostr-on; label: "Nostr"; toggled(v) => { root.switch-nostr(v); } } }
                     }
                 }
             }
@@ -420,12 +450,6 @@ component RequisitesCard inherits Card {
                 clicked => { key-box.select-all(); key-box.copy(); key-box.clear-selection(); root.copied = true; }
             }
         }
-        HorizontalLayout {
-            alignment: start;
-            spacing: 6px;
-            Btn { text: @tr("Receive and copy the address"); font-size: 13px; clicked => { root.open(4); } }
-            Btn { text: @tr("Password and words"); font-size: 13px; clicked => { root.open(7); } }
-        }
     }
     // the key, invisible, only to put it on the clipboard
     key-box := TextInput { text: root.phrase; read-only: true; width: 0px; height: 0px; visible: false; }
@@ -482,33 +506,139 @@ component LinkCard inherits Card {
     in property <bool> auto-known;
     callback set-auto(bool);
     callback bridges();
+    // the stages of following the network, in the order they happen (О33)
+    // how each Tor stands: 0 not in use, 3 coming up, 1 working, 2 needs attention (О35)
+    in property <int> tor-tone;
+    in property <int> tx-tone;
+    in property <int> addr-tone;
+    in property <[SyncRow]> stages;
+    // what the chain process says that is not a stage, as it said it
+    in property <[string]> rest;
+    in-out property <bool> details;
+    // the wallet's own starting point, made from the chain it verified (O38)
+    in property <string> point-note;
+    in property <bool> point-good;
+    in property <bool> point-busy;
+    callback make-point();
+    property <bool> asked: false;
+    property <bool> point-asked: false;
+    // the two parts that can be switched off, and the one being asked about: 0 none, 1 Tor, 2 Nostr (O42)
+    in property <bool> tor-on: true;
+    in property <bool> nostr-on: true;
+    callback switch-tor(bool);
+    callback switch-nostr(bool);
+    property <int> ask-part: 0;
+    property <bool> parts-asked: false;
     VerticalLayout {
         padding: 18px;
         spacing: 10px;
         HorizontalLayout {
-            Heading { text: @tr("Connection"); horizontal-stretch: 1; vertical-alignment: center; }
-            Btn { text: @tr("Tor bridges"); font-size: 12px; min-height: 30px; clicked => { root.bridges(); } }
+            Heading { text: @tr("Connection and synchronisation"); vertical-alignment: center; }
+            VerticalLayout { alignment: center; padding-left: 8px; Ask { open <=> root.asked; } }
+            Rectangle { horizontal-stretch: 1; }
+            if root.tor-on: Btn { text: @tr("Tor bridges"); font-size: 12px; min-height: 30px; clicked => { root.bridges(); } }
         }
         HorizontalLayout {
             spacing: 8px;
-            VerticalLayout { padding-top: 5px; alignment: start; Rectangle { width: 8px; height: 8px; border-radius: 4px; background: root.link-good ? Theme.accent : Theme.warn; } }
+            VerticalLayout { padding-top: 5px; alignment: start; Rectangle { width: 9px; height: 9px; border-radius: 4.5px; border-width: 1.5px; border-color: root.tor-tone == 2 ? Theme.state-alert : root.tor-tone == 0 ? Theme.state-off.with-alpha(0.7) : root.tor-tone == 3 ? Theme.state-busy : Theme.state-ok; background: root.tor-tone == 1 ? Theme.state-ok : root.tor-tone == 2 ? Theme.state-alert : transparent; } }
             Text { text: root.tor-line; color: Theme.text; font-size: 13px; wrap: word-wrap; horizontal-stretch: 1; }
         }
         HorizontalLayout {
             spacing: 8px;
-            VerticalLayout { padding-top: 5px; alignment: start; Rectangle { width: 8px; height: 8px; border-radius: 4px; background: root.tx-good ? Theme.accent : Theme.warn; } }
+            VerticalLayout { padding-top: 5px; alignment: start; Rectangle { width: 9px; height: 9px; border-radius: 4.5px; border-width: 1.5px; border-color: root.tx-tone == 2 ? Theme.state-alert : root.tx-tone == 0 ? Theme.state-off.with-alpha(0.7) : root.tx-tone == 3 ? Theme.state-busy : Theme.state-ok; background: root.tx-tone == 1 ? Theme.state-ok : root.tx-tone == 2 ? Theme.state-alert : transparent; } }
             Text { text: root.tx-line; color: Theme.text; font-size: 13px; wrap: word-wrap; horizontal-stretch: 1; }
         }
         HorizontalLayout {
             spacing: 8px;
-            VerticalLayout { padding-top: 5px; alignment: start; Rectangle { width: 8px; height: 8px; border-radius: 4px; background: root.addr-good ? Theme.accent : Theme.warn; } }
+            VerticalLayout { padding-top: 5px; alignment: start; Rectangle { width: 9px; height: 9px; border-radius: 4.5px; border-width: 1.5px; border-color: root.addr-tone == 2 ? Theme.state-alert : root.addr-tone == 0 ? Theme.state-off.with-alpha(0.7) : root.addr-tone == 3 ? Theme.state-busy : Theme.state-ok; background: root.addr-tone == 1 ? Theme.state-ok : root.addr-tone == 2 ? Theme.state-alert : transparent; } }
             Text { text: root.addr-line; color: Theme.text; font-size: 13px; wrap: word-wrap; horizontal-stretch: 1; }
         }
+        HorizontalLayout {
+            spacing: 8px;
+            Muted { text: "Tor"; font-size: 12px; vertical-alignment: center; }
+            VerticalLayout { alignment: center; Toggle { on: root.tor-on; label: "Tor"; toggled(v) => { root.ask-part = root.ask-part == 1 ? 0 : 1; } } }
+            Rectangle { width: 8px; }
+            Muted { text: "Nostr"; font-size: 12px; vertical-alignment: center; }
+            VerticalLayout { alignment: center; Toggle { on: root.nostr-on; label: "Nostr"; toggled(v) => { root.ask-part = root.ask-part == 2 ? 0 : 2; } } }
+            VerticalLayout { alignment: center; padding-left: 4px; Ask { open <=> root.parts-asked; } }
+            Rectangle { horizontal-stretch: 1; }
+        }
+        if root.parts-asked: Muted { text: @tr("Each of the two can be switched off, in case you need to. Off means its program is not started at all. Switching takes effect at once: the wallet locks and asks for the password again."); font-size: 12px; wrap: word-wrap; }
+        if root.ask-part != 0: Rectangle {
+            background: Theme.bg;
+            border-radius: 10px;
+            VerticalLayout {
+                padding: 12px;
+                spacing: 10px;
+                Text {
+                    text: root.ask-part == 1
+                        ? (root.tor-on
+                            ? @tr("Switch Tor off? Without it there are no payments to an address and no messages, and a transaction goes to the network directly: the node sees the address of your device. The wallet locks and asks for the password again.")
+                            : @tr("Switch Tor on? The wallet locks and asks for the password again."))
+                        : (root.nostr-on
+                            ? @tr("Switch Nostr off? Without it there are no messages and no payments to saved contacts; everything else works. The wallet locks and asks for the password again.")
+                            : @tr("Switch Nostr on? The wallet locks and asks for the password again."));
+                    color: root.ask-part == 1 && root.tor-on ? Theme.warn : Theme.text;
+                    font-size: 12px;
+                    wrap: word-wrap;
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: start;
+                    Btn {
+                        text: (root.ask-part == 1 ? root.tor-on : root.nostr-on) ? @tr("Switch off") : @tr("Switch on");
+                        primary: true;
+                        font-size: 12px;
+                        min-height: 30px;
+                        clicked => {
+                            if (root.ask-part == 1) { root.switch-tor(!root.tor-on); } else { root.switch-nostr(!root.nostr-on); }
+                            root.ask-part = 0;
+                        }
+                    }
+                    Btn { text: @tr("Cancel"); font-size: 12px; min-height: 30px; clicked => { root.ask-part = 0; } }
+                }
+            }
+        }
+        if root.asked: Muted { text: @tr("Through Tor everything goes slower. That is the price of privacy, not a fault."); font-size: 12px; wrap: word-wrap; }
+        if root.asked: Muted { text: @tr("A faint ring: not begun. A ring: under way. A filled mark: done. The warning colour: needs your attention."); font-size: 12px; wrap: word-wrap; }
+        if root.stages.length > 0: Rectangle { height: 1px; background: Theme.line; }
+        // a filled mark: done (or, in the warning colour, needs attention);
+        // a ring: under way; a faint ring: not begun. Shape as well as colour.
+        for r in root.stages: HorizontalLayout {
+            spacing: 8px;
+            VerticalLayout {
+                padding-top: 4px;
+                alignment: start;
+                Rectangle {
+                    width: 9px;
+                    height: 9px;
+                    border-radius: 4.5px;
+                    border-width: 1.5px;
+                    border-color: r.tone == 2 ? Theme.state-alert : r.tone == 0 ? Theme.state-off.with-alpha(0.7) : r.tone == 3 ? Theme.state-busy : Theme.state-ok;
+                    background: r.tone == 1 ? Theme.state-ok : r.tone == 2 ? Theme.state-alert : transparent;
+                }
+            }
+            Muted { text: r.label; font-size: 12px; width: 112px; vertical-alignment: top; }
+            Text { text: r.value; color: r.tone == 2 ? Theme.warn : r.tone == 0 ? Theme.muted : Theme.text; font-size: 12px; wrap: word-wrap; horizontal-stretch: 1; min-width: 60px; preferred-width: 60px; }
+        }
+        for w in root.rest: Text { text: w; color: Theme.warn; font-size: 12px; wrap: word-wrap; }
+        HorizontalLayout {
+            alignment: start;
+            Btn { text: root.details ? @tr("Hide details") : @tr("Details"); font-size: 12px; min-height: 28px; clicked => { root.details = !root.details; } }
+        }
+        if root.details: HorizontalLayout {
+            alignment: start;
+            spacing: 8px;
+            Btn { text: root.point-busy ? @tr("Making the point…") : @tr("Make my own starting point"); font-size: 12px; min-height: 28px; clicked => { if (!root.point-busy) { root.make-point(); } } }
+            VerticalLayout { alignment: center; Ask { open <=> root.point-asked; } }
+        }
+        if root.details && root.point-asked: Muted { text: @tr("The wallet starts checking the network from a starting point built into the program. It can make one of its own from the chain it has checked itself; from the next unlock it then starts from that one."); font-size: 12px; wrap: word-wrap; }
+        if root.details && root.point-note != "": Text { text: root.point-note; color: root.point-good ? Theme.accent : Theme.warn; font-size: 12px; wrap: word-wrap; }
         Muted { text: @tr("Payment delivery"); font-size: 12px; }
         HorizontalLayout {
             spacing: 6px;
-            Btn { text: "Tor"; primary: (root.link-good || root.addr-good) && !Settings.by-hand; font-size: 13px; horizontal-stretch: 1; clicked => { Settings.by-hand = false; Settings.save(); } }
-            Btn { text: @tr("By hand"); primary: Settings.by-hand || !(root.link-good || root.addr-good); font-size: 13px; horizontal-stretch: 1; clicked => { Settings.by-hand = true; Settings.save(); } }
+            Btn { text: "Tor"; primary: root.tor-on && (root.link-good || root.addr-good) && !Settings.by-hand; font-size: 13px; horizontal-stretch: 1; clicked => { Settings.by-hand = false; Settings.save(); } }
+            Btn { text: @tr("By hand"); primary: Settings.by-hand || !root.tor-on || !(root.link-good || root.addr-good); font-size: 13px; horizontal-stretch: 1; clicked => { Settings.by-hand = true; Settings.save(); } }
             // not in this wallet yet: shown, not pressed
             Rectangle {
                 horizontal-stretch: 1;
@@ -529,7 +659,7 @@ component LinkCard inherits Card {
         Muted {
             font-size: 12px;
             min-height: 30px;
-            text: Settings.by-hand ? @tr("By hand: every payment is a text you pass on yourself.") : (root.link-good || root.addr-good) ? @tr("Tor: a payment to a contact or to a grin1 address is delivered by itself.") : @tr("Tor is chosen, but delivery does not work now: payments go by hand.");
+            text: !root.tor-on ? @tr("Tor is switched off: every payment is a text you pass on yourself.") : Settings.by-hand ? @tr("By hand: every payment is a text you pass on yourself.") : (root.link-good || root.addr-good) ? @tr("Tor: a payment to a contact or to a grin1 address is delivered by itself.") : @tr("Tor is chosen, but delivery does not work now: payments go by hand.");
         }
         Rectangle { height: 1px; background: Theme.line; }
         HorizontalLayout {
@@ -551,6 +681,7 @@ component OpsCard inherits Card {
     callback all();
     callback show(int);
     VerticalLayout {
+        alignment: start;
         padding: 18px;
         spacing: 0px;
         Heading { text: @tr("Recent payments"); height: 28px; }
@@ -612,6 +743,20 @@ component Dashboard inherits Rectangle {
     in property <string> app-version;
     in property <[SyncRow]> sync-rows;
     in property <[string]> sync-words;
+    in property <int> tor-tone;
+    in property <int> tx-tone;
+    in property <int> addr-tone;
+    in property <[SyncRow]> sync-stages;
+    in property <[string]> sync-rest;
+    in-out property <bool> sync-details;
+    in property <string> point-note;
+    in property <bool> point-good;
+    in property <bool> point-busy;
+    callback make-point();
+    in property <bool> tor-on: true;
+    in property <bool> nostr-on: true;
+    callback switch-tor(bool);
+    callback switch-nostr(bool);
     in property <[Problem]> problems;
     in property <string> problems-more;
     callback leave();
@@ -643,6 +788,8 @@ component Dashboard inherits Rectangle {
             VerticalLayout { alignment: center; Chip { text: root.network; fg: Theme.muted; fill: Theme.soft; height: 24px; } }
             if !root.narrow: Muted { text: root.app-version; font-size: 12px; vertical-alignment: center; wrap: no-wrap; }
             Rectangle { horizontal-stretch: 1; }
+            // what belongs to the program rather than to a payment sits together here (О34)
+            Btn { text: root.narrow ? @tr("Password") : @tr("Password and words"); font-size: 13px; clicked => { root.open(7); } }
             Btn { text: root.narrow ? @tr("Theme") : @tr("Theme: ") + Theme.label; font-size: 13px; clicked => { Theme.next(); Settings.save(); } }
             Btn { text: Settings.russian ? "RU" : "EN"; font-size: 13px; clicked => { Settings.russian = !Settings.russian; Settings.save(); } }
             Btn { text: @tr("Lock"); font-size: 13px; clicked => { root.leave(); } }
@@ -661,25 +808,25 @@ component Dashboard inherits Rectangle {
                 // the width is shared two to one, whatever the texts would like
                 preferred-width: 200px;
                 spacing: 14px;
-                alignment: start;
-                BalanceCard { balance: root.balance; balance-note: root.balance-note; incoming: root.incoming; verified: root.verified; verified-chip: root.verified-chip; verified-good: root.verified-good; narrow: false; open(n) => { root.open(n); } }
-                if root.waiting.length > 0: WaitCard { waiting: root.waiting; note: root.wait-note; narrow: false; act(i, yes) => { root.act(i, yes); } }
+                BalanceCard { vertical-stretch: 0; balance: root.balance; balance-note: root.balance-note; incoming: root.incoming; verified: root.verified; verified-chip: root.verified-chip; verified-good: root.verified-good; narrow: false; open(n) => { root.open(n); } }
+                if root.waiting.length > 0: WaitCard { vertical-stretch: 0; waiting: root.waiting; note: root.wait-note; narrow: false; act(i, yes) => { root.act(i, yes); } }
                 HorizontalLayout {
+                    vertical-stretch: 0;
                     spacing: 14px;
                     RequisitesCard { horizontal-stretch: 1; address-groups: root.address-groups; address-full: root.address-full; phrase: root.phrase; phrase-label: root.phrase-label; identity-made: root.identity-made; open(n) => { root.open(n); } make-identity => { root.make-identity(); } }
                     ContactsCard { horizontal-stretch: 1; contacts: root.contacts; open(n) => { root.open(n); } chat(i) => { root.chat(i); } }
                 }
+                // the last card of each column takes what is left, so that both columns end at one line (O44)
+                ProblemsCard { vertical-stretch: 1; problems: root.problems; more: root.problems-more; }
             }
             VerticalLayout {
                 horizontal-stretch: 1;
                 preferred-width: 100px;
                 min-width: 340px;
                 spacing: 14px;
-                alignment: start;
-                LinkCard { tor-line: root.tor-line; link-good: root.link-good; tx-line: root.tx-line; tx-good: root.tx-good; addr-line: root.addr-line; addr-good: root.addr-good; auto-receive: root.auto-receive; auto-on: root.auto-on; auto-known: root.auto-known; set-auto(v) => { root.set-auto(v); } bridges => { root.tor-options(); } }
-                OpsCard { ops: root.ops; all => { root.all-ops(); } show(i) => { root.op-show(i); } }
-                ProblemsCard { problems: root.problems; more: root.problems-more; }
-                SyncCard { rows: root.sync-rows; words: root.sync-words; }
+                LinkCard { vertical-stretch: 0; tor-tone: root.tor-tone; tx-tone: root.tx-tone; addr-tone: root.addr-tone; stages: root.sync-stages; rest: root.sync-rest; details <=> root.sync-details; tor-on: root.tor-on; nostr-on: root.nostr-on; switch-tor(v) => { root.switch-tor(v); } switch-nostr(v) => { root.switch-nostr(v); } point-note: root.point-note; point-good: root.point-good; point-busy: root.point-busy; make-point => { root.make-point(); } tor-line: root.tor-line; link-good: root.link-good; tx-line: root.tx-line; tx-good: root.tx-good; addr-line: root.addr-line; addr-good: root.addr-good; auto-receive: root.auto-receive; auto-on: root.auto-on; auto-known: root.auto-known; set-auto(v) => { root.set-auto(v); } bridges => { root.tor-options(); } }
+                OpsCard { vertical-stretch: root.sync-details ? 0 : 1; ops: root.ops; all => { root.all-ops(); } show(i) => { root.op-show(i); } }
+                if root.sync-details: SyncCard { vertical-stretch: 1; rows: root.sync-rows; words: root.sync-words; }
             }
           }
         }
@@ -698,9 +845,9 @@ component Dashboard inherits Rectangle {
                 OpsCard { ops: root.ops; all => { root.all-ops(); } show(i) => { root.op-show(i); } }
                 RequisitesCard { address-groups: root.address-groups; address-full: root.address-full; phrase: root.phrase; phrase-label: root.phrase-label; identity-made: root.identity-made; open(n) => { root.open(n); } make-identity => { root.make-identity(); } }
                 ContactsCard { contacts: root.contacts; open(n) => { root.open(n); } chat(i) => { root.chat(i); } }
-                LinkCard { tor-line: root.tor-line; link-good: root.link-good; tx-line: root.tx-line; tx-good: root.tx-good; addr-line: root.addr-line; addr-good: root.addr-good; auto-receive: root.auto-receive; auto-on: root.auto-on; auto-known: root.auto-known; set-auto(v) => { root.set-auto(v); } bridges => { root.tor-options(); } }
+                LinkCard { tor-tone: root.tor-tone; tx-tone: root.tx-tone; addr-tone: root.addr-tone; stages: root.sync-stages; rest: root.sync-rest; details <=> root.sync-details; tor-on: root.tor-on; nostr-on: root.nostr-on; switch-tor(v) => { root.switch-tor(v); } switch-nostr(v) => { root.switch-nostr(v); } point-note: root.point-note; point-good: root.point-good; point-busy: root.point-busy; make-point => { root.make-point(); } tor-line: root.tor-line; link-good: root.link-good; tx-line: root.tx-line; tx-good: root.tx-good; addr-line: root.addr-line; addr-good: root.addr-good; auto-receive: root.auto-receive; auto-on: root.auto-on; auto-known: root.auto-known; set-auto(v) => { root.set-auto(v); } bridges => { root.tor-options(); } }
                 ProblemsCard { problems: root.problems; more: root.problems-more; }
-                SyncCard { rows: root.sync-rows; words: root.sync-words; }
+                if root.sync-details: SyncCard { rows: root.sync-rows; words: root.sync-words; }
                 // a phone has no room for it in the top row
                 Muted { text: "GrinSight " + root.app-version; font-size: 11px; horizontal-alignment: center; }
             }
@@ -807,6 +954,11 @@ export component App inherits Window {
     callback set-auto(bool);
     callback change-password(string, string, string);
     callback show-words(string);
+    callback delete-wallet(string, string, string);
+    in property <string> files-path;
+    in property <string> guard-path;
+    in property <int> delete-place-a: 1;
+    in property <int> delete-place-b: 2;
     callback words-closed();
     in-out property <string> own-nodes-text;
     in-out property <string> own-point-text;
@@ -841,6 +993,14 @@ export component App inherits Window {
     in property <string> addr-line;
     in property <bool> addr-good;
     in property <bool> out-can-tor;
+    in property <bool> out-can-resend;
+    in property <bool> out-can-direct;
+    in property <string> out-resend-note;
+    callback out-resend(bool);
+    callback out-tor-off();
+    // confirmations after which an incoming payment is called received (K190)
+    in property <int> confirmations: 10;
+    callback set-confirmations(int);
     in property <bool> out-waiting;
     // the wallet has Tor for payments to an address
     in property <bool> tor-address;
@@ -849,6 +1009,20 @@ export component App inherits Window {
     in property <string> app-version;
     in property <[SyncRow]> sync-rows;
     in property <[string]> sync-words;
+    in property <int> tor-tone;
+    in property <int> tx-tone;
+    in property <int> addr-tone;
+    in property <[SyncRow]> sync-stages;
+    in property <[string]> sync-rest;
+    in-out property <bool> sync-details;
+    in property <string> point-note;
+    in property <bool> point-good;
+    in property <bool> point-busy;
+    callback make-point();
+    in property <bool> tor-on: true;
+    in property <bool> nostr-on: true;
+    callback switch-tor(bool);
+    callback switch-nostr(bool);
     in property <[Problem]> problems;
     in property <string> problems-more;
     callback act(int, bool);
@@ -869,6 +1043,10 @@ export component App inherits Window {
             options-open <=> root.options-open;
             testnet <=> root.testnet;
             direct-post <=> root.direct-post;
+            tor-on: root.tor-on;
+            nostr-on: root.nostr-on;
+            switch-tor(v) => { root.switch-tor(v); }
+            switch-nostr(v) => { root.switch-nostr(v); }
             live: root.live;
             has-profile: root.has-profile;
             busy: root.busy;
@@ -906,6 +1084,11 @@ export component App inherits Window {
             app-version: root.app-version;
             sync-rows: root.sync-rows;
             sync-words: root.sync-words;
+            sync-stages: root.sync-stages;
+            tor-tone: root.tor-tone;
+            tx-tone: root.tx-tone;
+            addr-tone: root.addr-tone;
+            sync-rest: root.sync-rest;
             problems: root.problems;
             problems-more: root.problems-more;
             network: root.network;
@@ -938,6 +1121,15 @@ export component App inherits Window {
             make-identity => { root.make-identity(); }
             set-auto(v) => { root.set-auto(v); }
             op-show(i) => { root.op-show(i); }
+            sync-details <=> root.sync-details;
+            tor-on: root.tor-on;
+            nostr-on: root.nostr-on;
+            switch-tor(v) => { root.switch-tor(v); }
+            switch-nostr(v) => { root.switch-nostr(v); }
+            point-note: root.point-note;
+            point-good: root.point-good;
+            point-busy: root.point-busy;
+            make-point => { root.make-point(); }
             tor-options => { root.open-tor(); }
             all-ops => { root.page = 5; }
         }
@@ -954,6 +1146,8 @@ export component App inherits Window {
         }
         if root.page == 5: OpsPage {
             ops: root.all-ops;
+            confirmations: root.confirmations;
+            set-confirmations(n) => { root.set-confirmations(n); }
             back => { root.page = 1; }
             show(i) => { root.op-show(i); }
         }
@@ -974,6 +1168,11 @@ export component App inherits Window {
             out: root.out-text;
             wants-reply: root.out-wants-reply;
             can-tor: root.out-can-tor;
+            can-resend: root.out-can-resend;
+            can-direct: root.out-can-direct;
+            resend-note: root.out-resend-note;
+            resend(d) => { root.out-resend(d); }
+            tor-off => { root.out-tor-off(); }
             waiting: root.out-waiting;
             tor => { root.out-tor(); }
             busy: root.sheet-busy;
@@ -1040,6 +1239,11 @@ export component App inherits Window {
             close => { root.sheet-closed(root.sheet); root.sheet = 0; }
             change(a, b, c) => { root.change-password(a, b, c); }
             words(p) => { root.show-words(p); }
+            place-a: root.delete-place-a;
+            place-b: root.delete-place-b;
+            delete(p, a, b) => { root.delete-wallet(p, a, b); }
+            files-path: root.files-path;
+            guard-path: root.guard-path;
         }
         if root.page == 1 && root.sheet == 8: WordsSheet {
             words: root.words;

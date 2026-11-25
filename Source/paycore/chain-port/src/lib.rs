@@ -233,6 +233,13 @@ pub trait ChainFeed {
     fn next(&mut self, at: Option<Tip>) -> Result<Step, Unknown>;
     /// Hand a finished transaction to the network.
     fn post(&mut self, tx: &[u8]) -> Posted;
+    /// The same, with the owner's agreement that this one transaction may
+    /// go out from this computer's address if it cannot be sent privately
+    /// (K192). A layer that knows no such difference hands it over as
+    /// always - never less privately than `post`.
+    fn post_direct(&mut self, tx: &[u8]) -> Posted {
+        self.post(tx)
+    }
     /// Why the layer is not getting on, in words for the user; `None` when
     /// nothing is known to be wrong. A description to show, never a fact.
     fn problem(&mut self) -> Option<String> {
@@ -255,7 +262,17 @@ pub trait ChainFeed {
         let _ = since;
         self.old_outputs(piece)
     }
+    /// The record of a starting point made from the chain the layer has
+    /// verified, for a later start from there (K188). A layer that makes
+    /// none - now, or at all - says why, in words for the user. The
+    /// record is at most [`MAX_POINT_LEN`] long.
+    fn point(&mut self) -> Result<Vec<u8>, String> {
+        Err("this chain layer makes no starting points".to_string())
+    }
 }
+
+/// Longest record of a starting point handed over.
+pub const MAX_POINT_LEN: usize = 64 * 1024;
 
 /// A problem text made safe to show: plain printable characters only, cut
 /// to [`MAX_PROBLEM_LEN`]. The text may quote a peer, which is anybody.

@@ -139,6 +139,7 @@ fn the_wallet_is_given_the_blocks() {
         peers: vec![node.addr.to_string()],
         start_timeout_secs: 30,
         direct_post: false,
+        tor_off: false,
         tor_bridges: String::new(),
     };
     let mut chain = PipeChain::spawn(std::path::Path::new(FLY), &config, Duration::from_secs(10)).unwrap();

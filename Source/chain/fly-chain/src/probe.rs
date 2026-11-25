@@ -219,7 +219,7 @@ impl Session {
     /// network; `work` and `height` are what this side says of its chain.
     pub fn connect(addr: SocketAddr, genesis: [u8; 32], work: u64, height: u64) -> Result<Session, String> {
         let began = Instant::now();
-        let mut conn = TcpStream::connect_timeout(&addr, CONNECT_TIMEOUT).map_err(|e| format!("no connection ({})", e.kind()))?;
+        let mut conn = crate::net::connect(&addr, CONNECT_TIMEOUT).map_err(|e| format!("no connection ({})", e.kind()))?;
         let handshake = Handshake::new(Hash::from_vec(&genesis), P2PConfig::default());
         let nowhere = PeerAddr(SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), 0));
         let work = Difficulty::from_num(work.max(1));

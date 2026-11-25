@@ -189,6 +189,7 @@ impl World {
             peers: vec![self.node.addr.to_string()],
             start_timeout_secs: 30,
             direct_post: false,
+            tor_off: false,
             tor_bridges: String::new(),
         };
         PipeChain::spawn(std::path::Path::new(FLY), &config, Duration::from_secs(10)).unwrap()
@@ -487,6 +488,70 @@ fn a_point_the_user_gives() {
     assert_eq!(run.code, 0, "{}", run.out);
     assert!(run.out.contains("start: height=14 (development"), "{}", run.out);
     assert!(run.out.contains("replaced: the header file of the starting point at 20 gave way to this one"), "{}", run.out);
+}
+
+/// K188: the wallet asks the program for a starting point made from the
+/// chain it follows. None is made on top of a point nobody vouches for,
+/// none while the tip is not confirmed by public nodes, none that would
+/// not be three above the point the program started from. When one is
+/// made it is the record of the header nodes give their state out at,
+/// with the time of making written in; it passes the check of a starting
+/// point, and the program started from it follows the same chain.
+#[test]
+fn the_wallet_is_given_a_point_made_from_the_chain_it_follows() {
+    let world = World::new("wallet-point");
+    let headers = || world.source.read().unwrap().headers();
+    // from the development point: the tip is selected, provisionally
+    let mut chain = world.program();
+    wait_for("the selected tip", || selected(&mut chain, world.tip(40)));
+    assert!(chain.status().unwrap().provisional);
+    let why = chain.point().unwrap_err();
+    assert!(why.contains("provisional: nobody vouches for the point this program started from"), "{why}");
+    drop(chain);
+
+    // from a point the user gave, at 20: nodes give their state out at 20
+    // while the tip is 40, and a point there would be the same point
+    std::fs::write(world.data.0.join(OWN_POINT_FILE), TestChain::from_headers(headers()).record(20)).unwrap();
+    let mut chain = world.program();
+    wait_for("the selected tip", || selected(&mut chain, world.tip(40)));
+    assert!(!chain.status().unwrap().provisional);
+    let why = chain.point().unwrap_err();
+    assert!(why.starts_with("no new starting point can be made yet: it would be at block 20") && why.contains("started from (20); the tip is 40"), "{why}");
+
+    // the chain grows by twenty; the public nodes are behind
+    world.source.write().unwrap().grow(20);
+    world.show();
+    wait_for("the new tip, unselected", || at_tip_unselected(&mut chain, world.tip(60)).is_some());
+    let why = chain.point().unwrap_err();
+    assert!(why.contains("only when the tip is confirmed by public nodes"), "{why}");
+    assert!(chain.alive(), "a refusal is an answer");
+
+    // they catch up
+    world.all_say(60);
+    wait_for("the new tip, selected", || selected(&mut chain, world.tip(60)));
+    let before = clock();
+    let record = chain.point().unwrap();
+    let start = checkpoint::check(&record, Net::Automated).unwrap();
+    assert_eq!((start.height(), start.hash()), (40, hash_bytes(&world.header(40))));
+    let mut made: serde_json::Value = serde_json::from_slice(&record).unwrap();
+    let time = made["release_time"].as_u64().unwrap();
+    assert!(time >= before && time <= clock(), "{time}");
+    let expected = TestChain::from_headers(headers()).record_value(40);
+    made["release_time"] = expected["release_time"].clone();
+    assert_eq!(made, expected);
+    // asking changed nothing: the program goes on from the point it had
+    assert_eq!(checkpoint::check(&std::fs::read(world.data.0.join(OWN_POINT_FILE)).unwrap(), Net::Automated).unwrap().height(), 20);
+    assert!(selected(&mut chain, world.tip(60)));
+    drop(chain);
+
+    // the point made is one a program starts from
+    std::fs::write(world.data.0.join(OWN_POINT_FILE), &record).unwrap();
+    let run = follow(&world.data, &[world.node.addr], 60);
+    assert_eq!(run.code, 0, "{}", run.out);
+    assert!(run.out.contains("start: height=40 (starting point you gave this program)"), "{}", run.out);
+    let mut chain = world.program();
+    wait_for("the selected tip from the new point", || selected(&mut chain, world.tip(60)));
+    assert!(!chain.status().unwrap().provisional);
 }
 
 /// A node the user listed as their own is asked about the tip like the

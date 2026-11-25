@@ -5,7 +5,7 @@ use fly_paycore_pipe_link::Cut;
 /// Largest frame in either direction: room for the largest block.
 pub const MAX_FRAME: usize = 4 * 1024 * 1024;
 /// Version of this protocol; the two sides must agree exactly.
-pub const VERSION: u8 = 7;
+pub const VERSION: u8 = 10;
 
 // requests
 pub(crate) const STATUS: u8 = 0x01;
@@ -14,6 +14,8 @@ pub(crate) const POST: u8 = 0x03;
 pub(crate) const PROBLEM: u8 = 0x04;
 pub(crate) const OLD: u8 = 0x05;
 pub(crate) const OLD_SINCE: u8 = 0x06;
+pub(crate) const POINT: u8 = 0x07;
+pub(crate) const POST_DIRECT: u8 = 0x08;
 // answers
 pub(crate) const STATUS_IS: u8 = 0x81;
 pub(crate) const NOTHING: u8 = 0x82;
@@ -25,6 +27,7 @@ pub(crate) const TEXT: u8 = 0x87;
 pub(crate) const NO_PROBLEM: u8 = 0x88;
 pub(crate) const OLD_ARE: u8 = 0x89;
 pub(crate) const REANCHOR_EXTENDING: u8 = 0x8A;
+pub(crate) const POINT_IS: u8 = 0x8B;
 pub(crate) const UNKNOWN: u8 = 0x8F;
 
 /// What the chain process needs to start. Nothing in it is secret, and
@@ -44,6 +47,10 @@ pub struct Config {
     /// The user agreed that a transaction may go to a node directly, from
     /// this computer's address, when it cannot be sent through Tor.
     pub direct_post: bool,
+    /// The user switched Tor off (K189): the chain process brings no Tor
+    /// up, and a transaction goes out over its own connections, from this
+    /// computer's address.
+    pub tor_off: bool,
     /// Tor bridges the user chose, one a line; empty for none. The chain
     /// process reads and checks them; with any, Tor is reached through
     /// them only.
@@ -73,6 +80,7 @@ impl Config {
         out.extend_from_slice(&self.start_timeout_secs.to_le_bytes());
         out.extend_from_slice(&u16::try_from(self.tor_bridges.len()).ok()?.to_le_bytes());
         out.extend_from_slice(self.tor_bridges.as_bytes());
+        out.push(u8::from(self.tor_off));
         // the agreement to the direct way stays the last byte
         out.push(u8::from(self.direct_post));
         (out.len() < MAX_FRAME).then_some(out)
@@ -99,6 +107,11 @@ impl Config {
             peers,
             start_timeout_secs: c.u32()?,
             tor_bridges: c.short_text()?,
+            tor_off: match c.u8()? {
+                0 => false,
+                1 => true,
+                _ => return None,
+            },
             direct_post: match c.u8()? {
                 0 => false,
                 1 => true,

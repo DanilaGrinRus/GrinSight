@@ -12,6 +12,12 @@ export global Theme {
     out property <color> accent: name == ThemeName.ice ? #5AB0FF : name == ThemeName.honey ? #FFC814 : name == ThemeName.mono ? #F0F0F0 : #3DDC97;
     out property <color> on-accent: name == ThemeName.ice ? #03111F : name == ThemeName.honey ? #151000 : name == ThemeName.mono ? #0D0D0D : #05140D;
     out property <color> soft: name == ThemeName.ice ? #5AB0FF26 : name == ThemeName.honey ? #FFC81424 : name == ThemeName.mono ? #FFFFFF1A : #3DDC9724;
+    // the colours of a state: the same in every theme, so that a mark says
+    // how things stand and not which theme is chosen (O44)
+    out property <color> state-ok: #3DDC97;
+    out property <color> state-busy: #5AB0FF;
+    out property <color> state-alert: #F2B53A;
+    out property <color> state-off: #7C8A99;
     out property <color> warn: name == ThemeName.ice ? #FFC94A : name == ThemeName.honey ? #FF9A3D : name == ThemeName.mono ? #E0E0E0 : #F2B53A;
     out property <color> warn-soft: name == ThemeName.ice ? #FFC94A21 : name == ThemeName.honey ? #FF9A3D24 : name == ThemeName.mono ? #FFFFFF14 : #F2B53A21;
     // Ч/Б: dotted ground; buttons turn black and yellow under the pointer or focus.

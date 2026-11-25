@@ -203,10 +203,12 @@ pub fn run() {
         };
         // what this process was told, for the tests of whoever started it
         let genesis: String = config.genesis.iter().map(|b| format!("{b:02x}")).collect();
+        // Tor switched off is said only when it is: the line before the last
         let told = format!(
-            "network={}\ngenesis={genesis}\npeers={}\ndirect_post={}\n",
+            "network={}\ngenesis={genesis}\npeers={}\n{}direct_post={}\n",
             config.network,
             config.peers.join(","),
+            if config.tor_off { "tor_off=1\n" } else { "" },
             u8::from(config.direct_post)
         );
         let _ = std::fs::write(PathBuf::from(&config.data_dir).join("told"), told);

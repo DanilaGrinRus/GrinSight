@@ -27,6 +27,11 @@ grin_store = { path = "../store", version = "5.5.2" }
 grin_util = { path = "../util", version = "5.5.2" }
 grin_chain = { path = "../chain", version = "5.5.2" }
 
+# GrinSight: only in a browser module, where a connection is held twice
+# through the wallet's gateway bridge; see p2p/src/conn.rs.
+[target.'cfg(target_os = "emscripten")'.dependencies]
+fly-web-dial = { path = "../../../web/dial" }
+
 [dev-dependencies]
 grin_pool = { path = "../pool", version = "5.5.2" }
 

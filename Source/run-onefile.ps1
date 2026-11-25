@@ -1,12 +1,13 @@
 # Wrap the published Windows portable ZIP without rebuilding the wallet.
-param([ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version = '0.4.3')
+# -Release: the folder that holds the ZIP and its SHA256SUMS.txt (the stable 0.4.3 stays in 'releases').
+param([ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version = '0.4.4', [ValidatePattern('^[\w.-]{1,40}$')][string]$Release = 'releases-0.4.4')
 $ErrorActionPreference = 'Stop'
 $project = Split-Path $PSScriptRoot -Parent
-$release = Join-Path $project 'releases'
+$releaseDir = Join-Path $project $Release
 $baseName = "GrinSight-$Version-windows-x64-portable"
-$source = Join-Path $release "$baseName.zip"
+$source = Join-Path $releaseDir "$baseName.zip"
 $zipHash = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash.ToLowerInvariant()
-$pin = @(Get-Content -LiteralPath (Join-Path $release 'SHA256SUMS.txt') |
+$pin = @(Get-Content -LiteralPath (Join-Path $releaseDir 'SHA256SUMS.txt') |
     Where-Object { $_ -match ('^[0-9a-fA-F]{64}\s+\*?' + [regex]::Escape("$baseName.zip") + '$') })
 if ($pin.Count -ne 1 -or $pin[0].Substring(0,64) -ne $zipHash) { throw 'Published ZIP checksum mismatch.' }
 $dist = Join-Path (Split-Path $project -Parent) 'dist'

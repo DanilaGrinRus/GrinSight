@@ -123,19 +123,32 @@ public class CoreService extends Service {
         a.add("--guard-dir"); a.add(files + "/guard");
         // the first line of its input is the device's key for the guard
         a.add("--device-key-stdin");
-        a.add("--chain"); a.add(lib + "/libfly_chain.so");
-        a.add("--onion"); a.add(lib + "/libfly_onion.so");
-        a.add("--transport"); a.add(lib + "/libfly_mailbox.so");
-        a.add("--relay"); a.add("wss://relay.floonet.dev");
-        // the user's choice of Tor bridges: a file next to the profile, written by the window
-        a.add("--tor-bridges"); a.add(files + "/tor-bridges.txt");
-        // the window's choice "send directly if Tor fails" (ui.txt next to the profile)
+        // the window's choices (ui.txt next to the profile): "send directly if Tor
+        // fails", and the two parts the owner can switch off - Tor and Nostr
+        boolean direct = false, torOff = false, nostrOff = false;
         try {
             for (String line : Files.readAllLines(new File(files, "ui.txt").toPath(), StandardCharsets.UTF_8)) {
-                if (line.trim().equals("direct=on")) a.add("--chain-direct-post");
+                String word = line.trim();
+                if (word.equals("direct=on")) direct = true;
+                if (word.equals("tor=off")) torOff = true;
+                if (word.equals("nostr=off")) nostrOff = true;
             }
         } catch (IOException ignored) {
         }
+        a.add("--chain"); a.add(lib + "/libfly_chain.so");
+        // what is switched off is not started: without Tor neither the program
+        // for the address nor the message program (it speaks through Tor)
+        if (!torOff) {
+            a.add("--onion"); a.add(lib + "/libfly_onion.so");
+        }
+        if (!torOff && !nostrOff) {
+            a.add("--transport"); a.add(lib + "/libfly_mailbox.so");
+            a.add("--relay"); a.add("wss://relay.floonet.dev");
+        }
+        // the user's choice of Tor bridges: a file next to the profile, written by the window
+        a.add("--tor-bridges"); a.add(files + "/tor-bridges.txt");
+        if (torOff) a.add("--chain-no-tor");
+        if (direct) a.add("--chain-direct-post");
         return a;
     }
 
