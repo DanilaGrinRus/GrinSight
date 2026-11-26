@@ -1,6 +1,6 @@
 # Mathematical Explanation of GrinSight
 
-GrinSight builds a local copy of the part of the chain state it needs and verifies it against the commitments in block headers. This text describes version 0.4.3.
+GrinSight builds a local copy of the part of the chain state it needs and verifies it against the commitments in block headers. This text describes version 0.4.6.
 
 Let $H_h$ denote the block header at height $h$, and $S_h$ the state after block $h$: the unspent outputs, their range proofs and the kernels, each committed to by a root in $H_h$.
 
@@ -13,6 +13,30 @@ $$
 $$
 
 This check cannot be replaced by anything computed on the device. You can put a point of your own instead of the built-in one.
+
+## 1a. The History Before the Point (new in 0.4.6)
+
+The point no longer stands alone: the program carries a proof that a chain with the claimed work lies behind $H_s$. Over the headers $H_0, \ldots, H_{s-1}$ a tree of work sums is built in the shape of the header MMR: every node holds the sum of $\operatorname{work}(H_i)$ under it, and its root $R$ commits to the total work $W$. A seed is taken from the network, the point, the root and the number of samples $m$:
+
+$$
+\sigma = \operatorname{Hash}(\text{net},\ \operatorname{hash}(H_s),\ R,\ m)
+$$
+
+For $j = 1, \ldots, m$ a point $x_j = \operatorname{Draw}(\sigma, j) \in [0, W)$ is drawn, and the header $H_{i_j}$ whose share of the work covers $x_j$ is opened: its path of sums up to $R$, the headers the difficulty rule reads before it (2 after the fourth hard fork, 61 before it), and its Merkle proof in the header MMR whose root $H_s$ commits to. The wallet checks, when the chain is opened:
+
+$$
+\forall j:\quad \operatorname{Sums}(i_j) \to R,\quad \operatorname{ValidPoW}(H_{i_j}),\quad \operatorname{Difficulty}(H_{i_j}) \text{ follows from its run},\quad H_{i_j} \in \operatorname{MMR}(H_s)
+$$
+
+With $m = 420$ this takes under a second. If a share $f$ of the claimed work were not real, one honest draw would miss it with probability $1-f$, all of them with about
+
+$$
+(1-f)^m, \qquad (0.98)^{420} \approx 2 \cdot 10^{-4}, \qquad (0.95)^{420} \approx 4 \cdot 10^{-10}.
+$$
+
+This is a guide, not a bound: it does not count a forger who tries many roots $R$ to get a good seed, and the cost of that is not worked out for Grin. **The number 420 is a margin, not derived for a stated error.** The whole history of mainnet (4,123,322 headers) was checked by the program once on a synced node; the proof itself checks samples only.
+
+A point of your own (made in *Details*) carries the Merkle proof of the built-in point under its own root. The proof of the built-in point then still holds: the history up to $H_s$ is sampled, and from $H_s$ to your point your wallet checked every header.
 
 ## 2. Verifying the Header Chain
 
@@ -91,13 +115,13 @@ The wallet's journal can be replaced with an older copy of itself. A small recor
 ## Main Relationship and Trust Boundaries
 
 $$
-\boxed{\text{starting point} \;\longrightarrow\; \text{verified headers} \;\longrightarrow\; \text{selected tip} \;\longrightarrow\; \text{verified state} \;\longrightarrow\; \text{balance and payment status}}
+\boxed{\text{sampled history} \;\longrightarrow\; \text{starting point} \;\longrightarrow\; \text{verified headers} \;\longrightarrow\; \text{selected tip} \;\longrightarrow\; \text{verified state} \;\longrightarrow\; \text{balance and payment status}}
 $$
 
 What is taken on trust:
 
-- the hash of the starting point;
+- the hash of the starting point: the release chooses it; what lies behind it is checked by sampling (section 1a), not header by header;
 - that the public nodes asked about the tip are not all controlled by one party, and that the network lets the wallet reach them;
 - the implementation: there has been no independent audit by a human.
 
-Headers before the starting point are not checked. Verification from the first block is not part of this version.
+Headers before the starting point are checked by sampling their work, not one by one, and the number of samples is a margin, not a derived bound. Checking every header from the first block is not part of this version.

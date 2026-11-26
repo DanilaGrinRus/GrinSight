@@ -1,7 +1,7 @@
 <p align="center"><b>English</b> · <a href="README.ru.md">Русский</a> · <a href="https://danilagrinrus.github.io/GrinSight/en/">Website</a></p>
 
 <p align="center">
-  <img src="assets/readme/hero.png" width="100%" alt="GrinSight (the picture shows the window of 0.4.3): a light Grin wallet that verifies the chain on your device. Below the title, the main window with sample values: balance, a verified tip, payments waiting for a signature.">
+  <img src="assets/readme/hero.png" width="100%" alt="GrinSight 0.4.6: a light Grin wallet that verifies the chain on your device. Below the title, the main window with sample values: balance, a verified tip, payments waiting for a signature.">
 </p>
 
 GrinSight is a research light wallet for [Grin](https://grin.mw). It needs no full node of its own: it checks the header chain from a built-in point to the tip, confirms the tip with public nodes, collects and verifies the state its outputs depend on, and sends transactions through its own Tor. Nothing is signed and there has been no independent audit by a human; what was and was not checked is listed below.
