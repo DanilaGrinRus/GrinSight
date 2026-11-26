@@ -548,6 +548,25 @@ fn the_users_tor_bridges_reach_the_process_that_uses_tor() {
     for path in &found {
         assert_eq!(std::fs::read_to_string(path).unwrap(), lines, "{path:?}");
     }
+
+    // K201: the owner changes the bridges while the wallet is open. The host
+    // is told "now" and starts each of the three anew on the new lines: no
+    // restart of the wallet and no password again
+    let new_lines = "obfs4 203.0.113.9:443 0123456789ABCDEF0123456789ABCDEF01234567 cert=xyz iat-mode=0\n";
+    std::fs::write(&file, new_lines).unwrap();
+    assert_eq!(e.ok("host.tor.bridges", json!({})), json!({"lines": 1, "usable": true}));
+    wait_for("the three processes of e to be started anew on the new lines", || {
+        let _ = e.tip();
+        let _ = e.ok("paycore.onion.status", json!({}));
+        let _ = e.ok("paycore.transport.status", json!({}));
+        found.clear();
+        seen_under(&t.0.join("e"), &mut found);
+        found.len() == 3 && found.iter().all(|p| std::fs::read_to_string(p).is_ok_and(|text| text == new_lines))
+    });
+    // the wallet stayed open
+    e.ok("paycore.balance", json!({}));
+    // told of a choice that cannot be read, the host says so, as at its start
+    assert_eq!(d.ok("host.tor.bridges", json!({})), json!({"lines": 1, "usable": false}));
 }
 
 #[test]
@@ -904,8 +923,7 @@ fn the_product_program_and_bad_input() {
         std::fs::read_to_string(only_dir(&t.0.join("p"), "chain-").join("told")).is_ok_and(|told| told.ends_with("\ndirect_post=1\n"))
     });
     assert_eq!(h.end(), (0, String::new()));
-    // K189: Tor switched off is passed on too, and only when it is; it goes
-    // with no program that needs Tor
+    // K189: Tor switched off is passed on too, and only when it is
     assert!(!told.contains("tor_off"), "{told}");
     let no_tor = || {
         let mut command = Command::new(HOST);
@@ -918,16 +936,34 @@ fn the_product_program_and_bad_input() {
         std::fs::read_to_string(only_dir(&t.0.join("p"), "chain-").join("told")).is_ok_and(|told| told.ends_with("\ntor_off=1\ndirect_post=0\n"))
     });
     assert_eq!(h.end(), (0, String::new()));
-    for with in ["--onion", "--transport"] {
-        let mut command = no_tor();
-        command.arg(with).arg(CHAIN);
-        if with == "--transport" {
-            command.arg("--relay").arg("wss://relay.example");
-        }
-        let refused = command.output().unwrap();
-        assert!(!refused.status.success(), "{with}");
-        assert!(String::from_utf8_lossy(&refused.stderr).contains("--chain-no-tor goes with neither --transport nor --onion"), "{with}: {}", String::from_utf8_lossy(&refused.stderr));
+    // K193: programs that need Tor may be named with it; they are not
+    // started while Tor is off, and the switch is turned without a restart
+    let mut command = no_tor();
+    command.arg("--onion").arg(ONION);
+    let mut h = Proc::spawn(command);
+    assert_eq!(h.status()["tor_off"], true);
+    h.ok("host.unlock", json!({"password": "pw"}));
+    wait_for("the chain", || h.tip() == Chain::ANCHOR);
+    let onion = |h: &mut Proc| h.ok("paycore.onion.status", json!({}));
+    assert_eq!(onion(&mut h)["problem"], "Tor is switched off");
+    assert!(!chain.dir.join("tor").exists(), "the chain process was told at its start, not again");
+    assert_eq!(h.ok("host.tor", json!({"off": false})), json!({"off": false}));
+    assert_eq!(h.status()["tor_off"], false);
+    wait_for("the Tor process of the address", || onion(&mut h)["phase"] == "listening");
+    wait_for("the chain process told", || std::fs::read_to_string(chain.dir.join("tor")).is_ok_and(|t| t == "on"));
+    assert_eq!(h.ok("host.tor", json!({"off": true})), json!({"off": true}));
+    wait_for("the Tor process let go", || onion(&mut h)["problem"] == "Tor is switched off");
+    wait_for("the chain process told again", || { let _ = h.tip(); std::fs::read_to_string(chain.dir.join("tor")).is_ok_and(|t| t == "off") });
+    for bad in [json!({}), json!({"off": "yes"}), json!({"off": 1})] {
+        assert!(h.call("host.tor", bad.clone()).is_err(), "{bad}");
     }
+    assert_eq!(h.status()["tor_off"], true, "a refused turn changes nothing");
+    assert_eq!(h.end(), (0, String::new()));
+    // without a chain program there is nothing to send without Tor
+    let mut bare = Proc::start(HOST, &t.0, "p", None);
+    assert!(bare.call("host.tor", json!({"off": true})).is_err());
+    assert_eq!(bare.status()["tor_off"], false);
+    assert_eq!(bare.end().0, 0);
     let alone = Command::new(HOST).arg("--profile").arg(t.0.join("p")).arg("--guard-dir").arg(t.0.join("p-guard")).arg("--chain-no-tor").output().unwrap();
     assert!(String::from_utf8_lossy(&alone.stderr).contains("--chain-no-tor needs --chain"));
     // the profile file asks for real work to try a password

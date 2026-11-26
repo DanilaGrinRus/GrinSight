@@ -49,6 +49,8 @@ pub const KIND_EVENT: u8 = 0x20;
 pub const R_UNDO: u64 = 720;
 /// Open receive drafts allowed at once.
 pub const MAX_OPEN_DRAFTS: usize = 16;
+/// Words in the check code of a contact (K199): 66 bits.
+pub const CHECK_WORDS: usize = 6;
 /// Lifetime of a receive draft in seconds of confirmed time (7 days).
 pub const DRAFT_TTL_SECS: u64 = 7 * 24 * 3600;
 /// Largest slate accepted, checked before parsing.
@@ -226,6 +228,24 @@ pub struct OldProgress {
     pub since: Option<(u64, [u8; 32])>,
 }
 
+/// An own output that no record of a payment stands for (K194).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Unrecorded {
+    /// Its commitment.
+    pub commit: Vec<u8>,
+    /// Its value, in nanogrin.
+    pub value: u64,
+    /// The block it was seen in; for one found by the search for old
+    /// outputs (`old`), a block by which it existed.
+    pub height: u64,
+    /// Found by the search for old outputs, not in a block.
+    pub old: bool,
+    /// A block reward.
+    pub coinbase: bool,
+    /// The block that spent it, if it is spent.
+    pub spent: Option<u64>,
+}
+
 /// Balance by category, in nanogrin.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Balance {
@@ -235,6 +255,34 @@ pub struct Balance {
     pub reserved: u64,
     /// Unspent coinbase not yet mature.
     pub immature: u64,
+    /// Unspent and marked "not to be spent" by the owner (K195): the
+    /// wallet's own choice of inputs passes it by.
+    pub kept: u64,
+}
+
+
+/// What seals a slate for a contact: gives the envelope, or says why not.
+pub type Seal<'a> = &'a mut dyn FnMut(&[u8]) -> Result<Envelope, String>;
+/// One unspent output of the wallet (K195).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OwnOutput {
+    /// Its commitment.
+    pub commit: Vec<u8>,
+    /// Its value, in nanogrin.
+    pub value: u64,
+    /// The block it was seen in; found by the search for old outputs
+    /// (`old`), a block by which it existed.
+    pub height: u64,
+    /// Found by the search for old outputs.
+    pub old: bool,
+    /// A block reward.
+    pub coinbase: bool,
+    /// Held by a payment under way.
+    pub reserved: bool,
+    /// A block reward that cannot be spent yet.
+    pub immature: bool,
+    /// Marked "not to be spent" by the owner.
+    pub kept: bool,
 }
 
 /// Prepared send: what to hand to the recipient.
@@ -269,6 +317,9 @@ pub struct Core<D: Dir, G: Guard, K: Keychain> {
     maturity: u64,
     signs: u64,
     timing: Timing,
+    /// K196: how many of its smallest outputs a payment takes along on
+    /// the owner's standing word; 0: none. In memory only.
+    gather: usize,
 }
 
 /// Where the time of following the chain went since the journal was
@@ -319,6 +370,7 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
             maturity: coinbase_maturity,
             signs: 0,
             timing: Timing::default(),
+            gather: 0,
         };
         let branch = core.st.branch.fresh_branch().map_err(|_| CoreError::Rng)?;
         core.commit_sealed(Event::Init { account, branch })?;
@@ -353,6 +405,7 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
             maturity: coinbase_maturity,
             signs: 0,
             timing: Timing::default(),
+            gather: 0,
         };
         let recovered = opened.guard.recovery_required();
         if recovered {
@@ -563,6 +616,52 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
         })
     }
 
+    /// K199: the check code of this wallet and a contact - six words that
+    /// are the same in both wallets when each has the other's message key
+    /// and address right, and differ when anything of the four was
+    /// swapped on the way. Made from public keys only; it is no secret
+    /// and proves nothing by itself: the two compare it over a channel
+    /// of their own. Reads only.
+    pub fn contact_code(&self, key: &[u8; 32]) -> Result<Vec<String>, CoreError> {
+        use sha2::Digest;
+        let own = self.st.identity.as_ref().ok_or(CoreError::Refused("the wallet has no transport identity"))?;
+        let c = self.st.contacts.get(&state::hex(key)).ok_or(CoreError::NotFound)?;
+        let theirs = c.address.as_ref().ok_or(CoreError::Refused("the contact has no address to check"))?;
+        let mine = self.receive_address()?;
+        // each side: its message key, then its address; the two sides in
+        // one order whoever computes, so that both get the same words
+        let mut sides = [[own.public.as_slice(), mine.as_slice()].concat(), [c.key.as_slice(), theirs.as_slice()].concat()];
+        sides.sort();
+        let mut hash = sha2::Sha256::new();
+        hash.update(b"GrinSight contact check v1");
+        for side in &sides {
+            hash.update(side);
+        }
+        let digest = hash.finalize();
+        // six words of eleven bits each, from the first 66 bits
+        let mut bits = digest.iter().flat_map(|byte| (0..8u32).rev().map(move |bit| (byte >> bit) & 1));
+        let mut words = Vec::with_capacity(CHECK_WORDS);
+        for _ in 0..CHECK_WORDS {
+            let mut index = 0usize;
+            for _ in 0..11 {
+                index = (index << 1) | usize::from(bits.next().ok_or(CoreError::Build)?);
+            }
+            words.push(grin_keychain::mnemonic::WORDS.get(index).ok_or(CoreError::Build)?.clone());
+        }
+        Ok(words)
+    }
+
+    /// K199: set or take off the owner's mark that the check code of a
+    /// contact was compared and was the same. Durable. It is taken off by
+    /// the wallet itself when the contact's address is changed.
+    pub fn contact_check(&mut self, key: &[u8; 32], on: bool) -> Result<(), CoreError> {
+        let now = self.st.contacts.get(&state::hex(key)).ok_or(CoreError::NotFound)?.checked;
+        if now == on {
+            return Ok(());
+        }
+        self.commit_plain(Event::ContactChecked { key: key.to_vec(), on })
+    }
+
     /// Remove a contact. Refused while a payment delivered to it waits for
     /// its reply.
     pub fn contact_remove(&mut self, key: &[u8; 32]) -> Result<(), CoreError> {
@@ -583,6 +682,7 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
                         None => None,
                         Some(a) => Some(<[u8; 32]>::try_from(a.as_slice()).ok()?),
                     },
+                    checked: c.checked,
                 })
             })
             .collect();
@@ -969,6 +1069,141 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
         )
     }
 
+    /// K195: like [`Core::send_prepare`] for a new payment, paid with
+    /// exactly the outputs the owner chose - by hand, or to the contact
+    /// `to` when `seal` is given, with a payment proof asked of
+    /// `proof_to` if one is named. `spend_kept`: the owner's separate word
+    /// that an output marked "not to be spent" among them is spent this once.
+    pub fn send_prepare_chosen(
+        &mut self,
+        amount: u64,
+        ttl_cutoff_height: u64,
+        chosen: Vec<[u8; 33]>,
+        spend_kept: bool,
+        proof_to: Option<[u8; 32]>,
+        delivery: Option<([u8; 32], Seal<'_>)>,
+    ) -> Result<Prepared, CoreError> {
+        if self.st.any_contested() {
+            return Err(CoreError::Refused("a contested operation exists: replace it or confirm this is not a repeat"));
+        }
+        let seal = match delivery {
+            Some((contact, seal)) => {
+                if self.st.identity.is_none() {
+                    return Err(CoreError::Refused("the wallet has no transport identity"));
+                }
+                if !self.st.contacts.contains_key(&state::hex(&contact)) {
+                    return Err(CoreError::Refused("the recipient is not a contact"));
+                }
+                Some((contact, seal))
+            }
+            None => None,
+        };
+        self.prepare(amount, ttl_cutoff_height, How { chosen: Some((chosen, spend_kept)), proof_to, seal, ..How::default() })
+    }
+
+    /// K196: what collecting would come to - the amount of the one output,
+    /// the fee and how many outputs are spent. Reads only.
+    pub fn collect_plan(&self, chosen: Option<&[[u8; 33]]>, most: usize) -> Result<(u64, u64, usize), CoreError> {
+        let (commits, amount, fee) = self.st.collect_plan(chosen, self.maturity, most)?;
+        Ok((amount, fee, commits.len()))
+    }
+
+    /// K196: prepare the payment to this wallet itself that turns several
+    /// of its outputs into one: the outputs named, or - with none named -
+    /// those the wallet could spend by its own choice, the smallest first,
+    /// `most` at most. The amount is all they hold less the fee, so there
+    /// is no change. The wallet answers it itself (`receive_draft`) and
+    /// signs it as any payment. Gives the prepared payment, its amount,
+    /// its fee and how many outputs it spends.
+    pub fn collect_prepare(&mut self, chosen: Option<Vec<[u8; 33]>>, spend_kept: bool, most: usize) -> Result<(Prepared, u64, u64, usize), CoreError> {
+        if self.st.any_contested() {
+            return Err(CoreError::Refused("a contested operation exists: replace it or confirm this is not a repeat"));
+        }
+        let (commits, amount, fee) = self.st.collect_plan(chosen.as_deref(), self.maturity, most)?;
+        let count = commits.len();
+        let prepared = self.prepare(amount, 0, How { chosen: Some((commits, spend_kept)), ..How::default() })?;
+        Ok((prepared, amount, fee, count))
+    }
+
+    /// K197: what taking a signed payment back would come to: the amount
+    /// that returns in one output, the fee, how many outputs are spent.
+    /// Reads only.
+    pub fn take_back_plan(&self, op: &OpId) -> Result<(u64, u64, usize), CoreError> {
+        let (commits, amount, fee) = self.st.take_back_plan(op)?;
+        Ok((amount, fee, commits.len()))
+    }
+
+    /// K197: prepare the taking back of a signed payment that is in no
+    /// block: a payment of the wallet to itself that spends every input
+    /// of that payment, so that only one of the two can be in a block.
+    /// The wallet answers and signs it as any payment. Nothing is sure:
+    /// the first payment may reach a block all the same.
+    pub fn take_back_prepare(&mut self, op: &OpId) -> Result<(Prepared, u64, u64, usize), CoreError> {
+        let (commits, amount, fee) = self.st.take_back_plan(op)?;
+        let count = commits.len();
+        // what the payment holds is spent whatever its marks say
+        let prepared = self.prepare(amount, 0, How { chosen: Some((commits, true)), replaces: Some(*op), take_back: true, ..How::default() })?;
+        Ok((prepared, amount, fee, count))
+    }
+
+    /// K198: the owner agrees that this one signed payment may go to the
+    /// network from this device's own address when Tor fails to send it.
+    /// Written with the payment: it outlives a restart. Said again, it
+    /// writes nothing.
+    pub fn send_agree_direct(&mut self, op: &OpId) -> Result<(), CoreError> {
+        if self.send_direct(op) {
+            return Ok(());
+        }
+        self.commit_plain(Event::Direct { op: *op })
+    }
+
+    /// K198: whether the owner agreed to the direct way for this payment.
+    pub fn send_direct(&self, op: &OpId) -> bool {
+        self.st.sends.get(&state::hex(op)).is_some_and(|s| s.direct)
+    }
+
+    /// K197: the payment under way that replaces this one.
+    pub fn send_replaced_by(&self, op: &OpId) -> Option<OpId> {
+        self.st.replaced_by(op)
+    }
+
+    /// The payment this one replaces.
+    pub fn send_replaces(&self, op: &OpId) -> Option<OpId> {
+        self.st.sends.get(&state::hex(op))?.replaces
+    }
+
+    /// K196: the owner's standing word that a payment takes up to `most`
+    /// of the wallet's smallest outputs along (0: none). Not written: the
+    /// one who starts the wallet says it again.
+    pub fn set_gather(&mut self, most: usize) {
+        self.gather = most;
+    }
+
+    /// K196: whether payments take small outputs along now.
+    pub fn gathers(&self) -> bool {
+        self.gather > 0
+    }
+
+    /// K195: the wallet's unspent outputs, the largest first. Reads only.
+    pub fn outputs(&self) -> Vec<OwnOutput> {
+        self.st
+            .unspent_outputs(self.maturity)
+            .into_iter()
+            .map(|(o, reserved, immature, kept)| OwnOutput { commit: o.commit.clone(), value: o.value, height: o.height, old: o.old, coinbase: o.coinbase, reserved, immature, kept })
+            .collect()
+    }
+
+    /// K195: set or take off the owner's mark "not to be spent" on an
+    /// unspent output of this wallet. Durable: it outlives a restart.
+    pub fn output_keep(&mut self, commit: &[u8; 33], on: bool) -> Result<(), CoreError> {
+        if self.st.is_kept(commit) == on {
+            return Ok(());
+        }
+        // whether the output is there to be marked is decided where the
+        // event is applied; a refusal there writes nothing
+        self.commit_plain(Event::Keep { commit: commit.to_vec(), on })
+    }
+
     /// Late lock: build S1 without reserving anything. Inputs, change and the
     /// change path are chosen when the reply is finalized and become durable
     /// in the arming frame, before the signature. The fee is fixed now; if it
@@ -1028,7 +1263,9 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
         how: How<'_>,
     ) -> Result<Prepared, CoreError> {
         let How {
+            chosen,
             replaces,
+            take_back,
             not_a_repeat,
             proof_to,
             late,
@@ -1047,6 +1284,8 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
             return Err(CoreError::Refused("time-to-live already passed"));
         }
         match replaces {
+            // taking back has made its own checks (`take_back_plan`)
+            Some(_) if take_back => {}
             Some(old) => {
                 if self.st.send_status(&old) != Some(SendStatus::Contested) {
                     return Err(CoreError::Refused(
@@ -1072,9 +1311,16 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
             branch,
             index,
         };
-        let mut picked = self
-            .st
-            .select_inputs(amount, replaces.as_ref(), self.maturity)?;
+        let mut picked = match &chosen {
+            Some((commits, spend_kept)) => self.st.select_chosen(amount, commits, *spend_kept, self.maturity, replaces.as_ref().filter(|_| take_back))?,
+            None => self.st.select_inputs(amount, replaces.as_ref(), self.maturity)?,
+        };
+        // K196: only the wallet's own choice for a new, ordinary payment
+        // takes small outputs along - not the owner's choice, not a late
+        // lock, not the replacement of a contested payment
+        if chosen.is_none() && !late && replaces.is_none() {
+            self.st.gather_small(&mut picked, amount, self.maturity, self.gather)?;
+        }
         if late {
             // only the fee estimate is kept; nothing is reserved
             picked.inputs.clear();
@@ -1144,6 +1390,7 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
             held: None,
             by_search: false,
             released: false,
+            direct: false,
         };
         let sealed = self.commit_sealed(Event::Prepared(Box::new(rec)))?;
         Ok(Prepared {
@@ -1698,6 +1945,7 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
         let rec = DraftRec {
             slate_id: parsed.slate_id,
             s1_fp: sha(s1).to_vec(),
+            s1: s1.to_vec(),
             s2: built.s2.clone(),
             key_id: key_id.to_bytes().to_vec(),
             commit: built.commit.to_vec(),
@@ -1831,6 +2079,32 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
         self.st.sends.get(&state::hex(op)).is_some_and(|s| s.invoice)
     }
 
+    /// K194: own outputs no record of a payment stands for, newest first.
+    /// Reads only.
+    pub fn unrecorded_outputs(&self) -> Vec<Unrecorded> {
+        self.st
+            .unrecorded()
+            .into_iter()
+            .map(|o| Unrecorded { commit: o.commit.clone(), value: o.value, height: o.height, old: o.old, coinbase: o.coinbase, spent: o.spent })
+            .collect()
+    }
+
+    /// The block the wallet stood at when an outgoing payment was
+    /// prepared: its place in time among the operations.
+    pub fn send_made_height(&self, op: &OpId) -> Option<u64> {
+        Some(self.st.sends.get(&state::hex(op))?.r_height)
+    }
+
+    /// The same for an incoming payment the wallet has a record of.
+    pub fn incoming_made_height(&self, slate_id: &SlateId) -> Option<u64> {
+        Some(self.st.drafts.get(&state::hex(slate_id))?.r_height)
+    }
+
+    /// The number of an outgoing payment's slate.
+    pub fn send_slate_id(&self, op: &OpId) -> Option<SlateId> {
+        Some(self.st.sends.get(&state::hex(op))?.slate_id)
+    }
+
     /// The block an outgoing payment's kernel was seen in, if it was (K190).
     pub fn send_kernel_height(&self, op: &OpId) -> Option<u64> {
         self.st.sends.get(&state::hex(op))?.kernel_height
@@ -1839,6 +2113,15 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
     /// The block an incoming payment's kernel was seen in, if it was (K190).
     pub fn incoming_kernel_height(&self, slate_id: &SlateId) -> Option<u64> {
         self.st.drafts.get(&state::hex(slate_id))?.kernel_height
+    }
+
+    /// K200: the sender's request of an incoming payment this wallet
+    /// answered, as it came. Kept with the payment's record; gone when the
+    /// payment is abandoned. A payment taken by unattended receive has no
+    /// record and so no text. Reads only.
+    pub fn incoming_request(&self, slate_id: &SlateId) -> Option<Vec<u8>> {
+        let d = self.st.drafts.get(&state::hex(slate_id))?;
+        (!d.s1.is_empty()).then(|| d.s1.clone())
     }
 
     /// The reply this wallet made to an incoming payment (S2), as it is
@@ -1988,6 +2271,7 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
         let rec = DraftRec {
             slate_id: built.slate_id,
             s1_fp: sha(&built.i1).to_vec(),
+            s1: Vec::new(),
             s2: Vec::new(),
             key_id: key_id.to_bytes().to_vec(),
             commit: built.commit.to_vec(),
@@ -2231,6 +2515,7 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
             held: None,
             by_search: false,
             released: false,
+            direct: false,
         };
         // the signed I2 exists only in memory until this returns
         self.commit_sealed(Event::InvoicePaid(Box::new(rec)))?;
@@ -2319,6 +2604,8 @@ pub struct Contact {
     pub name: String,
     /// Slatepack address of the contact, if known.
     pub address: Option<[u8; 32]>,
+    /// K199: the owner compared the check code with the contact.
+    pub checked: bool,
 }
 
 fn bech32_encode(hrp: &str, key: &[u8; 32]) -> Result<String, CoreError> {
@@ -2405,7 +2692,13 @@ type Sealer<'a> = (
 /// The variations of preparing a send.
 #[derive(Default)]
 struct How<'a> {
+    /// K195: the outputs the owner chose to pay with, and whether one
+    /// marked "not to be spent" among them may be spent this once.
+    chosen: Option<(Vec<[u8; 33]>, bool)>,
     replaces: Option<OpId>,
+    /// K197: `replaces` names a signed payment the owner takes back, and
+    /// `chosen` are its inputs.
+    take_back: bool,
     not_a_repeat: bool,
     proof_to: Option<[u8; 32]>,
     late: bool,

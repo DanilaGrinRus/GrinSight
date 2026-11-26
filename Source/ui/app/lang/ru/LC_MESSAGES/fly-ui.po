@@ -782,3 +782,390 @@ msgstr "Выключение Tor закрывает кошелёк и снова
 
 msgid "Send it directly"
 msgstr "Отправить напрямую"
+
+msgid "The wallet starts checking the network from a starting point built into the program. It can make one of its own from the chain it has checked itself — a block well below the tip. From the next unlock the wallet starts from that point, so the start is shorter. Only you vouch for your own point: it is as good as the check this wallet has done. Money, keys and history are not touched."
+msgstr "Кошелёк начинает проверку сети со стартовой точки, встроенной в программу. Он может сделать свою — из цепи, которую проверил сам: это блок заметно ниже вершины. Со следующего входа кошелёк начнёт с неё, и запуск станет короче. За свою точку ручаетесь только вы: она так же хороша, как проверка, которую сделал этот кошелёк. Деньги, ключи и история не затрагиваются."
+
+msgid "To go back: on the login screen, Options → Own nodes and own point, clear the Own point field and save. The wallet starts from the built-in point again. The same point can be pasted into that field on another computer of yours."
+msgstr "Как вернуть: на экране входа «Опции» → «Свои ноды и своя точка», очистите поле «Своя точка» и сохраните. Кошелёк снова начнёт со встроенной точки. Ту же точку можно вставить в это поле на другом своём компьютере."
+
+msgid "Synchronisation numbers"
+msgstr "Числа синхронизации"
+
+msgid "Hide the numbers"
+msgstr "Скрыть числа"
+
+msgid "Tor is switched off at once, the wallet stays open; after that payments go directly until you switch Tor back on."
+msgstr "Tor выключается сразу, кошелёк остаётся открытым; дальше платежи идут напрямую, пока вы не включите Tor обратно."
+
+msgid "Each of the two can be switched off, in case you need to. Off means its program does not run. Tor is switched at once and the wallet stays open; for Nostr the wallet locks and asks for the password again."
+msgstr "Каждую из двух частей можно выключить — на всякий случай. Выключено значит, что её программа не работает. Tor переключается сразу, кошелёк остаётся открытым; для Nostr кошелёк закрывается и снова спрашивает пароль."
+
+msgid "Switch Tor off? Without it there are no payments to an address and no messages, and a transaction goes to the network directly: the node sees the address of your device. It takes effect at once; the wallet stays open."
+msgstr "Выключить Tor? Без него нет платежей на адрес и сообщений, а транзакция идёт в сеть напрямую: нода видит адрес вашего устройства. Действует сразу; кошелёк остаётся открытым."
+
+msgid "Switch Tor on? It takes effect at once; Tor needs a little time to come up."
+msgstr "Включить Tor? Действует сразу; Tor нужно немного времени, чтобы подняться."
+
+msgid "All"
+msgstr "Все"
+
+msgid "Incoming only"
+msgstr "Входящие"
+
+msgid "Outgoing only"
+msgstr "Исходящие"
+
+msgid "By contact"
+msgstr "По контакту"
+
+msgid "Hide the history"
+msgstr "Скрыть историю"
+
+msgid "Hide every payment that has ended by now from the lists of this window? Nothing is deleted: the records stay in the wallet's encrypted file, which needs them — for payments under way and so that no payment is answered twice. Payments still under way and new ones stay visible. You can show the hidden ones again."
+msgstr "Скрыть из списков этого окна все платежи, которые к этому моменту закончились? Ничего не удаляется: записи остаются в зашифрованном файле кошелька, они ему нужны — для платежей в пути и чтобы не ответить на один платёж дважды. Платежи в пути и новые остаются видны. Скрытое можно показать снова."
+
+msgid "Hide"
+msgstr "Скрыть"
+
+msgid "Hidden in this window:"
+msgstr "Скрыто в этом окне:"
+
+msgid "Show them again"
+msgstr "Показать снова"
+
+msgid "Block"
+msgstr "Блок"
+
+msgid "Who"
+msgstr "Кто"
+
+msgid "State"
+msgstr "Состояние"
+
+msgid "Everything is hidden"
+msgstr "Всё скрыто"
+
+msgid "Outputs"
+msgstr "Выходы"
+
+msgid "Let the wallet choose the outputs"
+msgstr "Пусть выходы выберет кошелёк"
+
+msgid "Choose the outputs to pay with"
+msgstr "Выбрать выходы для оплаты"
+
+msgid "Your money is kept in outputs: one for every payment you got and for the change of every payment you made. By itself the wallet takes the largest first. Here you can name the outputs yourself: the payment is paid with exactly those, all of them, and the change comes back as one new output."
+msgstr "Ваши деньги лежат выходами: по одному на каждый полученный платёж и на сдачу каждого вашего платежа. Сам кошелёк берёт сначала самые крупные. Здесь вы можете назвать выходы сами: платёж будет оплачен ровно ими, всеми, а сдача вернётся одним новым выходом."
+
+msgid "marked “not to be spent”"
+msgstr "помечен «не тратить»"
+
+msgid "block "
+msgstr "блок "
+
+msgid "The wallet has no outputs yet"
+msgstr "У кошелька пока нет выходов"
+
+msgid "Chosen: "
+msgstr "Выбрано: "
+
+msgid "You chose an output you marked “not to be spent”. It is spent only if you say so here, for this payment."
+msgstr "Вы выбрали выход, который пометили «не тратить». Он будет потрачен, только если вы подтвердите это здесь, для этого платежа."
+
+msgid "✓ Spend it in this payment"
+msgstr "✓ Потратить его в этом платеже"
+
+msgid "Spend it in this payment"
+msgstr "Потратить его в этом платеже"
+
+msgid "Your money is kept in outputs: one for every payment you got and for the change of every payment you made. An output you mark “not to be spent” stays yours, but the wallet passes it by when it pays, and “Available” is shown without it. You take the mark off here whenever you like."
+msgstr "Ваши деньги лежат выходами: по одному на каждый полученный платёж и на сдачу каждого вашего платежа. Выход с пометкой «не тратить» остаётся вашим, но кошелёк обходит его при оплате, и «Доступно» показано без него. Пометку можно снять здесь же в любой момент."
+
+msgid "✓ Not to be spent"
+msgstr "✓ Не тратить"
+
+msgid "Do not spend"
+msgstr "Не тратить"
+
+msgid "Many small outputs"
+msgstr "Много мелких выходов"
+
+msgid "Every output a payment spends adds to its fee, and a wallet restored from the words shows each as a line of its own in other programs. You can make one output of many: the wallet pays itself, for a fee. It is one transaction in the chain, and whoever looks at the chain sees from it that these outputs had one owner."
+msgstr "Каждый выход, который тратит платёж, добавляет к его комиссии, а в других программах кошелёк, восстановленный по словам, показывает каждый отдельной строкой. Из многих выходов можно сделать один: кошелёк платит сам себе, за комиссию. В цепи это одна транзакция, и по ней видно, что у этих выходов был один владелец."
+
+msgid "Collect into one"
+msgstr "Собрать в один"
+
+msgid "✓ Small ones go along with payments"
+msgstr "✓ Мелкие едут с платежами"
+
+msgid "Take small ones along with payments"
+msgstr "Брать мелкие с платежами"
+
+msgid "A payment that has change now also spends up to eight of the smallest outputs, and they come back inside the change. The amount paid is the same; the fee is a little higher; the outputs spent together are seen to have one owner. Marked outputs are not touched."
+msgstr "Платёж со сдачей теперь заодно тратит до восьми самых мелких выходов, и они возвращаются в составе сдачи. Сумма платежа та же; комиссия чуть выше; по выходам, потраченным вместе, видно, что у них один владелец. Помеченные выходы не трогаются."
+
+msgid "Signing…"
+msgstr "Подписываю…"
+
+msgid "Collect"
+msgstr "Собрать"
+
+msgid "Take this payment back"
+msgstr "Отозвать этот платёж"
+
+msgid "Take it back"
+msgstr "Отозвать"
+
+msgid "Sign and wait for Tor"
+msgstr "Подписать и ждать Tor"
+
+msgid "Sign, and send this one directly"
+msgstr "Подписать и отправить этот напрямую"
+
+msgid "QR code to a file"
+msgstr "QR-код в файл"
+
+msgid "Conversation"
+msgstr "Переписка"
+
+msgid "Add a contact to write to them and to pay them by name."
+msgstr "Добавьте контакт, чтобы писать ему и платить по имени."
+
+msgid "Choose a contact on the right to see the conversation."
+msgstr "Выберите контакт справа, чтобы увидеть переписку."
+
+msgid "Open the conversation on a page of its own"
+msgstr "Открыть переписку на отдельной странице"
+
+msgid "Open the conversation in a window of its own"
+msgstr "Открыть переписку в отдельном окне"
+
+msgid "Delete the contact"
+msgstr "Удалить контакт"
+
+msgid "Delete this contact and its conversation?"
+msgstr "Удалить контакт и переписку с ним?"
+
+msgid "The rest are under “Contacts”."
+msgstr "Остальные — в «Контактах»."
+
+msgid "Add"
+msgstr "Добавить"
+
+msgid "Hide details"
+msgstr "Скрыть подробности"
+
+msgid "you have paid them: a payment is in a block"
+msgstr "вы ему платили: платёж в блоке"
+
+msgid "Delete with the conversation"
+msgstr "Удалить вместе с перепиской"
+
+msgid "Message keys one a line; wallet addresses one a line, each on the line of its key (a line may be left empty). The contacts get the names “Contact 1”, “Contact 2”…"
+msgstr "Ключи для сообщений — по одному в строке; адреса кошельков — по одному в строке, каждый в строке своего ключа (строку можно оставить пустой). Контакты получат имена «Контакт 1», «Контакт 2»…"
+
+msgid "Message keys (npub1…)"
+msgstr "Ключи для сообщений (npub1…)"
+
+msgid "Wallet addresses (grin1…), optional"
+msgstr "Адреса кошельков (grin1…), необязательно"
+
+msgid "Add these contacts"
+msgstr "Добавить эти контакты"
+
+msgid "Close the list to add"
+msgstr "Закрыть список для добавления"
+
+msgid "Add a list"
+msgstr "Добавить списком"
+
+msgid "Delete all"
+msgstr "Удалить все"
+
+msgid "Delete every contact and conversation"
+msgstr "Удалить все контакты и переписки"
+
+msgid "Delete"
+msgstr "Удалить"
+
+msgid "No"
+msgstr "Нет"
+
+msgid "Your contacts"
+msgstr "Контакты"
+
+msgid "All contacts"
+msgstr "Все контакты"
+
+msgid "Or a Slatepack you were sent: a payment, an invoice, or the answer to your invoice"
+msgstr "Или присланный вам Slatepack: платёж, счёт или ответ на ваш счёт"
+
+msgid "Or ask for GRIN: the wallet makes an invoice for the amount, you pass its text to whoever pays, and paste their answer back here."
+msgstr "Или запросите GRIN: кошелёк выставит счёт на сумму, его текст вы передаёте плательщику, а ответ вставляете сюда же."
+
+msgid "amount to ask for, GRIN"
+msgstr "сколько запросить, GRIN"
+
+msgid "Make an invoice"
+msgstr "Выставить счёт"
+
+msgid "Change the contact"
+msgstr "Изменить контакт"
+
+msgid "The name and the wallet address can be changed. The message key cannot: with another key it is another contact — add that one and delete this."
+msgstr "Имя и адрес кошелька можно изменить. Ключ для сообщений — нет: с другим ключом это другой контакт, его добавляют, а этот удаляют."
+
+msgid "Ask for GRIN"
+msgstr "Запросить GRIN"
+
+msgid "✓ checked: the check code was compared"
+msgstr "✓ сверен: код сверки сравнили"
+
+msgid "✓ Checked: you compared the check code with this contact"
+msgstr "✓ Сверен: вы сравнили код сверки с этим контактом"
+
+msgid "Is it really them?"
+msgstr "Это точно он?"
+
+msgid "Both wallets show the same six words when each has the other's message key and address right. Compare them with the contact over another channel — a call, another messenger, in person. They are not the words of your wallet and are no secret. The same words mean nobody swapped a key or an address between you; they do not prove who the person is."
+msgstr "Оба кошелька показывают одни и те же шесть слов, когда у каждого верно записаны ключ сообщений и адрес другого. Сравните их с контактом по другому каналу — звонок, другой мессенджер, лично. Это не слова вашего кошелька и не секрет. Совпавшие слова значат, что между вами никто не подменил ключ или адрес; кто этот человек, они не доказывают."
+
+msgid "Show the check code"
+msgstr "Показать код сверки"
+
+msgid "They are the same"
+msgstr "Слова совпали"
+
+msgid "Take the mark off"
+msgstr "Снять отметку"
+
+msgid "Save a changed address first: the code is of the saved one, and the mark goes when the address changes."
+msgstr "Изменённый адрес сначала сохраните: код считается по сохранённому, а отметка снимается при смене адреса."
+
+msgid "Restart the wallet"
+msgstr "Перезапустить кошелёк"
+
+msgid "Show the payment as it came"
+msgstr "Показать платёж, как он пришёл"
+
+msgid "Try through Tor bridges"
+msgstr "Попробовать через мосты Tor"
+
+msgid "The wallet tries the built-in obfs4 bridges, then Snowflake, up to three minutes each. Tor still hides your device."
+msgstr "Кошелёк сам попробует встроенные мосты obfs4, затем Snowflake, до трёх минут на каждый. Tor по-прежнему скрывает ваше устройство."
+
+msgid "Stop trying the bridges"
+msgstr "Хватит пробовать мосты"
+
+msgid "Settings"
+msgstr "Настройки"
+
+msgid "Got it"
+msgstr "Понятно"
+
+msgid "Copy the words"
+msgstr "Скопировать слова"
+
+msgid "Look"
+msgstr "Вид"
+
+msgid "Language"
+msgstr "Язык"
+
+msgid "Safety"
+msgstr "Безопасность"
+
+msgid "Hide what the program reports"
+msgstr "Скрыть, что сообщает программа"
+
+msgid "Bridges, for where Tor is blocked"
+msgstr "Мосты — там, где Tor блокируют"
+
+msgid "How far the wallet has checked the network, and what its programs say"
+msgstr "Насколько кошелёк проверил сеть и что говорят его программы"
+
+msgid "Change the password, see the 24 words again, delete the wallet from this computer"
+msgstr "Сменить пароль, посмотреть 24 слова ещё раз, удалить кошелёк с этого компьютера"
+
+msgid "Any program on this computer can read the clipboard. In a minute the wallet empties it if the words are still there; the clipboard history of Windows (Win+V) it cannot empty."
+msgstr "Буфер обмена может прочитать любая программа на этом компьютере. Через минуту кошелёк очистит его, если слова ещё там; журнал буфера Windows (Win+V) он очистить не может."
+
+msgid "The wallet starts from the point built into the program, and the history before that point is proved by sampling its work. The wallet can make a point of its own further up, from the chain it has checked itself since then. From the next unlock it starts from there, so the start is shorter."
+msgstr "Кошелёк начинает с точки, встроенной в программу, и история до неё доказана выборкой её работы. Кошелёк может сделать свою точку выше — из цепи, которую сам проверил с тех пор. Со следующего входа он начнёт оттуда, и запуск станет короче."
+
+msgid "Your point carries the proof of the built-in one: up to the built-in point the history stays proved, and from it to your point this wallet vouches. A point is made only from a chain that keeps that proof. Money, keys and history are not touched."
+msgstr "Ваша точка несёт доказательство встроенной: до встроенной точки история остаётся доказанной, а от неё до вашей ручается этот кошелёк. Точка делается только из цепи, которая сохраняет это доказательство. Деньги, ключи и история не затрагиваются."
+
+msgid "To carry the point to another device of yours: on the login screen there, Options → Own nodes and a point from another device, paste it whole. To go back to the built-in point: clear that field and save."
+msgstr "Чтобы перенести точку на другое ваше устройство: там на экране входа «Опции → Свои узлы и точка с другого устройства», вставьте её целиком. Чтобы вернуться к встроенной точке: очистите это поле и сохраните."
+
+msgid "Own nodes and a point from another device"
+msgstr "Свои узлы и точка с другого устройства"
+
+msgid "Usually not needed. Own nodes: servers of yours the wallet also asks. A point from another device: a starting point your wallet made there, so that this one starts shorter."
+msgstr "Обычно не нужно. Свои узлы — ваши серверы, которые кошелёк тоже спрашивает. Точка с другого устройства — стартовая точка, которую там сделал ваш кошелёк, чтобы этот запускался короче."
+
+msgid "No contacts yet."
+msgstr "Контактов пока нет."
+
+msgid "Actions on the contact"
+msgstr "Действия с контактом"
+
+msgid "check code compared · you have paid them"
+msgstr "код сверен · вы ему платили"
+
+msgid "check code compared"
+msgstr "код сверен"
+
+msgid "you have paid them · check code not compared"
+msgstr "вы ему платили · код не сверен"
+
+msgid "check code not compared"
+msgstr "код не сверен"
+
+msgid "Find a contact"
+msgstr "Найти контакт"
+
+msgid "Find by name"
+msgstr "Найти по имени"
+
+msgid "Send GRIN to the contact"
+msgstr "Отправить GRIN контакту"
+
+msgid "Change the contact's details"
+msgstr "Изменить данные контакта"
+
+msgid "The conversation will be here"
+msgstr "Здесь будет переписка"
+
+msgid "Choose a contact"
+msgstr "Выберите контакт"
+
+msgid "Add a contact by their message key (npub1…): you can write to them and pay them by name. Messages travel over Tor."
+msgstr "Добавьте контакт по его ключу сообщений (npub1…): ему можно будет писать и платить по имени. Сообщения идут через Tor."
+
+msgid "Choose a contact on the left to see the conversation."
+msgstr "Выберите контакт слева, чтобы увидеть переписку."
+
+msgid "More"
+msgstr "Ещё"
+
+msgid "Compare the check code"
+msgstr "Сверить код"
+
+msgid "Delete the contact…"
+msgstr "Удалить контакт…"
+
+msgid "Delete the contact “{}”?"
+msgstr "Удалить контакт «{}»?"
+
+msgid "The conversation with them is deleted too. Payments stay in the list of payments."
+msgstr "Переписка с ним тоже удалится. Платежи останутся в списке операций."
+
+msgid "A starting point your wallet made on another device of yours (Details → Make my own starting point) can be pasted here whole, so that this wallet starts shorter. It keeps the proof of the built-in point. Leave empty for the built-in point."
+msgstr "Стартовую точку, которую ваш кошелёк сделал на другом вашем устройстве («Подробнее → Сделать свою стартовую точку»), можно вставить сюда целиком, чтобы этот кошелёк запускался короче. Она сохраняет доказательство встроенной точки. Оставьте пустым для встроенной точки."
+
+msgid "Point from another device"
+msgstr "Точка с другого устройства"

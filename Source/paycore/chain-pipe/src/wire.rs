@@ -5,7 +5,7 @@ use fly_paycore_pipe_link::Cut;
 /// Largest frame in either direction: room for the largest block.
 pub const MAX_FRAME: usize = 4 * 1024 * 1024;
 /// Version of this protocol; the two sides must agree exactly.
-pub const VERSION: u8 = 10;
+pub const VERSION: u8 = 11;
 
 // requests
 pub(crate) const STATUS: u8 = 0x01;
@@ -16,6 +16,7 @@ pub(crate) const OLD: u8 = 0x05;
 pub(crate) const OLD_SINCE: u8 = 0x06;
 pub(crate) const POINT: u8 = 0x07;
 pub(crate) const POST_DIRECT: u8 = 0x08;
+pub(crate) const TOR: u8 = 0x09;
 // answers
 pub(crate) const STATUS_IS: u8 = 0x81;
 pub(crate) const NOTHING: u8 = 0x82;
@@ -28,6 +29,7 @@ pub(crate) const NO_PROBLEM: u8 = 0x88;
 pub(crate) const OLD_ARE: u8 = 0x89;
 pub(crate) const REANCHOR_EXTENDING: u8 = 0x8A;
 pub(crate) const POINT_IS: u8 = 0x8B;
+pub(crate) const DONE: u8 = 0x8C;
 pub(crate) const UNKNOWN: u8 = 0x8F;
 
 /// What the chain process needs to start. Nothing in it is secret, and

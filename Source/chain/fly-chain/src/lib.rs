@@ -100,6 +100,11 @@ pub struct Point {
 /// point passes when the program starts, and to be of that height; why
 /// none can be made is said in words for the user.
 pub fn point_from(chain: &fly_chain_headers::chain::HeaderChain, made: u64) -> Result<Vec<u8>, String> {
+    // K202: a point is made only of a chain that does not lose the proof
+    // of the program's point, and has to carry that proof itself
+    if refused(chain.start()) {
+        return Err("no starting point of your own is made from this chain: it began at a point the proof in this program does not reach; clear your own point first".to_string());
+    }
     let tip = chain.tip().height;
     let at = node::archive_height(tip);
     let record = match chain.record_at(at, made) {
@@ -113,9 +118,21 @@ pub fn point_from(chain: &fly_chain_headers::chain::HeaderChain, made: u64) -> R
         Err(_) => return Err("the header file cannot be read".to_string()),
     };
     match fly_chain_headers::checkpoint::check(&record, chain.net()) {
-        Ok(start) if start.height() == at => Ok(record),
+        Ok(start) if start.height() == at && !refused(&start) => Ok(record),
         _ => Err("the starting point made does not pass its own check".to_string()),
     }
+}
+
+/// Whether the proof of history this program carries for the network of
+/// `start` does not reach it; `false` when it carries none (K202).
+#[cfg(feature = "history-proof")]
+fn refused(start: &fly_chain_headers::checkpoint::Start) -> bool {
+    matches!(fly_chain_headers::proof::history_of(start), fly_chain_headers::proof::History::Refused(_))
+}
+
+#[cfg(not(feature = "history-proof"))]
+fn refused(_start: &fly_chain_headers::checkpoint::Start) -> bool {
+    false
 }
 
 /// A point the user left in the data directory (`own-point.json`) comes

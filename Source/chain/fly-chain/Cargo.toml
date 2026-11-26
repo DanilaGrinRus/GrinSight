@@ -27,9 +27,16 @@ fly-chain-tor = { path = "../tor" }
 fly-web-dial = { path = "../../web/dial" }
 
 [features]
+# From 0.4.6 every product build carries the proof of history (the decision
+# of 26.11: one build, on the proof).
+default = ["history-proof"]
 # Lets the program run on the network of automated tests, with a starting
 # point read from a file in its data directory. Never part of a product build.
 test-net = []
+# The proof of the history before the starting point is compiled in, checked
+# when the chain is opened, and what came of it is said in the program's
+# words about itself. A build without it (no default features) is as 0.4.5.
+history-proof = ["fly-chain-headers/history-proof"]
 
 [dev-dependencies]
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }

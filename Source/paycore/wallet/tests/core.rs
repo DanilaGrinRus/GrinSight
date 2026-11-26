@@ -710,6 +710,45 @@ fn rollback_locks_prepared_operations() {
 }
 
 /// K3, K17: another transaction spends one input of a signed payment.
+/// K196: the standing word to take small outputs along is for a new,
+/// ordinary payment: a payment locked late reserves nothing and its fee
+/// is reckoned as before, and the replacement of a contested payment
+/// spends what it has to and no more.
+#[test]
+fn small_outputs_go_only_with_an_ordinary_payment() {
+    let small = |core: &C| core.outputs().into_iter().find(|o| o.value == GRIN / 10).map(|o| o.reserved);
+    let fee_of = |core: &C, op: &OpId| core.sends().into_iter().find(|s| s.0 == *op).map(|s| s.3);
+
+    let Setup { mut core, .. } = funded(1, &[5 * GRIN, GRIN / 10]);
+    let plain = core.send_prepare_late(GRIN, 0, None).unwrap();
+    let plain_fee = fee_of(&core, &plain.op);
+    core.send_cancel(&plain.op).unwrap();
+    core.set_gather(8);
+    let late = core.send_prepare_late(GRIN, 0, None).unwrap();
+    assert_eq!(fee_of(&core, &late.op), plain_fee);
+    assert_eq!(small(&core), Some(false));
+    core.send_cancel(&late.op).unwrap();
+    let ordinary = core.send_prepare(GRIN, 0, None, false).unwrap();
+    assert_eq!(small(&core), Some(true), "an ordinary payment does take it");
+    core.send_cancel(&ordinary.op).unwrap();
+
+    let Setup { mut chain, mut core, .. } = funded(1, &[2 * GRIN, 2 * GRIN, 5 * GRIN, GRIN / 10]);
+    let p = core.send_prepare(6 * GRIN, 0, None, false).unwrap();
+    let mut other = lw(2, chain.height);
+    let s2 = to_json(&foreign::receive_tx_stateless(&mut other.w, None, &from_json(&p.s1), None, None, false).unwrap());
+    let fin = core.send_finalize(&p.op, &s2).unwrap();
+    let tx: Transaction = ser::deserialize(&mut &fin.tx[..], ser::ProtocolVersion::local(), ser::DeserializationMode::default()).unwrap();
+    let ins: Vec<grin_core::core::transaction::CommitWrapper> = tx.inputs().into();
+    let mut a = Advance { inputs: vec![ins[0].commitment()], ..Advance::default() };
+    chain.block(&mut a);
+    core.chain_advance(&a).unwrap();
+    assert_eq!(core.send_status(&p.op), Some(SendStatus::Contested));
+    assert_eq!(small(&core), Some(false));
+    core.set_gather(8);
+    core.send_prepare(GRIN / 2, 0, Some(p.op), false).unwrap();
+    assert_eq!(small(&core), Some(false));
+}
+
 #[test]
 fn contested_operation_replacement_and_death() {
     let Setup {
@@ -1075,6 +1114,73 @@ fn reanchor_between_draft_and_inclusion_prevents_binding() {
         Some(Row::S7a)
     );
     assert_eq!(core.balance().spendable, GRIN);
+}
+
+/// K195: the owner's mark "not to be spent" is kept in the wallet's file:
+/// it is there after the wallet is opened again, it outlives a gap in the
+/// blocks that takes away what the wallet knew of its outputs, and the
+/// wallet's own choice of inputs passes the marked output by in every way
+/// of paying. An output that is not there cannot be marked.
+#[test]
+fn the_mark_not_to_be_spent_is_durable() {
+    let Setup { sim, chain, mut core } = funded(7, &[5 * GRIN, 3 * GRIN]);
+    let outs = core.outputs();
+    assert_eq!(outs.iter().map(|o| (o.value, o.kept, o.reserved, o.immature)).collect::<Vec<_>>(), [(5 * GRIN, false, false, false), (3 * GRIN, false, false, false)]);
+    let five: [u8; 33] = outs[0].commit.clone().try_into().unwrap();
+    core.output_keep(&five, true).unwrap();
+    assert_eq!((core.balance().spendable, core.balance().kept), (3 * GRIN, 5 * GRIN));
+    let ops = sim.ops();
+    assert!(matches!(core.output_keep(&[9; 33], true), Err(CoreError::NotFound)));
+    assert_eq!(sim.ops(), ops, "a refused mark writes nothing");
+    assert!(core.output_keep(&[9; 33], false).is_ok(), "taking a mark off what has none is nothing");
+    // the wallet's own choice, the ordinary way and the late lock
+    assert!(matches!(core.send_prepare(4 * GRIN, 0, None, false), Err(CoreError::InsufficientFunds)));
+    drop(core);
+    // opened again
+    let (mut core, _) = open(&sim, 7);
+    assert_eq!((core.balance().spendable, core.balance().kept), (3 * GRIN, 5 * GRIN));
+    assert!(core.outputs()[0].kept);
+    // a gap: what the wallet knew of its outputs goes, the mark stays for
+    // when the output is found again
+    core.chain_reanchor(chain.height + 50, [0xAA; 32]).unwrap();
+    assert_eq!((core.balance().spendable, core.balance().kept), (0, 0));
+    drop(core);
+    let (mut core, _) = open(&sim, 7);
+    core.output_keep(&five, false).unwrap();
+    assert_eq!(core.balance().kept, 0);
+}
+
+/// K198: the owner's agreement to the direct way for one payment is
+/// written with that payment: it is there after the wallet is opened
+/// again, it is for that payment alone, and only a signed payment that is
+/// in no block takes it.
+#[test]
+fn the_agreement_to_the_direct_way_is_durable() {
+    let Setup { sim, chain, mut core } = funded(7, &[5 * GRIN, 3 * GRIN]);
+    let mut other = lw(2, chain.height);
+    let mut pay = |core: &mut C| {
+        let p = core.send_prepare(GRIN, 0, None, false).unwrap();
+        let s2 = to_json(&foreign::receive_tx_stateless(&mut other.w, None, &from_json(&p.s1), None, None, false).unwrap());
+        core.send_finalize(&p.op, &s2).unwrap();
+        p.op
+    };
+    let unsigned = core.send_prepare(GRIN, 0, None, false).unwrap();
+    let ops = sim.ops();
+    assert!(matches!(core.send_agree_direct(&unsigned.op), Err(CoreError::Refused("only a signed payment that is in no block takes the direct way"))));
+    assert!(matches!(core.send_agree_direct(&[9; 16]), Err(CoreError::NotFound)));
+    assert_eq!(sim.ops(), ops, "a refusal writes nothing");
+    core.send_cancel(&unsigned.op).unwrap();
+    let first = pay(&mut core);
+    assert!(!core.send_direct(&first));
+    core.send_agree_direct(&first).unwrap();
+    let ops = sim.ops();
+    core.send_agree_direct(&first).unwrap();
+    assert_eq!(sim.ops(), ops, "agreed already: nothing is written");
+    let second = pay(&mut core);
+    assert_eq!((core.send_direct(&first), core.send_direct(&second), core.send_direct(&[9; 16])), (true, false, false));
+    drop(core);
+    let (core, _) = open(&sim, 7);
+    assert_eq!((core.send_direct(&first), core.send_direct(&second)), (true, false));
 }
 
 /// K8: stateless receive writes nothing; the output is found by the scan and

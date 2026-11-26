@@ -8,25 +8,25 @@ GrinSight is a research light wallet for [Grin](https://grin.mw). It needs no fu
 
 ## Download
 
-Version **0.4.4** — [all files and SHA-256 sums](https://github.com/DanilaGrinRus/GrinSight/releases/tag/v0.4.4).
+Version **0.4.6** — [all files and SHA-256 sums](https://github.com/DanilaGrinRus/GrinSight/releases/tag/v0.4.6).
 
 | Platform | File |
 |---|---|
-| **Windows 10/11 x64** — installer, no administrator rights | [GrinSight-0.4.4-windows-x64-setup.exe](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-windows-x64-setup.exe) |
-| **Windows x64** — portable, one file | [GrinSight-0.4.4-windows-x64-portable.exe](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-windows-x64-portable.exe) |
-| **Linux** — Debian 10+ / Ubuntu 20.04+ | [GrinSight-0.4.4-linux-amd64.deb](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-linux-amd64.deb) |
-| **Linux** — Fedora / RHEL 8+ | [GrinSight-0.4.4-linux-x86_64.rpm](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-linux-x86_64.rpm) |
-| **Linux** — any with glibc 2.28+ | [GrinSight-0.4.4-linux-x86_64.tar.gz](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-linux-x86_64.tar.gz) |
-| **Android 8+** (arm64) — checked on an emulator only | [GrinSight-0.4.4-android-arm64.apk](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-android-arm64.apk) |
-| **macOS 11+** — Apple silicon and Intel; no Tor bridges, not started on a real Mac | [GrinSight-0.4.4-macos-universal.dmg](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-macos-universal.dmg) |
+| **Windows 10/11 x64** — installer, no administrator rights | [GrinSight-0.4.6-windows-x64-setup.exe](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.6/GrinSight-0.4.6-windows-x64-setup.exe) |
+| **Windows x64** — portable, one file | [GrinSight-0.4.6-windows-x64-portable.exe](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.6/GrinSight-0.4.6-windows-x64-portable.exe) |
+| **Linux** — Debian 10+ / Ubuntu 20.04+ | [GrinSight-0.4.6-linux-amd64.deb](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.6/GrinSight-0.4.6-linux-amd64.deb) |
+| **Linux** — Fedora / RHEL 8+ | [GrinSight-0.4.6-linux-x86_64.rpm](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.6/GrinSight-0.4.6-linux-x86_64.rpm) |
+| **Linux** — any with glibc 2.28+ | [GrinSight-0.4.6-linux-x86_64.tar.gz](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.6/GrinSight-0.4.6-linux-x86_64.tar.gz) |
+| **Android 8+** (arm64) — checked on an emulator only | [GrinSight-0.4.6-android-arm64.apk](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.6/GrinSight-0.4.6-android-arm64.apk) |
+| **macOS 11+** — Apple silicon and Intel; no Tor bridges, not started on a real Mac | [GrinSight-0.4.6-macos-universal.dmg](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.6/GrinSight-0.4.6-macos-universal.dmg) |
 
 Check a file before running it — the hash must match its line in `SHA256SUMS.txt`:
 
 ```powershell
-Get-FileHash .\GrinSight-0.4.4-windows-x64-setup.exe -Algorithm SHA256
+Get-FileHash .\GrinSight-0.4.6-windows-x64-setup.exe -Algorithm SHA256
 ```
 
-On Windows and Linux 0.4.4 installs as **GrinSight Light**, next to GrinSight 0.4.2 if you have it; it does not pick up a 0.4.2 wallet — restore it from its words.
+On Windows and Linux 0.4.6 installs as **GrinSight Light**, next to GrinSight 0.4.2 if you have it; it does not pick up a 0.4.2 wallet — restore it from its words.
 
 ## How long it takes
 
@@ -52,6 +52,7 @@ More: [How it works and how to use it](Documents/HOW_IT_WORKS_EN.md).
 
 ## How it checks
 
+0. **History before the point** (new in 0.4.6). The program carries a proof of the history before the built-in point; the wallet checks it by sampling its work, after the FlyClient scheme: 420 places across all the accumulated work, each with its headers, the difficulty rule and its place in the header tree. Under a second. The number of samples is a margin, not derived for a stated probability; the hash of the point itself is still chosen by the release.
 1. **Headers.** Every header from the built-in point (mainnet height 4,115,520) to the tip is checked by the node's own rules: proof of work, difficulty, links. A heavier branch replaces the tip only when it carries more total work.
 2. **Coin state.** The unspent outputs are collected from PIBD segments at the nodes' archive point and matched to the roots in a verified header.
 3. **Every block** from the archive point to the tip is checked against its header before the wallet sees it.
@@ -76,9 +77,9 @@ More: [How it works and how to use it](Documents/HOW_IT_WORKS_EN.md).
 
 ## What was checked, and what was not
 
-- 599 tests on Windows in 23 sections, none failed; the window is driven against the real wallet process in 62 steps on Windows, Debian 10 and macOS.
-- Five review rounds by an AI reviewer: 50 findings, all fixed. **No audit by a human.**
-- On mainnet the author restored a wallet from its words and exchanged payments with Grim 0.3.7 over Tor in both directions (Windows, the build before the published one). **Other wallets, paying an invoice and cancelling were not run live with this build**; they are covered by tests.
+- 682 tests on Windows, none failed; the window is driven against the real wallet process in 86 steps on Windows, Debian 10 and macOS.
+- Six review rounds by an AI reviewer (0.4.3–0.4.5): 53 findings, all fixed. **What was added in 0.4.6 has not been reviewed. No audit by a human.**
+- On mainnet the author restored a wallet from its words and exchanged payments with Grim 0.3.7 over Tor in both directions (Windows, version 0.4.3). **No payment was made by 0.4.6 on a live network**; other wallets, invoices, cancelling and taking back are covered by tests.
 - **Android was run on an emulator only. The macOS image was built and its window scenario run on GitHub's machine; it was not started on a real Mac and has no Tor bridges. Nothing is signed.**
 - Not in this version, present in 0.4.2: scanning QR codes, GlauxNet, "Check myself" from the first block, "Try the future".
 

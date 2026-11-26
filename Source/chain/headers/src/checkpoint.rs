@@ -14,7 +14,7 @@
 //!
 //! The format is version 1 of the record used by the Fly core
 //! (`CheckpointRecord`), so that points prepared there can be read here.
-use crate::peaks::Peaks;
+use crate::peaks::{Peaks, Track};
 use crate::{hash_bytes, read_header, rules, Net, MAX_HEADER_LEN};
 use grin_core::core::hash::{Hash, Hashed};
 use grin_core::core::BlockHeader;
@@ -58,6 +58,18 @@ struct Record {
     /// Merkle proof of S-2 under the root S-1 commits to.
     #[serde(default)]
     older_context_path: Option<Vec<[u8; 32]>>,
+    /// K202: a point made by a wallet carries the Merkle proof of an earlier
+    /// point - the one its chain came from, down to the program's own - under
+    /// the root S commits to. Absent in a record made before 0.4.6.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    base: Option<Base>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct Base {
+    height: u64,
+    path: Vec<[u8; 32]>,
 }
 
 /// A checked starting point: everything needed to verify the header after it.
@@ -74,6 +86,10 @@ pub struct Start {
     /// When the record was made for a release, in Unix seconds, as the
     /// record says. Not checked against anything.
     pub release_time: u64,
+    /// K202: the earlier point this one came from, followed through the
+    /// range that ends with S: the point itself when the record names none.
+    /// That the followed leaf is really that point is not checked here.
+    pub track: Track,
 }
 
 impl Start {
@@ -98,6 +114,7 @@ pub fn check(bytes: &[u8], net: Net) -> Result<Start, CheckError> {
     }
     let record: Record = serde_json::from_slice(bytes).map_err(|_| CheckError::Format)?;
     let paths_fit = record.previous_path.len() <= MAX_HASHES
+        && record.base.as_ref().is_none_or(|b| b.path.len() <= MAX_HASHES && b.height < record.height)
         && record.peaks.len() <= MAX_HASHES
         && record.older_context_path.as_ref().is_none_or(|p| p.len() <= MAX_HASHES);
     if record.version != 1
@@ -131,6 +148,16 @@ pub fn check(bytes: &[u8], net: Net) -> Result<Start, CheckError> {
     // the peaks before S, from the proof of S-1 under the root in S ...
     let before = Peaks::from_last_leaf(record.height, &prev, &hashes(&record.previous_path), anchor.prev_root)
         .map_err(|_| CheckError::Peaks)?;
+    // the earlier point followed to S: its path is taken up under the peaks
+    // before S (only its shape can be checked here), then S is added
+    let track = match &record.base {
+        Some(base) => {
+            let mut track = Track::from_path(&before, base.height, &hashes(&base.path)).map_err(|_| CheckError::Format)?;
+            track.append(&anchor).map_err(|_| CheckError::Peaks)?;
+            track
+        }
+        None => Track::begin(&before, &anchor).map_err(|_| CheckError::Peaks)?,
+    };
     // ... and S on top of them
     let mut peaks = before;
     peaks.append(&anchor).map_err(|_| CheckError::Peaks)?;
@@ -150,6 +177,7 @@ pub fn check(bytes: &[u8], net: Net) -> Result<Start, CheckError> {
         prev,
         peaks,
         release_time: record.release_time,
+        track,
     })
 }
 
@@ -169,6 +197,9 @@ pub struct Parts<'a> {
     pub before_older: &'a Peaks,
     /// When the record is made, in Unix seconds.
     pub release_time: u64,
+    /// K202: the earlier point followed through the range that ends with
+    /// S-1 - its path goes into the record; `None` writes a record without it.
+    pub base: Option<&'a Track>,
 }
 
 fn plain(hashes: &[Hash]) -> Vec<[u8; 32]> {
@@ -211,6 +242,14 @@ pub fn write(parts: &Parts<'_>) -> Option<Vec<u8>> {
     let height = parts.anchor.height;
     let mut peaks = parts.before_prev.clone();
     peaks.append(parts.prev).ok()?;
+    // the path of the earlier point has to be under the very range before S
+    let base = match parts.base {
+        Some(track) if track.peaks() == &peaks && track.target() < height => {
+            Some(Base { height: track.target(), path: plain(&track.path()?) })
+        }
+        Some(_) => return None,
+        None => None,
+    };
     peaks.append(parts.anchor).ok()?;
     let record = Record {
         version: 1,
@@ -229,8 +268,10 @@ pub fn write(parts: &Parts<'_>) -> Option<Vec<u8>> {
         previous_path: last_leaf_path(parts.before_prev),
         release_time: parts.release_time,
         older_context_path: Some(last_leaf_path(parts.before_older)),
+        base,
     };
     let bytes = serde_json::to_vec(&record).ok()?;
     let read = check(&bytes, parts.net).ok()?;
-    (read.hash() == hash_bytes(parts.anchor) && read.peaks == peaks && read.prev.hash() == parts.prev.hash()).then_some(bytes)
+    let followed = parts.base.is_none_or(|track| read.track.target() == track.target());
+    (read.hash() == hash_bytes(parts.anchor) && read.peaks == peaks && read.prev.hash() == parts.prev.hash() && followed).then_some(bytes)
 }

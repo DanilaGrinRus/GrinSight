@@ -136,12 +136,11 @@ public class CoreService extends Service {
         } catch (IOException ignored) {
         }
         a.add("--chain"); a.add(lib + "/libfly_chain.so");
-        // what is switched off is not started: without Tor neither the program
-        // for the address nor the message program (it speaks through Tor)
-        if (!torOff) {
-            a.add("--onion"); a.add(lib + "/libfly_onion.so");
-        }
-        if (!torOff && !nostrOff) {
+        // with Tor off the programs that need it stay named: the wallet process
+        // holds them back until the switch is turned (K193). Nostr off: no
+        // message program at all.
+        a.add("--onion"); a.add(lib + "/libfly_onion.so");
+        if (!nostrOff) {
             a.add("--transport"); a.add(lib + "/libfly_mailbox.so");
             a.add("--relay"); a.add("wss://relay.floonet.dev");
         }

@@ -126,6 +126,10 @@ pub(crate) struct SendRec {
     /// This operation pays an invoice (signed when created).
     #[serde(default)]
     pub invoice: bool,
+    /// K198: the owner agreed that this one payment may go to the network
+    /// from this device's own address when Tor fails to send it.
+    #[serde(default)]
+    pub direct: bool,
     /// Late lock: inputs, change and the change path are chosen and made
     /// durable in the arming frame, not when S1 is built.
     #[serde(default)]
@@ -181,6 +185,11 @@ pub(crate) struct DeliveryRec {
 pub(crate) struct DraftRec {
     pub slate_id: SlateId,
     pub s1_fp: Vec<u8>,
+    /// K200: the sender's request as it came, kept to be shown again.
+    /// Empty: an invoice of the wallet's own, a draft made before this
+    /// was kept, or one that was abandoned.
+    #[serde(default)]
+    pub s1: Vec<u8>,
     pub s2: Vec<u8>,
     pub key_id: Vec<u8>,
     pub commit: Vec<u8>,
@@ -360,6 +369,21 @@ pub(crate) enum Event {
     AutoReceive {
         on: bool,
     },
+    /// K195: the owner's mark "not to be spent" on an output, set or taken off.
+    Keep {
+        commit: Vec<u8>,
+        on: bool,
+    },
+    /// K199: the owner's mark that the check code of a contact was compared
+    /// and was the same, set or taken off.
+    ContactChecked {
+        key: Vec<u8>,
+        on: bool,
+    },
+    /// K198: the owner's agreement to the direct way for one signed payment.
+    Direct {
+        op: OpId,
+    },
 }
 
 impl Event {
@@ -463,6 +487,11 @@ pub(crate) struct State {
     #[serde(default = "legacy_snapshot")]
     pub legacy_chain_evidence: bool,
     pub auto_receive: Option<u64>,
+    /// K195: the outputs the owner marked "not to be spent", by commitment.
+    /// A mark outlives a gap in the blocks: the output it names is found
+    /// again by the search and is still marked.
+    #[serde(default, skip_serializing_if = "std::collections::BTreeSet::is_empty")]
+    pub kept: std::collections::BTreeSet<String>,
     /// Opaque snapshot of the verified state V taken at the last checkpoint,
     /// with the height it describes.
     pub v_base: Option<(u64, Vec<u8>)>,
@@ -573,6 +602,10 @@ pub(crate) struct ContactRec {
     pub name: String,
     /// Slatepack address (payment-proof key) of the contact, if known.
     pub address: Option<Vec<u8>>,
+    /// K199: the owner compared the check code with the contact and it
+    /// was the same. Holds for the key and the address it was made for.
+    #[serde(default)]
+    pub checked: bool,
 }
 
 mod branch_serde {
@@ -626,6 +659,7 @@ impl State {
             undo: Vec::new(),
             legacy_chain_evidence: false,
             auto_receive: None,
+            kept: std::collections::BTreeSet::new(),
             v_base: None,
             v_deltas: Vec::new(),
             identity: None,
@@ -707,9 +741,44 @@ impl State {
     }
 
     pub(crate) fn any_contested(&self) -> bool {
+        // K197: a payment whose inputs went to the owner's own replacement
+        // of it, now in a block, is no question to the owner any more
         self.sends
             .values()
-            .any(|s| Self::in_flight(s) && s.conflict_height.is_some())
+            .any(|s| Self::in_flight(s) && s.conflict_height.is_some() && !self.sends.values().any(|x| x.replaces == Some(s.op) && x.kernel_height.is_some()))
+    }
+
+    /// K197: the payment under way that replaces this one, if there is one.
+    pub(crate) fn replaced_by(&self, op: &OpId) -> Option<OpId> {
+        self.sends.values().find(|x| Self::in_flight(x) && x.replaces == Some(*op)).map(|x| x.op)
+    }
+
+    /// K197: what taking a signed payment back would spend and come to:
+    /// all the inputs of the payment, the amount of the one output the
+    /// wallet makes for itself, the fee. The payment has to be signed, in
+    /// no block, not the payment of an invoice, and not being taken back
+    /// already.
+    pub(crate) fn take_back_plan(&self, op: &OpId) -> Result<(Vec<[u8; 33]>, u64, u64), CoreError> {
+        let s = self.sends.get(&hex(op)).ok_or(CoreError::NotFound)?;
+        if self.send_status(op) != Some(SendStatus::Finalized) {
+            return Err(CoreError::Refused("only a signed payment that is in no block can be taken back"));
+        }
+        if s.invoice {
+            return Err(CoreError::Refused("the payment of an invoice is not taken back"));
+        }
+        if self.replaced_by(op).is_some() {
+            return Err(CoreError::Refused("this payment is being taken back already"));
+        }
+        let mut commits = Vec::new();
+        let mut total = 0u64;
+        for c in &s.inputs {
+            let o = self.outputs.get(&hex(c)).filter(|o| o.spent.is_none()).ok_or(CoreError::Refused("an input of the payment is spent already"))?;
+            total = total.checked_add(o.value).ok_or(CoreError::Build)?;
+            commits.push(arr33(c)?);
+        }
+        let fee = grin_core::libtx::tx_fee(commits.len(), 1, 1);
+        let amount = total.checked_sub(fee).filter(|left| *left > 0).ok_or(CoreError::Refused("the payment would not pay the fee of taking it back"))?;
+        Ok((commits, amount, fee))
     }
 
     pub(crate) fn open_drafts(&self) -> usize {
@@ -749,6 +818,9 @@ impl State {
         for o in self.outputs.values().filter(|o| o.spent.is_none()) {
             let slot = if self.reserved_by(&o.commit).is_some() {
                 &mut b.reserved
+            } else if self.is_kept(&o.commit) {
+                // K195: marked "not to be spent" - the owner's, and not on offer
+                &mut b.kept
             } else if !self.mature(o, maturity) {
                 &mut b.immature
             } else {
@@ -757,6 +829,92 @@ impl State {
             *slot = slot.saturating_add(o.value);
         }
         b
+    }
+
+    /// K196: what collecting outputs into one would spend and cost. With
+    /// none named, every output the wallet could spend by its own choice -
+    /// unspent, mature, held by no payment, not marked - the smallest
+    /// first, `most` at most. Named ones are checked when the payment is made.
+    /// Gives the commitments, the amount of the one output that is made
+    /// and the fee. Less than two outputs are not collected, and neither
+    /// are outputs that would not pay their own fee.
+    pub(crate) fn collect_plan(&self, chosen: Option<&[[u8; 33]]>, maturity: u64, most: usize) -> Result<(Vec<[u8; 33]>, u64, u64), CoreError> {
+        let commits: Vec<[u8; 33]> = match chosen {
+            Some(chosen) => chosen.to_vec(),
+            None => {
+                // what one more input costs: an output worth no more is left alone
+                let one_more = grin_core::libtx::tx_fee(2, 1, 1).saturating_sub(grin_core::libtx::tx_fee(1, 1, 1));
+                let mut pool: Vec<&OutputRec> = self
+                    .outputs
+                    .values()
+                    .filter(|o| o.spent.is_none() && self.mature(o, maturity) && self.reserved_by(&o.commit).is_none() && !self.is_kept(&o.commit))
+                    .filter(|o| o.value > one_more)
+                    .collect();
+                pool.sort_by(|a, b| a.value.cmp(&b.value).then(a.commit.cmp(&b.commit)));
+                pool.into_iter().take(most).filter_map(|o| arr33(&o.commit).ok()).collect()
+            }
+        };
+        if commits.len() < 2 {
+            return Err(CoreError::Refused("there are not two outputs to collect"));
+        }
+        let mut total = 0u64;
+        for commit in &commits {
+            let o = self.outputs.get(&hex(commit)).filter(|o| o.spent.is_none()).ok_or(CoreError::Refused("a chosen output is not an unspent output of this wallet"))?;
+            total = total.checked_add(o.value).ok_or(CoreError::Build)?;
+        }
+        let fee = grin_core::libtx::tx_fee(commits.len(), 1, 1);
+        let amount = total.checked_sub(fee).filter(|left| *left > 0).ok_or(CoreError::Refused("the outputs would not pay the fee of collecting them"))?;
+        Ok((commits, amount, fee))
+    }
+
+    /// K196: on the owner's standing word, a payment takes some of the
+    /// wallet's smallest outputs along, so that they come back as part of
+    /// its one change output. Only a payment that has change takes any;
+    /// `most` at most; never one that is marked, held, immature or would
+    /// not pay for the fee it adds. The amount paid does not change.
+    pub(crate) fn gather_small(&self, picked: &mut Picked, amount: u64, maturity: u64, most: usize) -> Result<(), CoreError> {
+        if picked.change == 0 || picked.inputs.is_empty() {
+            return Ok(());
+        }
+        let mut pool: Vec<&OutputRec> = self
+            .outputs
+            .values()
+            .filter(|o| o.spent.is_none() && self.mature(o, maturity) && self.reserved_by(&o.commit).is_none() && !self.is_kept(&o.commit))
+            .filter(|o| !picked.inputs.iter().any(|taken| taken.commit == o.commit))
+            .collect();
+        pool.sort_by(|a, b| a.value.cmp(&b.value).then(a.commit.cmp(&b.commit)));
+        for o in pool.into_iter().take(most) {
+            let fee_now = grin_core::libtx::tx_fee(picked.inputs.len(), 2, 1);
+            let fee_with = grin_core::libtx::tx_fee(picked.inputs.len().saturating_add(1), 2, 1);
+            // an output that does not pay for itself is left where it is
+            if o.value <= fee_with.saturating_sub(fee_now) {
+                continue;
+            }
+            picked.inputs.push(o.clone());
+        }
+        let total = picked.inputs.iter().try_fold(0u64, |acc, o| acc.checked_add(o.value)).ok_or(CoreError::Build)?;
+        let fee = grin_core::libtx::tx_fee(picked.inputs.len(), 2, 1);
+        picked.change = total.checked_sub(amount).and_then(|left| left.checked_sub(fee)).ok_or(CoreError::Build)?;
+        picked.fee = fee;
+        Ok(())
+    }
+
+    /// K195: whether the owner marked this output "not to be spent".
+    pub(crate) fn is_kept(&self, commit: &[u8]) -> bool {
+        self.kept.contains(&hex(commit))
+    }
+
+    /// K195: the wallet's unspent outputs, the largest first: each with
+    /// what holds it back from being spent, if anything.
+    pub(crate) fn unspent_outputs(&self, maturity: u64) -> Vec<(&OutputRec, bool, bool, bool)> {
+        let mut list: Vec<(&OutputRec, bool, bool, bool)> = self
+            .outputs
+            .values()
+            .filter(|o| o.spent.is_none())
+            .map(|o| (o, self.reserved_by(&o.commit).is_some(), !self.mature(o, maturity), self.is_kept(&o.commit)))
+            .collect();
+        list.sort_by(|a, b| b.0.value.cmp(&a.0.value).then(a.0.commit.cmp(&b.0.commit)));
+        list
     }
 
     pub(crate) fn unspent(&self) -> Vec<([u8; 33], u64)> {
@@ -769,6 +927,44 @@ impl State {
 
     /// Choose inputs for `amount`. A replacement must spend an input of the
     /// operation it replaces, so that the two transactions exclude each other.
+    /// K195: pay `amount` with exactly these outputs, all of them. Each
+    /// has to be the wallet's, unspent, mature and held by no payment; one
+    /// marked "not to be spent" is taken only with the owner's separate
+    /// word for this payment (`spend_kept`). Nothing is added to them and
+    /// none is left out: if they do not cover the amount and its fee, the
+    /// payment is refused.
+    /// K197: `held_by` - the payment being taken back, whose outputs these
+    /// are: held by it, they can be chosen all the same.
+    pub(crate) fn select_chosen(&self, amount: u64, chosen: &[[u8; 33]], spend_kept: bool, maturity: u64, held_by: Option<&OpId>) -> Result<Picked, CoreError> {
+        if chosen.is_empty() {
+            return Err(CoreError::Refused("no output is chosen"));
+        }
+        let mut inputs: Vec<OutputRec> = Vec::new();
+        for commit in chosen {
+            if inputs.iter().any(|o| o.commit == commit.as_slice()) {
+                return Err(CoreError::Refused("an output is chosen twice"));
+            }
+            let o = self.outputs.get(&hex(commit)).filter(|o| o.spent.is_none()).ok_or(CoreError::Refused("a chosen output is not an unspent output of this wallet"))?;
+            if !self.mature(o, maturity) || self.reserved_by(&o.commit).is_some_and(|holder| Some(&holder.op) != held_by) {
+                return Err(CoreError::Refused("a chosen output cannot be spent now"));
+            }
+            if self.is_kept(&o.commit) && !spend_kept {
+                return Err(CoreError::Refused("a chosen output is marked not to be spent"));
+            }
+            inputs.push(o.clone());
+        }
+        let total = inputs.iter().try_fold(0u64, |acc, o| acc.checked_add(o.value)).ok_or(CoreError::Build)?;
+        let fee_for = |outputs: usize| grin_core::libtx::tx_fee(inputs.len(), outputs, 1);
+        let need = amount.checked_add(fee_for(2)).ok_or(CoreError::Build)?;
+        if total > need {
+            return Ok(Picked { fee: fee_for(2), change: total.checked_sub(need).ok_or(CoreError::Build)?, inputs });
+        }
+        if amount.checked_add(fee_for(1)) == Some(total) {
+            return Ok(Picked { fee: fee_for(1), change: 0, inputs });
+        }
+        Err(CoreError::Refused("the chosen outputs do not cover the amount and its fee"))
+    }
+
     pub(crate) fn select_inputs(
         &self,
         amount: u64,
@@ -780,7 +976,8 @@ impl State {
             None => None,
         };
         let usable = |o: &OutputRec| -> bool {
-            if o.spent.is_some() || !self.mature(o, maturity) {
+            // K195: what the owner marked is never taken by the wallet's own choice
+            if o.spent.is_some() || !self.mature(o, maturity) || self.is_kept(&o.commit) {
                 return false;
             }
             match self.reserved_by(&o.commit) {
@@ -854,6 +1051,7 @@ impl State {
                 o.spent.is_none()
                     && self.mature(o, maturity)
                     && self.reserved_by(&o.commit).is_none()
+                    && !self.is_kept(&o.commit)
             })
             .collect();
         pool.sort_by(|a, b| b.value.cmp(&a.value).then(a.commit.cmp(&b.commit)));
@@ -931,6 +1129,23 @@ impl State {
                 }
             }
         })
+    }
+
+    /// K194: the wallet's own outputs that no record of a payment stands
+    /// for - a payment received without state (unattended receive), by
+    /// another copy of this wallet, or found by the search for old
+    /// outputs. Change of this wallet's own payments and the outputs of
+    /// the incoming payments it has a record of are not among them: what
+    /// decides is the record itself, not the chain evidence that binds an
+    /// output to it, which a gap in the blocks takes away.
+    pub(crate) fn unrecorded(&self) -> Vec<&OutputRec> {
+        let of_record = |commit: &Vec<u8>| {
+            self.sends.values().any(|s| s.change.as_ref().is_some_and(|(_, _, change)| change == commit))
+                || self.drafts.values().any(|d| d.commit == *commit)
+        };
+        let mut found: Vec<&OutputRec> = self.outputs.values().filter(|o| !of_record(&o.commit)).collect();
+        found.sort_by(|a, b| b.height.cmp(&a.height).then(a.commit.cmp(&b.commit)));
+        found
     }
 
     pub(crate) fn unrecorded_row(&self, commit: &[u8; 33], chain: ChainState) -> Option<Row> {
@@ -1136,14 +1351,29 @@ impl State {
                 if !self.contacts.contains_key(&k) && self.contacts.len() >= crate::MAX_CONTACTS {
                     return Err(CoreError::Refused("too many contacts"));
                 }
+                // K199: the mark was for this key with this address; a name is the owner's own
+                let checked = self.contacts.get(&k).is_some_and(|c| c.checked && c.address == *address);
                 self.contacts.insert(
                     k,
                     ContactRec {
                         key: key.clone(),
                         name: name.clone(),
                         address: address.clone(),
+                        checked,
                     },
                 );
+                Ok(())
+            }
+            Event::ContactChecked { key, on } => {
+                let own = self.identity.is_some();
+                let c = self.contacts.get_mut(&hex(key)).ok_or(CoreError::NotFound)?;
+                if *on && c.address.is_none() {
+                    return Err(CoreError::Refused("the contact has no address to check"));
+                }
+                if *on && !own {
+                    return Err(CoreError::Refused("the wallet has no transport identity"));
+                }
+                c.checked = *on;
                 Ok(())
             }
             Event::ContactRemoved { key } => {
@@ -1393,6 +1623,31 @@ impl State {
                 }
                 d.abandoned = true;
                 d.ctx.clear();
+                // K200: what was given up is not kept
+                d.s1.clear();
+                Ok(())
+            }
+            Event::Direct { op } => {
+                // only for a payment that is signed and in no block
+                if self.send_status(op).ok_or(CoreError::NotFound)? != SendStatus::Finalized {
+                    return Err(CoreError::Refused("only a signed payment that is in no block takes the direct way"));
+                }
+                let s = self.sends.get_mut(&hex(op)).ok_or(CoreError::NotFound)?;
+                s.direct = true;
+                Ok(())
+            }
+            Event::Keep { commit, on } => {
+                // only an output the wallet holds, unspent, takes a mark;
+                // taking one off needs no output
+                let key = hex(commit);
+                if *on {
+                    if !self.outputs.get(&key).is_some_and(|o| o.spent.is_none()) {
+                        return Err(CoreError::NotFound);
+                    }
+                    self.kept.insert(key);
+                } else {
+                    self.kept.remove(&key);
+                }
                 Ok(())
             }
             Event::AutoReceive { on } => {
@@ -1973,6 +2228,7 @@ mod tests {
             held: None,
             by_search: false,
             released: false,
+            direct: false,
         }
     }
 

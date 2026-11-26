@@ -383,9 +383,12 @@ fn a_release_point_is_made() {
     assert_eq!(origin.confirmed.len(), 5);
     assert!(origin.from.starts_with("headers from the nodes named: 127.0.0.1:"), "{}", origin.from);
     // the record is the one the full range of the Grin code gives
-    let built: serde_json::Value = serde_json::from_slice(&record).unwrap();
+    let mut built: serde_json::Value = serde_json::from_slice(&record).unwrap();
     let mut want = TestChain::from_headers(world.source.read().unwrap().headers()).record_value(20);
     want["release_time"] = built["release_time"].clone();
+    // K202: and the path to the point the program's chain began at
+    let base = built.as_object_mut().unwrap().remove("base").unwrap();
+    assert!(base["height"].as_u64().unwrap() < 20);
     assert_eq!(built, want);
 
     // lower, as asked; higher than where the state is given out, refused
@@ -538,6 +541,10 @@ fn the_wallet_is_given_a_point_made_from_the_chain_it_follows() {
     assert!(time >= before && time <= clock(), "{time}");
     let expected = TestChain::from_headers(headers()).record_value(40);
     made["release_time"] = expected["release_time"].clone();
+    // K202: the point carries the path to the one the program began at
+    let base = made.as_object_mut().unwrap().remove("base").unwrap();
+    assert_eq!(base["height"].as_u64(), Some(20));
+    assert_eq!(start.track.target(), 20);
     assert_eq!(made, expected);
     // asking changed nothing: the program goes on from the point it had
     assert_eq!(checkpoint::check(&std::fs::read(world.data.0.join(OWN_POINT_FILE)).unwrap(), Net::Automated).unwrap().height(), 20);

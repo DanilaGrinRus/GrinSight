@@ -118,6 +118,33 @@ fn phase_words(part: &Part) -> (String, i32) {
 }
 
 /// The whole path, top to bottom, in the order it is walked.
+/// 0.4.6: what the chain process says of the history before its starting
+/// point. Only a build that carries the proof of history says anything; the
+/// others have no such line. "Checked" is said for one statement only -
+/// anything else the process may say of it is "not checked".
+pub(crate) fn history_row(f: &Facts) -> Option<Row> {
+    if !f.answered || f.chain.phase != "ready" {
+        return None;
+    }
+    let said = f.chain.problem.split("; ").find_map(|part| part.trim().strip_prefix("history:"))?;
+    // K202: the words come last and may be cut at the length limit: words
+    // that are not one of the four whole say nothing, never "not passed"
+    let (value, tone) = match said.trim() {
+        "sampled" => (tr("checked by sampling its work, from the first block", "проверена выборкой работы, от первого блока"), 1),
+        "sampled to the program's point" => (
+            tr("checked by sampling its work up to the program's point; from there checked by the wallet that made your point", "проверена выборкой работы до точки программы; дальше — кошельком, который сделал вашу точку"),
+            1,
+        ),
+        "not proved for this point" => (
+            tr("not checked: the proof in the program is for another starting point", "не проверена: доказательство в программе — для другой стартовой точки"),
+            0,
+        ),
+        "the proof did not pass" => (tr("not checked: the proof in the program did not pass", "не проверена: доказательство в программе не прошло проверку"), 2),
+        _ => return None,
+    };
+    Some(row(tr("History before the starting point", "История до стартовой точки"), value.into(), tone))
+}
+
 pub(crate) fn rows(f: &Facts) -> Vec<Row> {
     if !f.answered {
         return vec![row(tr("Wallet", "Кошелёк"), tr("does not answer", "не отвечает").into(), 2)];
@@ -125,6 +152,7 @@ pub(crate) fn rows(f: &Facts) -> Vec<Row> {
     let mut out = Vec::with_capacity(8);
     let (value, tone) = phase_words(&f.chain);
     out.push(row(tr("Network check", "Проверка сети"), value, tone));
+    out.extend(history_row(f));
 
     let (value, tone) = match (f.state.as_deref(), f.selected_height) {
         (_, Some(h)) => (fill(tr("block {}", "блок {}"), &[&spaced(h)]), 1),
@@ -258,6 +286,8 @@ fn said(problem: &str) -> Said {
             out.confirmed = Some(!rest.is_empty());
         } else if part.starts_with("no node is connected") || part.starts_with("no node address is known") {
             out.nodes = Some(part.to_string());
+        } else if part.starts_with("history:") || "history:".starts_with(part) {
+            // K202: said in a line of its own (`history_row`), never as a trouble
         } else if out.tip_why.is_none() && tip_why_words(part).is_some() {
             out.tip_why = Some(part.to_string());
         } else {
@@ -428,6 +458,24 @@ pub(crate) fn not_sent(f: &Facts) -> Option<String> {
     Some(said.get(..end).unwrap_or(said).to_string())
 }
 
+/// O60: whether Tor looks unable to carry a transaction to the network
+/// now, said before a payment is signed. The Tor for transactions starts
+/// only with a sending, so the signs are indirect: an earlier transaction
+/// the chain process says it could not send, or a Tor of this wallet that
+/// is down. `None`: nothing speaks against it, or Tor is switched off.
+pub(crate) fn tor_doubt(f: &Facts) -> Option<&'static str> {
+    if f.tor_off {
+        return None;
+    }
+    if not_sent(f).is_some() {
+        return Some(tr("An earlier payment could not be sent through Tor and is still waiting", "Прежний платёж не удалось отправить через Tor, он всё ещё ждёт"));
+    }
+    if (f.transport.configured && f.transport.phase == "down") || (f.onion.configured && f.onion.phase == "failed") {
+        return Some(tr("Tor is not working on this device now", "Tor на этом устройстве сейчас не работает"));
+    }
+    None
+}
+
 /// The state of the two Tors in plain words, each with whether it is well:
 /// the one that carries messages and payments to contacts (the delivery
 /// process) and the one that carries transactions to the network (the
@@ -531,6 +579,8 @@ pub(crate) enum Kind {
     NoAnswer,
     NoChain,
     ChainDown,
+    /// O66: the chain process cannot start because another one holds its files.
+    ChainHeld,
     NotSent,
     DeliveryDown,
     DeliveryProblem,
@@ -547,6 +597,52 @@ pub(crate) struct Trouble {
     pub detail: String,
 }
 
+/// O67: how far the chain is checked above the starting point the chain
+/// process began from, as that process says itself ("headers verified to
+/// N from a ... starting point (S)"). `None`: it does not say so now.
+pub(crate) fn point_gap(f: &Facts) -> Option<u64> {
+    if !f.answered || f.chain.phase != "ready" {
+        return None;
+    }
+    let number_after = |mark: &str| -> Option<u64> {
+        let rest = f.chain.problem.split_once(mark)?.1;
+        let digits: String = rest.chars().take_while(char::is_ascii_digit).collect();
+        digits.parse().ok()
+    };
+    let checked = number_after("headers verified to ")?;
+    let start = number_after("starting point (")?;
+    checked.checked_sub(start)
+}
+
+/// O67: below this many blocks a new starting point saves little.
+pub(crate) const POINT_LITTLE: u64 = 20_000;
+/// O67: above this many blocks a new starting point is offered.
+pub(crate) const POINT_OLD: u64 = 30_000;
+
+/// O67: what is said next to the button that makes a starting point,
+/// by how far the present one lies below the checked chain.
+pub(crate) fn point_hint(gap: Option<u64>) -> String {
+    let Some(gap) = gap else { return String::new() };
+    let blocks = spaced(gap);
+    if gap < POINT_LITTLE {
+        crate::fill(tr("The present point is {} blocks below the checked chain: a new one would save almost nothing now. It pays off past 20 000 blocks.", "Нынешняя точка на {} блоков ниже проверенной цепи: новая сейчас почти ничего не даст. Она окупается после 20 000 блоков."), &[&blocks])
+    } else if gap > POINT_OLD {
+        crate::fill(tr("The present point is {} blocks below the checked chain: a new one will make the next opening noticeably faster.", "Нынешняя точка на {} блоков ниже проверенной цепи: с новой следующий вход будет заметно быстрее."), &[&blocks])
+    } else {
+        crate::fill(tr("The present point is {} blocks below the checked chain: a new one would save some time at the next opening.", "Нынешняя точка на {} блоков ниже проверенной цепи: новая немного ускорит следующий вход."), &[&blocks])
+    }
+}
+
+/// How the chain process says that another one has its files (`fly-chain`, `node.rs`).
+const CHAIN_HELD: &str = "another chain process has the header file open";
+
+/// O66: whether starting the wallet's processes anew is offered for this
+/// trouble: where the wallet does not answer, and where the files of the
+/// chain are held by a process of an earlier run.
+pub(crate) fn restart_offered(kind: Kind) -> bool {
+    matches!(kind, Kind::NoAnswer | Kind::ChainHeld)
+}
+
 /// What is wrong right now.
 pub(crate) fn troubles(f: &Facts) -> Vec<Trouble> {
     let one = |kind, detail: &str| Trouble { kind, detail: detail.into() };
@@ -556,6 +652,9 @@ pub(crate) fn troubles(f: &Facts) -> Vec<Trouble> {
     let mut out = Vec::new();
     if !f.chain.configured {
         out.push(one(Kind::NoChain, ""));
+    } else if f.chain.problem.contains(CHAIN_HELD) || f.chain.error.contains(CHAIN_HELD) {
+        // the chain process stays up and says so; it does not try again by itself
+        out.push(one(Kind::ChainHeld, ""));
     } else if f.chain.phase == "down" {
         out.push(one(Kind::ChainDown, &f.chain.error));
     } else if let Some(why) = not_sent(f) {
@@ -596,6 +695,10 @@ pub(crate) fn words(kind: Kind) -> (&'static str, &'static str) {
         Kind::ChainDown => (
             tr("The network check stopped", "Проверка сети остановилась"),
             tr("The wallet starts it again by itself. If this repeats, check the internet connection and free disk space.", "Кошелёк запускает её снова сам. Если повторяется — проверьте интернет и свободное место на диске."),
+        ),
+        Kind::ChainHeld => (
+            tr("Another GrinSight process holds the files of the network check", "Файлы проверки сети держит другой процесс GrinSight"),
+            tr("This wallet is open in another window, or a process of the last run has not ended yet — it happens when the wallet is opened again right after it was closed. Close the other window if there is one, then press “Restart the wallet”: its processes are started anew and the password is asked for again. One wallet is opened in one place at a time.", "Этот кошелёк открыт в другом окне, или ещё не завершился процесс прошлого запуска — так бывает, если открыть кошелёк сразу после закрытия. Закройте другое окно, если оно есть, и нажмите «Перезапустить кошелёк»: его процессы запустятся заново, пароль спросят снова. Один кошелёк открывают в одном месте."),
         ),
         Kind::NotSent => (
             tr("A transaction is not sent yet", "Транзакция ещё не отправлена"),
@@ -698,6 +801,95 @@ mod tests {
     }
 
     /// The whole path is shown with the wallet's own numbers.
+    /// O67: the distance from the starting point is read from the chain
+    /// process's own words, and what is said about a new point goes by it.
+    /// 0.4.6: the line about the history before the starting point.
+    #[test]
+    fn the_history_before_the_point_has_a_line_only_when_the_chain_speaks_of_it() {
+        let says = |text: &str| Facts { answered: true, chain: Part { configured: true, phase: "ready".into(), problem: text.into(), ..Part::default() }, ..Facts::default() };
+        let plain = "headers verified to 4121046 from a release starting point (4115520); blocks applied to the tip, 4121046; the tip is confirmed by public nodes";
+        assert_eq!(history_row(&says(plain)), None, "a build without the proof has no such line");
+        let with = |words: &str| says(&format!("{plain}; history: {words}"));
+        let line = |words: &str| history_row(&with(words)).map(|r| (r.value, r.tone));
+        assert_eq!(line("sampled"), Some(("checked by sampling its work, from the first block".to_string(), 1)));
+        assert_eq!(line("sampled to the program's point"), Some(("checked by sampling its work up to the program's point; from there checked by the wallet that made your point".to_string(), 1)));
+        assert_eq!(line("not proved for this point"), Some(("not checked: the proof in the program is for another starting point".to_string(), 0)));
+        assert_eq!(line("the proof did not pass"), Some(("not checked: the proof in the program did not pass".to_string(), 2)));
+        // cut short at the length limit, or anything else: no line, never "checked"
+        for odd in ["sampl", "sampled to the prog", "the proof did", "", "sampled and more"] {
+            assert_eq!(line(odd), None, "{odd}");
+        }
+        // the words are never a trouble, whole or cut, and the tip before them is read
+        let f = with("sampled");
+        assert!(chain_rest(&f).is_empty(), "{:?}", chain_rest(&f));
+        assert!(chain_rest(&says(&format!("{plain}; hist"))).is_empty());
+        assert!(chain_rest(&with("sampled to the prog")).is_empty());
+        assert_eq!(said(&f.chain.problem).confirmed, Some(false));
+        assert_eq!(rows(&f).len(), rows(&says(plain)).len() + 1);
+        assert_eq!(point_gap(&f), point_gap(&says(plain)));
+        // a chain process that is not working says nothing that counts
+        assert_eq!(history_row(&Facts { chain: Part { phase: "down".into(), ..f.chain.clone() }, ..f }), None);
+    }
+
+
+    #[test]
+    fn the_starting_point_is_weighed_by_its_distance() {
+        let says = |words: &str| Facts { answered: true, chain: Part { configured: true, phase: "ready".into(), problem: words.into(), ..Part::default() }, ..Facts::default() };
+        assert_eq!(point_gap(&says("headers verified to 4121046 from a release starting point (4115520); blocks applied to the tip, 4121046")), Some(5_526));
+        assert_eq!(point_gap(&says("a transaction is not sent: Tor: no route; headers verified to 4150000 from your own starting point (4119120)")), Some(30_880));
+        assert_eq!(point_gap(&says("headers verified to 10 from a release starting point (50)")), None, "a point above what is checked");
+        assert_eq!(point_gap(&says("asking public nodes about the tip")), None);
+        let down = Facts { chain: Part { phase: "down".into(), ..says("headers verified to 9 from a release starting point (5)").chain }, ..says("") };
+        assert_eq!(point_gap(&down), None);
+        assert_eq!(point_hint(None), "");
+        assert!(point_hint(Some(19_999)).contains("almost nothing") && point_hint(Some(19_999)).contains("19 999"));
+        assert!(point_hint(Some(20_000)).contains("some time"));
+        assert!(point_hint(Some(30_000)).contains("some time"));
+        assert!(point_hint(Some(30_001)).contains("noticeably faster"));
+    }
+
+    /// O66: a chain process that cannot start because another one holds
+    /// its files is its own trouble, with its own words, and the restart
+    /// is offered for it; another reason the chain process is down is not.
+    #[test]
+    fn held_chain_files_are_a_trouble_of_their_own() {
+        let part = |phase: &str, error: &str| Part { configured: true, phase: phase.into(), error: error.into(), ..Part::default() };
+        let held = Facts { answered: true, chain: part("down", "the chain process stopped: another chain process has the header file open"), ..Facts::default() };
+        assert_eq!(troubles(&held), vec![Trouble { kind: Kind::ChainHeld, detail: String::new() }]);
+        let other = Facts { answered: true, chain: part("down", "no disk space"), ..Facts::default() };
+        assert_eq!(troubles(&other), vec![Trouble { kind: Kind::ChainDown, detail: "no disk space".into() }]);
+        // the chain process itself stays up and says it as its state: the same trouble
+        let up = Facts { answered: true, chain: Part { configured: true, phase: "ready".into(), problem: "another chain process has the header file open".into(), ..Part::default() }, ..Facts::default() };
+        assert_eq!(troubles(&up), vec![Trouble { kind: Kind::ChainHeld, detail: String::new() }]);
+        // a chain process that is not set up is another trouble, whatever stale words there are
+        let unset = Facts { answered: true, chain: Part { problem: "another chain process has the header file open".into(), ..Part::default() }, ..Facts::default() };
+        assert_eq!(troubles(&unset), vec![Trouble { kind: Kind::NoChain, detail: String::new() }]);
+        assert!(words(Kind::ChainHeld).1.contains("Restart the wallet"));
+        let offered: Vec<bool> = [Kind::NoAnswer, Kind::ChainHeld, Kind::ChainDown, Kind::NoChain, Kind::NotSent, Kind::DeliveryDown, Kind::DeliveryProblem, Kind::AddressTor, Kind::TorSend].into_iter().map(restart_offered).collect();
+        assert_eq!(offered, [true, true, false, false, false, false, false, false, false]);
+    }
+
+    /// O60: the doubt about Tor is said when an earlier transaction waits
+    /// for it or a Tor of the wallet is down - and never with Tor switched
+    /// off, or when nothing speaks against it.
+    #[test]
+    fn a_doubt_about_tor_is_said_before_signing() {
+        let part = |phase: &str| Part { configured: true, phase: phase.into(), ..Part::default() };
+        let well = Facts { answered: true, chain: part("ready"), transport: part("ready"), onion: part("listening"), ..Facts::default() };
+        assert_eq!(tor_doubt(&well), None);
+        let waiting = Facts { chain: Part { problem: format!("{NOT_SENT}Tor did not start; headers verified to 5"), ..part("ready") }, ..well.clone() };
+        assert_eq!(tor_doubt(&waiting), Some("An earlier payment could not be sent through Tor and is still waiting"));
+        let down = Facts { transport: part("down"), ..well.clone() };
+        let failed = Facts { onion: part("failed"), ..well.clone() };
+        assert_eq!((tor_doubt(&down), tor_doubt(&failed)), (Some("Tor is not working on this device now"), Some("Tor is not working on this device now")));
+        // a part that is not set up says nothing of Tor
+        let unset = Facts { transport: Part { phase: "down".into(), ..Part::default() }, ..well.clone() };
+        assert_eq!(tor_doubt(&unset), None);
+        for off in [waiting, down, failed] {
+            assert_eq!(tor_doubt(&Facts { tor_off: true, ..off }), None);
+        }
+    }
+
     #[test]
     fn the_path_is_shown_with_its_numbers() {
         let rows = rows(&at_tip());

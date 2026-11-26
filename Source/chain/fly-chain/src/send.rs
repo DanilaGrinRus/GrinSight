@@ -120,7 +120,26 @@ pub enum Dial {
     },
 }
 
+/// An address on this computer that leads to `host` at `port` - unless the
+/// owner switched Tor off: then the Tor that runs is let go and nothing is
+/// reached.
+fn open(dial: &mut Dial, off: &std::sync::atomic::AtomicBool, host: &str, port: u16) -> Result<SocketAddr, String> {
+    if off.load(std::sync::atomic::Ordering::SeqCst) {
+        dial.rest();
+        return Err(TOR_DOWN.to_string());
+    }
+    dial.open(host, port)
+}
+
 impl Dial {
+    /// Let go of a Tor that runs; the next `open` brings one up again.
+    fn rest(&mut self) {
+        #[cfg(all(not(feature = "test-net"), not(target_os = "emscripten")))]
+        if let Dial::Tor { tor, .. } = self {
+            *tor = None;
+        }
+    }
+
     /// How this build reaches nodes for the data directory `dir`.
     pub fn of(dir: PathBuf, bridges: String, off: bool) -> Dial {
         if off {
@@ -182,6 +201,10 @@ impl Dial {
 pub struct Setup {
     /// How to reach nodes.
     pub dial: Dial,
+    /// The owner's switch (K193): while it is set no Tor is used - a Tor
+    /// that runs is let go, and every try ends as when Tor does not come
+    /// up. It can be set and cleared while the program runs.
+    pub off: Arc<std::sync::atomic::AtomicBool>,
     /// The public nodes and how to authenticate them: the user's own
     /// first.
     pub sources: Vec<Source>,
@@ -259,7 +282,7 @@ fn send(setup: &mut Setup, job: &Job) -> Result<Way, String> {
         let mut order = own.to_vec();
         order.extend(from_turn(listed, job.turn).into_iter().take(TRIES));
         for source in &order {
-            let at = match setup.dial.open(&source.host, source.port) {
+            let at = match open(&mut setup.dial, &setup.off, &source.host, source.port) {
                 Ok(at) => at,
                 Err(e) if e == TOR_DOWN => return Err(e),
                 Err(e) => {
@@ -279,7 +302,7 @@ fn send(setup: &mut Setup, job: &Job) -> Result<Way, String> {
     }
     // the nodes of the network, by their own network code
     for to in from_turn(&job.nodes, job.turn).iter().take(TRIES) {
-        let at = match setup.dial.open(&to.ip().to_string(), to.port()) {
+        let at = match open(&mut setup.dial, &setup.off, &to.ip().to_string(), to.port()) {
             Ok(at) => at,
             Err(e) if e == TOR_DOWN => return Err(e),
             Err(e) => {

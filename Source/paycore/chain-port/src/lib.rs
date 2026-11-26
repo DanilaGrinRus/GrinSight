@@ -240,6 +240,13 @@ pub trait ChainFeed {
     fn post_direct(&mut self, tx: &[u8]) -> Posted {
         self.post(tx)
     }
+    /// The owner switched Tor off (`true`) or back on while the layer runs
+    /// (K193). True when the layer took it up; a layer that has no such
+    /// switch says false, and nothing is assumed about how it sends.
+    fn set_tor(&mut self, off: bool) -> bool {
+        let _ = off;
+        false
+    }
     /// Why the layer is not getting on, in words for the user; `None` when
     /// nothing is known to be wrong. A description to show, never a fact.
     fn problem(&mut self) -> Option<String> {

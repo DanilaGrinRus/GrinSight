@@ -36,6 +36,13 @@ impl Drop for Temp {
     }
 }
 
+fn without_base(mut value: Value) -> Value {
+    if let Some(map) = value.as_object_mut() {
+        map.remove("base");
+    }
+    value
+}
+
 fn point(name: &str) -> Vec<u8> {
     std::fs::read(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("points").join(name)).unwrap()
 }
@@ -100,6 +107,58 @@ fn peaks_are_those_of_the_full_range() {
         assert_eq!(Peaks::from_parts(n + 1, peaks.hashes().to_vec()).is_ok(), (n + 1).count_ones() == n.count_ones());
     }
     assert_eq!(Peaks::from_last_leaf(0, &leaves[0], &[], peaks.root()), Err(PeaksError::Shape));
+}
+
+/// K202: a leaf followed through a growing range has, at every size, the
+/// Merkle proof the full range of the Grin code gives for it; the path is
+/// taken up again from the peaks, and a path whose upper part is not what
+/// the peaks give is refused.
+#[test]
+fn a_followed_leaf_has_the_proof_of_the_full_range() {
+    use fly_chain_headers::peaks::Track;
+    Net::Automated.enter();
+    let chain = TestChain::new();
+    let leaves: Vec<BlockHeader> = (0..160u64)
+        .map(|i| {
+            let mut h = chain.headers[1].clone();
+            h.pow.proof.nonces = (0..8).map(|k| i * 100 + k).collect();
+            h
+        })
+        .collect();
+    for target in [0usize, 1, 2, 3, 6, 7, 8, 21, 63, 64, 100] {
+        let mut backend = VecBackend::<BlockHeader>::new();
+        let mut mmr = PMMR::new(&mut backend);
+        let mut before = Peaks::empty();
+        for leaf in &leaves[..target] {
+            mmr.push(leaf).unwrap();
+            before.append(leaf).unwrap();
+        }
+        mmr.push(&leaves[target]).unwrap();
+        let mut track = Track::begin(&before, &leaves[target]).unwrap();
+        let pos = pmmr::insertion_to_pmmr_index(target as u64);
+        for n in target + 1..=leaves.len() {
+            let root = mmr.root().unwrap();
+            assert_eq!(track.peaks().root(), root, "{target} in {n}");
+            let path = track.path().unwrap();
+            let full = mmr.merkle_proof(pos).unwrap();
+            assert_eq!(path, full.path, "{target} in {n}");
+            full.verify(root, &leaves[target], pos).unwrap();
+            assert_eq!(Track::from_path(track.peaks(), target as u64, &path).unwrap(), track, "{target} in {n}");
+            if !path.is_empty() {
+                let mut cut = path.clone();
+                cut.pop();
+                assert!(Track::from_path(track.peaks(), target as u64, &cut).is_err());
+            }
+            let mut long = path.clone();
+            long.push(root);
+            assert!(Track::from_path(track.peaks(), target as u64, &long).is_err());
+            assert!(Track::from_path(track.peaks(), n as u64, &path).is_err(), "a leaf the range does not have");
+            if let Some(next) = leaves.get(n) {
+                mmr.push(next).unwrap();
+                track.append(next).unwrap();
+            }
+        }
+    }
 }
 
 /// The points prepared from real nodes pass, on both networks, and the real
@@ -232,12 +291,14 @@ fn a_point_is_written_from_the_chain() {
     for height in 23..=tip {
         let record = chain.record_at(height, 1_700_000_000).unwrap().unwrap();
         let written: Value = serde_json::from_slice(&record).unwrap();
-        assert_eq!(written, main.record_value(height), "{height}");
+        // K202: the point the chain began at (20) is followed into the record
+        assert_eq!(written["base"]["height"], json!(20), "{height}");
+        assert_eq!(without_base(written), main.record_value(height), "{height}");
         let start = checkpoint::check(&record, Net::Automated).unwrap();
         assert_eq!((start.height(), start.hash()), (height, hash_bytes(&main.headers[height as usize])));
     }
     // the time is carried as given and changes nothing else
-    let mut later: Value = serde_json::from_slice(&chain.record_at(40, 7).unwrap().unwrap()).unwrap();
+    let mut later = without_base(serde_json::from_slice(&chain.record_at(40, 7).unwrap().unwrap()).unwrap());
     assert_eq!(later["release_time"], json!(7));
     later["release_time"] = json!(1_700_000_000u64);
     assert_eq!(later, main.record_value(40));
@@ -255,7 +316,7 @@ fn a_point_is_written_from_the_chain() {
     let mut fork = main.fork_at(tip - 5);
     fork.mine_salted(8, 60, 9);
     assert!(matches!(chain.offer(fork.after(tip - 5), FAR).unwrap().outcome, Outcome::Switched { .. }));
-    let on_fork: Value = serde_json::from_slice(&chain.record_at(tip - 2, 1_700_000_000).unwrap().unwrap()).unwrap();
+    let on_fork = without_base(serde_json::from_slice(&chain.record_at(tip - 2, 1_700_000_000).unwrap().unwrap()).unwrap());
     assert_eq!(on_fork, fork.record_value(tip - 2));
     assert_ne!(on_fork, main.record_value(tip - 2));
 }
@@ -316,6 +377,7 @@ fn a_record_is_written_only_from_what_fits() {
         before_prev: &before_prev,
         before_older: &before_older,
         release_time: 1_700_000_000,
+        base: None,
     };
     let written: Value = serde_json::from_slice(&checkpoint::write(&good).unwrap()).unwrap();
     assert_eq!(written, main.record_value(30));
@@ -959,4 +1021,77 @@ fn pending_branch_reports_the_current_depth_limit() {
     chain.set_max_reorg(2);
     assert_eq!(chain.offer(rest, FAR).unwrap().outcome, Outcome::TooDeep { depth: 3 });
     assert_eq!(chain.tip().hash, hash_bytes(main.tip()));
+}
+
+/// K202: a point a wallet makes from a chain that began at the program's
+/// point carries that point in its history - through any number of such
+/// points - and the proof of the program's point is checked for it as for
+/// the point itself; a point without that path, or with a spoiled one, is
+/// refused as another point. (The filler headers of a test chain have no
+/// proof of work, so the proof itself fails here at the same place each
+/// time; that it passes for a later point of mainnet is the test in
+/// `baked.rs`.)
+#[test]
+fn a_point_made_later_carries_the_proof_of_the_programs_point() {
+    use fly_chain_headers::proof::{self, History, Refused};
+    Net::Automated.enter();
+    let mut main = TestChain::new();
+    main.mine(160, 60);
+    let all = main.headers.clone();
+    let at = |h: u64| all.get(h as usize).cloned();
+    let made = proof::build(&at, 60, Net::Automated, proof::POINTS).unwrap();
+    let raw = proof::write(&made, Net::Automated).unwrap();
+    let record = main.record(60);
+    let start = checkpoint::check(&record, Net::Automated).unwrap();
+    assert_eq!(start.track.target(), 60, "a point that names none follows itself");
+    let as_itself = proof::check_for(&start, &raw);
+    assert!(matches!(as_itself, History::Refused(Refused::Sample(..))), "{as_itself:?}");
+
+    let t = Temp::new("k202");
+    let (mut chain, _) = HeaderChain::open(&t.0, Net::Automated, &record).unwrap();
+    chain.offer(main.after(60), FAR).unwrap();
+    assert_eq!(chain.tip().height, main.tip().height);
+    let later = chain.record_at(120, 1).unwrap().unwrap();
+    let second = checkpoint::check(&later, Net::Automated).unwrap();
+    assert_eq!(second.track.target(), 60);
+    assert_eq!(proof::check_for(&second, &raw), as_itself, "checked as the point itself");
+
+    // a point made from a chain that began at the later point still carries it
+    let t2 = Temp::new("k202-on");
+    let (mut on, _) = HeaderChain::open(&t2.0, Net::Automated, &later).unwrap();
+    on.offer(main.after(120), FAR).unwrap();
+    let third = checkpoint::check(&on.record_at(150, 1).unwrap().unwrap(), Net::Automated).unwrap();
+    assert_eq!(third.track.target(), 60);
+    assert_eq!(proof::check_for(&third, &raw), as_itself);
+
+    // the same header without the path is a point of its own
+    let plain = checkpoint::check(&main.record(120), Net::Automated).unwrap();
+    assert_eq!(plain.track.target(), 120);
+    assert_eq!(proof::check_for(&plain, &raw), History::Refused(Refused::Point));
+    // a spoiled path, and a path that names another height, are not taken
+    for k in 0..serde_json::from_slice::<Value>(&later).unwrap()["base"]["path"].as_array().unwrap().len() {
+        let mut value: Value = serde_json::from_slice(&later).unwrap();
+        value["base"]["path"][k] = json!(vec![7u8; 32]);
+        if let Ok(spoiled) = checkpoint::check(&serde_json::to_vec(&value).unwrap(), Net::Automated) {
+            assert_eq!(proof::check_for(&spoiled, &raw), History::Refused(Refused::Point), "{k}");
+        }
+    }
+    for height in [59u64, 61, 119] {
+        let mut value: Value = serde_json::from_slice(&later).unwrap();
+        value["base"]["height"] = json!(height);
+        if let Ok(moved) = checkpoint::check(&serde_json::to_vec(&value).unwrap(), Net::Automated) {
+            assert_eq!(proof::check_for(&moved, &raw), History::Refused(Refused::Point), "{height}");
+        }
+    }
+    // a path longer than any range has, or a height not below the point, is refused with the record
+    let mut value: Value = serde_json::from_slice(&later).unwrap();
+    value["base"]["path"] = json!(vec![vec![1u8; 32]; 65]);
+    assert!(checkpoint::check(&serde_json::to_vec(&value).unwrap(), Net::Automated).is_err());
+    let mut value: Value = serde_json::from_slice(&later).unwrap();
+    value["base"]["height"] = json!(120);
+    assert!(checkpoint::check(&serde_json::to_vec(&value).unwrap(), Net::Automated).is_err());
+    // an unknown field in it is refused
+    let mut value: Value = serde_json::from_slice(&later).unwrap();
+    value["base"]["more"] = json!(1);
+    assert!(checkpoint::check(&serde_json::to_vec(&value).unwrap(), Net::Automated).is_err());
 }

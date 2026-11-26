@@ -68,6 +68,80 @@ impl Mode {
     }
 }
 
+/// O71: how long one way through the built-in bridges is given to bring
+/// a Tor of this wallet up before the next is tried.
+pub(crate) const TRY_WAIT: std::time::Duration = std::time::Duration::from_secs(180);
+
+/// O71: the wallet trying the built-in bridges by itself, at the owner's
+/// word. `original` is the owner's choice before it, put back if nothing
+/// works; `now` is the way being tried and `rest` the ways after it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct Try {
+    pub original: (Mode, String),
+    pub now: Mode,
+    pub rest: Vec<Mode>,
+    /// How many times the message program had been started when this way began.
+    pub starts: u64,
+    /// The address program was seen without Tor since this way began.
+    pub seen_down: bool,
+}
+
+/// What the wallet process says of its Tors, as far as a try looks.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub(crate) struct Signs {
+    pub transport_configured: bool,
+    pub transport_ready: bool,
+    pub transport_starts: u64,
+    pub onion_configured: bool,
+    pub onion_up: bool,
+}
+
+/// What a try has come to by now.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Verdict {
+    /// Tor is still coming up; there is time left.
+    Wait,
+    /// A Tor of this wallet came up anew through the way being tried.
+    Worked,
+    /// No program of this wallet can show whether Tor came up.
+    Blind,
+    /// The time is up and no Tor came up.
+    GiveUp,
+}
+
+/// The built-in ways to try, in order, given the owner's choice. The way
+/// already chosen is not tried again. With lines of the owner's own
+/// nothing is tried: they chose those bridges and no others.
+pub(crate) fn ways(current: Mode) -> Vec<Mode> {
+    match current {
+        Mode::Direct => vec![Mode::Obfs4, Mode::Snowflake],
+        Mode::Obfs4 => vec![Mode::Snowflake],
+        Mode::Snowflake => vec![Mode::Obfs4],
+        Mode::Own => Vec::new(),
+    }
+}
+
+/// Whether the way being tried has brought a Tor up. A Tor that was up
+/// before the try began does not count: the message program must have
+/// been started anew, the address program must have been seen down first.
+pub(crate) fn judge(t: &mut Try, s: &Signs, elapsed: std::time::Duration) -> Verdict {
+    if !s.transport_configured && !s.onion_configured {
+        return Verdict::Blind;
+    }
+    if s.onion_configured && !s.onion_up {
+        t.seen_down = true;
+    }
+    let messages = s.transport_configured && s.transport_ready && s.transport_starts > t.starts;
+    let address = s.onion_configured && s.onion_up && t.seen_down;
+    if messages || address {
+        Verdict::Worked
+    } else if elapsed >= TRY_WAIT {
+        Verdict::GiveUp
+    } else {
+        Verdict::Wait
+    }
+}
+
 /// Why the user's lines are not taken. `usize` is the number of the line.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum OwnError {
@@ -213,6 +287,40 @@ mod tests {
 
     const OBFS4: &str = "obfs4 192.0.2.55:38114 316E643333645F6D79216558614D3931657A5F5F cert=YXJlIGZyZXF1ZW50bHkgZnVsbCBvZiBsaXR0bGUgbWVzc2FnZXMgeW91IGNhbiBmaW5kLg iat-mode=0";
     const PLAIN: &str = "198.51.100.25:443 7DD62766BF2052432051D7B7E08A22F7E34A4543";
+
+    /// O71: which built-in ways are tried, and when a try has worked.
+    #[test]
+    fn the_built_in_bridges_are_tried_in_turn() {
+        use std::time::Duration;
+        assert_eq!(ways(Mode::Direct), vec![Mode::Obfs4, Mode::Snowflake]);
+        assert_eq!(ways(Mode::Obfs4), vec![Mode::Snowflake], "the way already chosen is not tried again");
+        assert_eq!(ways(Mode::Snowflake), vec![Mode::Obfs4]);
+        assert!(ways(Mode::Own).is_empty(), "the owner's own bridges are not replaced");
+        let fresh = || Try { original: (Mode::Direct, String::new()), now: Mode::Obfs4, rest: vec![Mode::Snowflake], starts: 4, seen_down: false };
+        let soon = Duration::from_secs(5);
+        // nothing to look at: no program of the wallet uses Tor
+        assert_eq!(judge(&mut fresh(), &Signs::default(), soon), Verdict::Blind);
+        // the Tor that was up before the try does not count
+        let before = Signs { transport_configured: true, transport_ready: true, transport_starts: 4, onion_configured: true, onion_up: true };
+        let mut t = fresh();
+        assert_eq!(judge(&mut t, &before, soon), Verdict::Wait);
+        assert!(!t.seen_down);
+        // the message program started anew and ready: it worked
+        assert_eq!(judge(&mut fresh(), &Signs { transport_starts: 5, ..before }, soon), Verdict::Worked);
+        assert_eq!(judge(&mut fresh(), &Signs { transport_starts: 5, transport_ready: false, onion_up: false, ..before }, soon), Verdict::Wait);
+        // the address program: down first, then up
+        let mut t = fresh();
+        assert_eq!(judge(&mut t, &Signs { onion_up: false, ..before }, soon), Verdict::Wait);
+        assert!(t.seen_down);
+        assert_eq!(judge(&mut t, &before, soon), Verdict::Worked);
+        // the time is up
+        let mut t = fresh();
+        assert_eq!(judge(&mut t, &Signs { onion_up: false, transport_ready: false, ..before }, TRY_WAIT), Verdict::GiveUp);
+        assert_eq!(judge(&mut t, &Signs { onion_up: false, transport_ready: false, ..before }, TRY_WAIT.saturating_sub(Duration::from_secs(1))), Verdict::Wait);
+        // working at the last moment still counts
+        assert_eq!(judge(&mut t, &before, TRY_WAIT), Verdict::Worked);
+        assert_eq!(TRY_WAIT, Duration::from_secs(180));
+    }
 
     #[test]
     fn the_built_in_bridges_are_those_of_the_bundle() {

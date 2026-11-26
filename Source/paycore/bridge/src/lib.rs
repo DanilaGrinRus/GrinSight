@@ -174,6 +174,12 @@ fn unhex(text: &str) -> Option<Vec<u8>> {
 }
 
 /// Typed access to the `params` object.
+/// Most outputs one collecting payment spends (K196): the transaction
+/// stays far below the size a node takes.
+const MAX_COLLECT: usize = 100;
+/// Most small outputs a payment takes along on the owner's word (K196).
+const GATHER_MOST: usize = 8;
+
 struct Params<'a>(&'a Map<String, Value>);
 
 impl Params<'_> {
@@ -216,6 +222,21 @@ impl Params<'_> {
         unhex(self.text(name)?)
             .and_then(|v| <[u8; N]>::try_from(v).ok())
             .ok_or_else(|| bad_params(name))
+    }
+
+    /// A list of output commitments in hex, at most 256; absent is `None`.
+    fn commits_opt(&self, name: &str) -> Result<Option<Vec<[u8; 33]>>, Fail> {
+        let list = match self.0.get(name) {
+            None | Some(Value::Null) => return Ok(None),
+            Some(Value::Array(list)) if list.len() <= 256 => list,
+            Some(_) => return Err(bad_params(name)),
+        };
+        let mut out = Vec::with_capacity(list.len());
+        for item in list {
+            let bytes = item.as_str().and_then(unhex).ok_or_else(|| bad_params(name))?;
+            out.push(<[u8; 33]>::try_from(bytes.as_slice()).map_err(|_| bad_params(name))?);
+        }
+        Ok(Some(out))
     }
 
     fn bytes_opt<const N: usize>(&self, name: &str) -> Result<Option<[u8; N]>, Fail> {
@@ -647,6 +668,8 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
             "spendable": b.spendable.to_string(),
             "reserved": b.reserved.to_string(),
             "immature": b.immature.to_string(),
+            // K195: unspent and marked "not to be spent" by the owner
+            "kept": b.kept.to_string(),
             "incomplete": incomplete,
         })
     }
@@ -665,6 +688,89 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
             })),
             "paycore.balance" => Ok(self.balance_json()),
             "paycore.address" => Ok(json!({ "address": hex(&self.core.receive_address()?) })),
+            // ----- the wallet's outputs and the owner's marks (K195)
+            "paycore.outputs.list" => {
+                let list: Vec<Value> = self
+                    .core
+                    .outputs()
+                    .into_iter()
+                    .map(|o| {
+                        json!({
+                            "commit": hex(&o.commit),
+                            "amount": o.value.to_string(),
+                            "height": o.height,
+                            "by_search": o.old,
+                            "coinbase": o.coinbase,
+                            "state": if o.reserved { "reserved" } else if o.immature { "immature" } else { "spendable" },
+                            "kept": o.kept,
+                        })
+                    })
+                    .collect();
+                Ok(json!({ "outputs": list, "tip_height": self.core.tip_height() }))
+            }
+            "paycore.outputs.keep" => {
+                let commit = p.bytes::<33>("commit")?;
+                let on = match p.0.get("on") {
+                    Some(Value::Bool(on)) => *on,
+                    _ => return Err(bad_params("on")),
+                };
+                self.core.output_keep(&commit, on)?;
+                Ok(json!({ "kept": on }))
+            }
+            // K196: several outputs into one, by a payment to this wallet
+            // itself. Prepared, answered and signed here in one call; if
+            // the answer or the signature fails, the payment is cancelled
+            // and its outputs are free again. The transaction goes to the
+            // network the way every signed payment does.
+            "paycore.outputs.collect" => {
+                let chosen = p.commits_opt("inputs")?;
+                let spend_kept = p.flag("spend_kept")?;
+                if spend_kept && chosen.is_none() {
+                    return Err(bad_params("spend_kept goes with inputs"));
+                }
+                // asked what it would come to: nothing is made or written
+                if p.flag("plan")? {
+                    let (amount, fee, count) = self.core.collect_plan(chosen.as_deref(), MAX_COLLECT)?;
+                    return Ok(json!({ "amount": amount.to_string(), "fee": fee.to_string(), "inputs": count }));
+                }
+                let (prepared, amount, fee, count) = self.core.collect_prepare(chosen, spend_kept, MAX_COLLECT)?;
+                let op = prepared.op;
+                // the wallet answers its own request and signs the answer.
+                // A failure on the way leaves an ordinary payment in the
+                // history, to be finished or cancelled like any other: the
+                // store that failed lets nothing more be written before the
+                // wallet is opened again
+                let slate = self.slate_out(&prepared.s1)?;
+                let mut ask = Map::new();
+                ask.insert("slate".into(), slate);
+                let reply = self.dispatch("paycore.receive.draft", &Params(&ask))?;
+                let mut end = Map::new();
+                end.insert("op".into(), json!(hex(&op)));
+                end.insert("slate".into(), reply.get("slate").cloned().unwrap_or(Value::Null));
+                let done = self.dispatch("paycore.send.finalize", &Params(&end))?;
+                Ok(json!({ "op": hex(&op), "amount": amount.to_string(), "fee": fee.to_string(), "inputs": count, "tx": done.get("tx").cloned().unwrap_or(Value::Null) }))
+            }
+            // K197: the owner takes back a signed payment that is in no
+            // block: the wallet pays itself with the same inputs, and only
+            // one of the two can be in a block. `plan`: only what it comes to
+            "paycore.send.take_back" => {
+                let old = p.bytes::<16>("op")?;
+                if p.flag("plan")? {
+                    let (amount, fee, count) = self.core.take_back_plan(&old)?;
+                    return Ok(json!({ "amount": amount.to_string(), "fee": fee.to_string(), "inputs": count }));
+                }
+                let (prepared, amount, fee, count) = self.core.take_back_prepare(&old)?;
+                let op = prepared.op;
+                let slate = self.slate_out(&prepared.s1)?;
+                let mut ask = Map::new();
+                ask.insert("slate".into(), slate);
+                let reply = self.dispatch("paycore.receive.draft", &Params(&ask))?;
+                let mut end = Map::new();
+                end.insert("op".into(), json!(hex(&op)));
+                end.insert("slate".into(), reply.get("slate").cloned().unwrap_or(Value::Null));
+                let done = self.dispatch("paycore.send.finalize", &Params(&end))?;
+                Ok(json!({ "op": hex(&op), "amount": amount.to_string(), "fee": fee.to_string(), "inputs": count, "tx": done.get("tx").cloned().unwrap_or(Value::Null) }))
+            }
             "paycore.history" => {
                 let sends: Vec<Value> = self
                     .core
@@ -682,6 +788,15 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
                             "locked": self.core.send_locked(&op),
                             "deliver_to": self.core.delivery_contact(&op).map(|key| hex(&key)),
                             "kernel_height": self.core.send_kernel_height(&op),
+                            // the payment's own number: an incoming payment
+                            // with the same one is this wallet paying itself (K196)
+                            "slate_id": self.core.send_slate_id(&op).map(|id| hex(&id)),
+                            // K197: the payment this one replaces, and the
+                            // payment under way that replaces this one
+                            "direct": self.core.send_direct(&op),
+                            "replaces": self.core.send_replaces(&op).map(|id| hex(&id)),
+                            "replaced_by": self.core.send_replaced_by(&op).map(|id| hex(&id)),
+                            "made_height": self.core.send_made_height(&op),
                             "signed": self.core.send_result(&op).is_some(),
                         })
                     })
@@ -698,12 +813,31 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
                             "amount": value.to_string(),
                             "abandoned": abandoned,
                             "kernel_height": self.core.incoming_kernel_height(&id),
+                            "made_height": self.core.incoming_made_height(&id),
                             "reply_kept": self.core.incoming_reply(&id).is_some(),
+                            // K200: the sender's text is kept and can be shown again
+                            "request_kept": self.core.incoming_request(&id).is_some(),
+                        })
+                    })
+                    .collect();
+                // K194: money that came with no record of a payment is listed too
+                let found: Vec<Value> = self
+                    .core
+                    .unrecorded_outputs()
+                    .into_iter()
+                    .map(|o| {
+                        json!({
+                            "commit": hex(&o.commit),
+                            "amount": o.value.to_string(),
+                            "height": o.height,
+                            "by_search": o.old,
+                            "coinbase": o.coinbase,
+                            "spent_height": o.spent,
                         })
                     })
                     .collect();
                 let k_conf = self.wallet_basis().k_conf;
-                Ok(json!({ "sends": sends, "incoming": incoming, "k_conf": k_conf, "tip_height": self.core.tip_height() }))
+                Ok(json!({ "sends": sends, "incoming": incoming, "found": found, "k_conf": k_conf, "gather": self.core.gathers(), "tip_height": self.core.tip_height() }))
             }
 
             // ----- reading a slate before deciding (K119)
@@ -731,6 +865,32 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
                 let replaces = p.bytes_opt::<16>("replaces")?;
                 let late = p.flag("late")?;
                 let not_a_repeat = p.flag("not_a_repeat")?;
+                // K195: the outputs the owner chose for this payment
+                if let Some(chosen) = p.commits_opt("inputs")? {
+                    let spend_kept = p.flag("spend_kept")?;
+                    if late || replaces.is_some() || not_a_repeat {
+                        return Err(bad_params("inputs cannot be combined with late, replaces or not_a_repeat"));
+                    }
+                    let prepared = match p.bytes_opt::<32>("deliver_to")? {
+                        Some(to) => {
+                            let slatepack = self.slatepack;
+                            let Ports { codec, mailbox, .. } = &mut self.ports;
+                            let mailbox = mailbox.as_mut().ok_or_else(no_mailbox)?;
+                            let mut seal = |s1: &[u8]| -> Result<Envelope, String> {
+                                let text = encode_text(slatepack, codec.as_mut(), s1)?;
+                                mailbox.seal(&to, &text)
+                            };
+                            let prepared = self.core.send_prepare_chosen(amount, ttl, chosen, spend_kept, proof_to, Some((to, &mut seal)))?;
+                            self.strikes.remove(&to);
+                            return Ok(json!({ "op": hex(&prepared.op), "slate": self.slate_out(&prepared.s1)?, "delivery": "queued" }));
+                        }
+                        None => self.core.send_prepare_chosen(amount, ttl, chosen, spend_kept, proof_to, None)?,
+                    };
+                    return Ok(json!({ "op": hex(&prepared.op), "slate": self.slate_out(&prepared.s1)? }));
+                }
+                if p.flag("spend_kept")? {
+                    return Err(bad_params("spend_kept goes with inputs"));
+                }
                 if let Some(to) = p.bytes_opt::<32>("deliver_to")? {
                     if replaces.is_some() || not_a_repeat {
                         return Err(bad_params(
@@ -852,10 +1012,28 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
                             "npub": fly_paycore_wallet::npub_encode(&c.key)?,
                             "name": c.name,
                             "address": c.address.as_ref().map(|a| hex(a)),
+                            // K199: the owner compared the check code with this contact
+                            "checked": c.checked,
                         }))
                     })
                     .collect::<Result<Vec<Value>, Fail>>()?;
                 Ok(json!({ "contacts": list }))
+            }
+            // K199: the six words both wallets show when each has the
+            // other's key and address right; and the owner's mark that
+            // they were compared
+            "paycore.contacts.code" => {
+                let key = p.bytes::<32>("key")?;
+                Ok(json!({ "words": self.core.contact_code(&key)? }))
+            }
+            "paycore.contacts.check" => {
+                let key = p.bytes::<32>("key")?;
+                let on = match p.0.get("on") {
+                    Some(Value::Bool(on)) => *on,
+                    _ => return Err(bad_params("on")),
+                };
+                self.core.contact_check(&key, on)?;
+                Ok(json!({ "checked": on }))
             }
             "paycore.contacts.set" => {
                 let key = match p.bytes_opt::<32>("key")? {
@@ -1041,10 +1219,19 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
                 if fin.tx.is_empty() {
                     return Err(CoreError::Refused("the payee broadcasts a paid invoice").into());
                 }
+                // K197: a payment the owner is taking back is not sent again
+                if self.core.send_replaced_by(&op).is_some() {
+                    return Err(CoreError::Refused("this payment is being taken back").into());
+                }
                 // the same stored bytes every time; nothing is signed here.
                 // `direct`: the owner agrees that this one payment may go out
                 // from this computer's address if Tor fails to send it (K192)
-                let outcome = if p.flag("direct")? {
+                // K198: the agreement is written with the payment before it
+                // is acted on, and holds for every later sending of it
+                if p.flag("direct")? {
+                    self.core.send_agree_direct(&op)?;
+                }
+                let outcome = if self.core.send_direct(&op) {
                     self.ports.broadcaster.post_tx_direct(&fin.tx)
                 } else {
                     self.ports.broadcaster.post_tx(&fin.tx)
@@ -1102,6 +1289,12 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
                 let s2 = self.core.incoming_reply(&id).ok_or(CoreError::NotFound)?;
                 Ok(json!({ "slate": self.slate_out(&s2)? }))
             }
+            // K200: the sender's request of an incoming payment, again, as it came
+            "paycore.receive.request" => {
+                let id = p.bytes::<16>("slate_id")?;
+                let s1 = self.core.incoming_request(&id).ok_or(CoreError::NotFound)?;
+                Ok(json!({ "slate": self.slate_out(&s1)? }))
+            }
             // K190: how many confirmations make an incoming payment "received"
             "paycore.settings.confirmations" => {
                 let count = p.amount("count")?;
@@ -1110,6 +1303,16 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
                 }
                 self.k_conf_owner = Some(count);
                 Ok(json!({ "k_conf": count }))
+            }
+            // K196: the owner's standing word that payments take small
+            // outputs along; in memory, said again at every start
+            "paycore.settings.gather" => {
+                let on = match p.0.get("on") {
+                    Some(Value::Bool(on)) => *on,
+                    _ => return Err(bad_params("on")),
+                };
+                self.core.set_gather(if on { GATHER_MOST } else { 0 });
+                Ok(json!({ "gather": on }))
             }
             "paycore.receive.abandon" => {
                 self.core.draft_abandon(&p.bytes::<16>("slate_id")?)?;
@@ -1336,6 +1539,9 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
             .into_iter()
             .filter(|(_, status, _, _)| *status == SendStatus::Finalized)
             .map(|(op, _, _, _)| op)
+            // K197: what the owner is taking back is not handed over again
+            // while the payment that takes it back is under way
+            .filter(|op| self.core.send_replaced_by(op).is_none())
             .collect();
         // Invoices this wallet issued and completed: the transaction is
         // here and nowhere else - the payer signed first and never had it.
@@ -1386,7 +1592,9 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
             self.posted.insert(op, (now, Broadcast::Unknown));
             return nothing();
         }
-        let outcome = self.ports.broadcaster.post_tx(&fin.tx);
+        // K198: where the owner agreed to the direct way for this payment,
+        // it is said to the chain layer every time - that layer forgets
+        let outcome = if self.core.send_direct(&op) { self.ports.broadcaster.post_tx_direct(&fin.tx) } else { self.ports.broadcaster.post_tx(&fin.tx) };
         self.posted.insert(op, (now, outcome));
         if before == Some(outcome) {
             return nothing();

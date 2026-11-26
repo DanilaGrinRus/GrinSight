@@ -55,6 +55,7 @@ impl Inline {
                 chain: None,
                 onion: None,
                 device_key: None,
+                tor: crate::chain::TorSwitch::default(),
             },
             open: None,
             chain_report: Default::default(),
@@ -426,7 +427,7 @@ mod tests {
             peers: Vec::new(),
             retry: std::time::Duration::from_secs(3600),
             direct_post: false,
-            tor_off: false,
+            tor_off: crate::chain::TorSwitch::default(),
         };
         let mut host = Inline::new(quick(), &root.join("p"), &root.join("g")).unwrap_or_else(|e| unreachable!("{e}")).with_chain(chain);
         let chain_of = |host: &mut Inline| call(host, "host.status", json!({})).pointer("/result/chain").cloned().unwrap_or(Value::Null);

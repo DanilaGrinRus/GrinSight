@@ -1,0 +1,15 @@
+{
+  "source": "Retained public mainnet C32 headers from local research fixture, merged from two saved overlapping captures; this is not an independently verified chain of trust.",
+  "header_records_in_file": 14734,
+  "compared_interval": 14731,
+  "trusted_fixture_height": 4099165,
+  "fork_height": 4099168,
+  "tip_height": 4113899,
+  "headers_bin_sha256": "524ebb8460c33d817bee7b0e4cbb9c7ab8b607fffe960c8dc8be5539d8871ef7",
+  "research_root_json_sha256": "5a22e3a9bc7b34c41fa86d55bfe6faee7f25e6680bd9ba8732879454c96e1bc7",
+  "original_old_segment_sha256": "e24810854f621d5ec294fc7620829eee6d2f60c36094da9dd942b6e790d3b5ea",
+  "original_new_segment_sha256": "50c49c1924cdc3aba3fffe03b86e4ba96cfdc858d25aa3f6913e0b2470204e85",
+  "merged_source_sha256": "11defa800e19c895d951732f1a62077dfd8defe39a130ed9bb31cce3fb9fb0aa",
+  "original_segments_included": false,
+  "live_independent_reference": false
+}

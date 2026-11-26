@@ -96,6 +96,15 @@ impl ChainFeed for Stub {
         })
     }
 
+    /// The owner's Tor switch, left in `tor` ("off" or "on") for the tests;
+    /// with `no-switch` there the stub is a layer that has none.
+    fn set_tor(&mut self, off: bool) -> bool {
+        if self.has("no-switch") {
+            return false;
+        }
+        std::fs::write(self.dir.join("tor"), if off { "off" } else { "on" }).is_ok()
+    }
+
     fn next(&mut self, at: Option<Tip>) -> Result<Step, Unknown> {
         if self.has("dark") {
             return Err(Unknown);

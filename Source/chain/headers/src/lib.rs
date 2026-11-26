@@ -37,6 +37,8 @@ pub mod checkpoint;
 pub mod origin;
 pub mod peaks;
 pub mod rules;
+pub mod proof;
+pub mod sample;
 #[cfg(feature = "testkit")]
 pub mod testkit;
 

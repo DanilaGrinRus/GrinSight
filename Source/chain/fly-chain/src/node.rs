@@ -129,6 +129,9 @@ pub struct View {
     pub start: u64,
     /// Who vouches for it.
     pub point: crate::PointKind,
+    /// What this build knows of the history before the starting point, in
+    /// words; nothing in a build without the proof of history (0.4.6e).
+    pub history: Option<&'static str>,
     /// Height of the starting point whose header file gave way to this
     /// one's when the program started.
     pub replaced: Option<u64>,
@@ -332,8 +335,12 @@ impl Pending {
 struct Node {
     chain: HeaderChain,
     point: crate::PointKind,
+    /// What this build knows of the history before the starting point.
+    past: Option<&'static str>,
     /// Where transactions to be sent through Tor are handed over.
     sender: Option<SyncSender<crate::send::Job>>,
+    /// The owner's switch, shared with the thread that sends through Tor.
+    tor_off: Arc<AtomicBool>,
     /// How the last transaction went out.
     last_sent: Option<crate::send::Way>,
     /// Lines of the user's file of own nodes that named none.
@@ -700,6 +707,16 @@ impl Node {
                     None => Err(Unknown),
                 };
                 let _ = reply.try_send(answer);
+            }
+            Event::Tor { off, reply } => {
+                // the sending thread sees it at its next step; what waited
+                // for Tor goes out over the program's own connections now
+                self.tor_off.store(off, Ordering::SeqCst);
+                let peers: Vec<SocketAddr> = self.links.iter().map(|l| l.addr).collect();
+                let todo = self.outbox.tor_switched(off, Instant::now(), &peers);
+                self.carry_out(todo);
+                self.tell_watch();
+                let _ = reply.try_send(true);
             }
             Event::Point { reply } => {
                 let made = std::time::SystemTime::now()
@@ -1409,6 +1426,7 @@ impl Node {
             failed: None,
             start: self.chain.start().height(),
             point: self.point,
+            history: self.past,
             replaced: self.chain.replaced(),
             height: tip.height,
             hash: tip.hash,
@@ -1440,6 +1458,39 @@ impl Node {
         }
     }
 }
+
+/// What this build knows of the history before the starting point of
+/// `chain`, in the words the program says of itself; nothing in a build
+/// without the proof of history. The check takes under a second.
+#[cfg(feature = "history-proof")]
+fn past_words(chain: &HeaderChain) -> Option<&'static str> {
+    use fly_chain_headers::proof::{history_of, History, Refused};
+    match history_of(chain.start()) {
+        History::Sampled(_) => Some(HISTORY_SAMPLED),
+        History::Extended(_) => Some(HISTORY_EXTENDED),
+        // a network the program carries no proof for: nothing is said, as before
+        History::Unproved => None,
+        // the proof with the program is for the point the program carries;
+        // a point that does not carry it has none
+        History::Refused(Refused::Point) => Some(HISTORY_OTHER_POINT),
+        History::Refused(_) => Some(HISTORY_REFUSED),
+    }
+}
+
+#[cfg(not(feature = "history-proof"))]
+fn past_words(_chain: &HeaderChain) -> Option<&'static str> {
+    None
+}
+
+/// The history before the starting point answered for every point of its work.
+pub const HISTORY_SAMPLED: &str = "history: sampled";
+/// K202: the history up to the program's point answered by sampling; from
+/// there to the point in use the wallet that made it vouches.
+pub const HISTORY_EXTENDED: &str = "history: sampled to the program's point";
+/// The program's proof is for another starting point than the one in use.
+pub const HISTORY_OTHER_POINT: &str = "history: not proved for this point";
+/// The program's proof did not pass.
+pub const HISTORY_REFUSED: &str = "history: the proof did not pass";
 
 /// Run the node until `stop` is set. Blocks; meant for a thread of its own.
 /// The network must already be the process's global chain type: the
@@ -1487,6 +1538,7 @@ pub fn run(settings: Settings, view: SharedView, stop: Arc<AtomicBool>, events: 
         (names, port)
     };
     let handshake = Arc::new(Handshake::new(genesis, P2PConfig::default()));
+    let tor_off = Arc::new(AtomicBool::new(settings.tor_off));
     let sender = {
         let tips = crate::accept::Setup::for_posting(net, &settings.data_dir);
         // the user's own nodes first: a transaction goes to a third party
@@ -1495,7 +1547,9 @@ pub fn run(settings: Settings, view: SharedView, stop: Arc<AtomicBool>, events: 
         sources.rotate_right(tips.own);
         crate::send::start(
             crate::send::Setup {
-                dial: crate::send::Dial::of(settings.data_dir.clone(), settings.tor_bridges.clone(), settings.tor_off),
+                // the switch decides while the program runs; the way itself is always there
+                dial: crate::send::Dial::of(settings.data_dir.clone(), settings.tor_bridges.clone(), false),
+                off: tor_off.clone(),
                 sources,
                 own: tips.own,
                 asker: tips.asker,
@@ -1505,9 +1559,11 @@ pub fn run(settings: Settings, view: SharedView, stop: Arc<AtomicBool>, events: 
             events.clone(),
         )
     };
+    let past = past_words(&chain);
     let mut node = Node {
         chain,
         point: settings.point,
+        past,
         sender,
         last_sent: None,
         own_refused: crate::accept::own_nodes(&settings.data_dir).1,
@@ -1534,7 +1590,8 @@ pub fn run(settings: Settings, view: SharedView, stop: Arc<AtomicBool>, events: 
         old: Old::new(),
         old_since: None,
         // with Tor switched off the direct way is the only one, and the user chose it
-        outbox: Outbox::new(settings.direct_post || settings.tor_off),
+        outbox: Outbox::with_tor(settings.direct_post, settings.tor_off),
+        tor_off,
         trail: Trail::default(),
         watch,
         waiting_segments,

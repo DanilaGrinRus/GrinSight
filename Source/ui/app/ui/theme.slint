@@ -49,6 +49,8 @@ export global Device {
 export global Files {
     // save the text as a new file; the answer is a line to show
     pure callback save(string) -> string;
+    // save the QR code of the text as a picture; the answer is a line to show (O61)
+    pure callback save-qr(string) -> string;
     // the files a text can be taken from, the newest first
     pure callback list() -> [string];
     // the text of file number N of the last list, or nothing
@@ -63,6 +65,20 @@ export global Qr {
     // the picture, one pixel a module with its light border; an empty
     // picture when there is no text or it is longer than one code holds
     pure callback picture(string) -> image;
+}
+
+// O75: finding a contact by a part of its name, as the program compares
+// words (letter case and Cyrillic included).
+export global Find {
+    pure callback matches(string, string) -> bool;
+}
+
+// O73: what a "?" says opens in a window of its own over everything, at
+// the size of ordinary text; never as small print under the thing.
+export global Help {
+    in-out property <bool> open: false;
+    in-out property <string> title;
+    in-out property <string> text;
 }
 
 export global Settings {

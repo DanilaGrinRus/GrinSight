@@ -8,25 +8,25 @@ GrinSight — исследовательский лёгкий кошелёк д�
 
 ## Загрузка
 
-Версия **0.4.4** — [все файлы и суммы SHA-256](https://github.com/DanilaGrinRus/GrinSight/releases/tag/v0.4.4).
+Версия **0.4.6** — [все файлы и суммы SHA-256](https://github.com/DanilaGrinRus/GrinSight/releases/tag/v0.4.6).
 
 | Платформа | Файл |
 |---|---|
-| **Windows 10/11 x64** — установщик, права администратора не нужны | [GrinSight-0.4.4-windows-x64-setup.exe](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-windows-x64-setup.exe) |
-| **Windows x64** — переносная одним файлом | [GrinSight-0.4.4-windows-x64-portable.exe](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-windows-x64-portable.exe) |
-| **Linux** — Debian 10+ / Ubuntu 20.04+ | [GrinSight-0.4.4-linux-amd64.deb](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-linux-amd64.deb) |
-| **Linux** — Fedora / RHEL 8+ | [GrinSight-0.4.4-linux-x86_64.rpm](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-linux-x86_64.rpm) |
-| **Linux** — любой с glibc 2.28+ | [GrinSight-0.4.4-linux-x86_64.tar.gz](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-linux-x86_64.tar.gz) |
-| **Android 8+** (arm64) — проверен только на эмуляторе | [GrinSight-0.4.4-android-arm64.apk](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-android-arm64.apk) |
-| **macOS 11+** — Apple silicon и Intel; без мостов Tor, на настоящем Mac не запускалась | [GrinSight-0.4.4-macos-universal.dmg](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.4/GrinSight-0.4.4-macos-universal.dmg) |
+| **Windows 10/11 x64** — установщик, права администратора не нужны | [GrinSight-0.4.6-windows-x64-setup.exe](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.6/GrinSight-0.4.6-windows-x64-setup.exe) |
+| **Windows x64** — переносная одним файлом | [GrinSight-0.4.6-windows-x64-portable.exe](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.6/GrinSight-0.4.6-windows-x64-portable.exe) |
+| **Linux** — Debian 10+ / Ubuntu 20.04+ | [GrinSight-0.4.6-linux-amd64.deb](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.6/GrinSight-0.4.6-linux-amd64.deb) |
+| **Linux** — Fedora / RHEL 8+ | [GrinSight-0.4.6-linux-x86_64.rpm](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.6/GrinSight-0.4.6-linux-x86_64.rpm) |
+| **Linux** — любой с glibc 2.28+ | [GrinSight-0.4.6-linux-x86_64.tar.gz](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.6/GrinSight-0.4.6-linux-x86_64.tar.gz) |
+| **Android 8+** (arm64) — проверен только на эмуляторе | [GrinSight-0.4.6-android-arm64.apk](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.6/GrinSight-0.4.6-android-arm64.apk) |
+| **macOS 11+** — Apple silicon и Intel; без мостов Tor, на настоящем Mac не запускалась | [GrinSight-0.4.6-macos-universal.dmg](https://github.com/DanilaGrinRus/GrinSight/releases/download/v0.4.6/GrinSight-0.4.6-macos-universal.dmg) |
 
 Проверьте файл перед запуском — сумма должна совпасть со строкой в `SHA256SUMS.txt`:
 
 ```powershell
-Get-FileHash .\GrinSight-0.4.4-windows-x64-setup.exe -Algorithm SHA256
+Get-FileHash .\GrinSight-0.4.6-windows-x64-setup.exe -Algorithm SHA256
 ```
 
-В Windows и Linux 0.4.4 ставится как **GrinSight Light**, рядом с GrinSight 0.4.2, если он у вас есть; кошелёк 0.4.2 она не подхватывает — восстановите его из слов.
+В Windows и Linux 0.4.6 ставится как **GrinSight Light**, рядом с GrinSight 0.4.2, если он у вас есть; кошелёк 0.4.2 она не подхватывает — восстановите его из слов.
 
 ## Сколько это занимает
 
@@ -52,6 +52,7 @@ Get-FileHash .\GrinSight-0.4.4-windows-x64-setup.exe -Algorithm SHA256
 
 ## Как проверяет
 
+0. **История до точки** (новое в 0.4.6). С программой едет доказательство истории до встроенной точки; кошелёк проверяет его выборкой по работе, по схеме FlyClient: 420 мест по всей накопленной работе, у каждого — заголовки, правило сложности и место в дереве заголовков. Меньше секунды. Число проб — запас, а не расчёт для названной вероятности; хеш самой точки по-прежнему выбран выпуском.
 1. **Заголовки.** Каждый заголовок от встроенной точки (mainnet, высота 4 115 520) до вершины проверяется по правилам самой ноды: доказательство работы, сложность, связи. Более тяжёлая ветвь заменяет вершину, только когда несёт больше суммарной работы.
 2. **Состояние монет.** Непотраченные выходы собираются из сегментов PIBD на архивной точке нод и сверяются с корнями в проверенном заголовке.
 3. **Каждый блок** от архивной точки до вершины сверяется со своим заголовком, прежде чем его увидит кошелёк.
@@ -76,9 +77,9 @@ Get-FileHash .\GrinSight-0.4.4-windows-x64-setup.exe -Algorithm SHA256
 
 ## Что проверено и что нет
 
-- 599 тестов на Windows в 23 разделах, упавших нет; окно проходит 62 шага против настоящего процесса кошелька на Windows, Debian 10 и macOS.
-- Пять кругов проверки ИИ-аудитором: 50 находок, все исправлены. **Аудита человеком не было.**
-- В mainnet автор восстановил кошелёк из слов и обменялся платежами с Grim 0.3.7 через Tor в обе стороны (Windows, сборка перед опубликованной). **С другими кошельками, оплата счёта и отмена этой сборкой вживую не запускались**: они покрыты тестами.
+- 682 теста на Windows, упавших нет; окно проходит 86 шагов против настоящего процесса кошелька на Windows, Debian 10 и macOS.
+- Шесть кругов проверки ИИ-аудитором (0.4.3–0.4.5): 53 находки, все исправлены. **Добавленное в 0.4.6 не проверялось. Аудита человеком не было.**
+- В mainnet автор восстановил кошелёк из слов и обменялся платежами с Grim 0.3.7 через Tor в обе стороны (Windows, версия 0.4.3). **Версией 0.4.6 на живой сети не платили**; другие кошельки, счёт, отмена и отзыв покрыты тестами.
 - **Android запускался только на эмуляторе. Образ для macOS собран, и сценарий окна пройден на машине GitHub; на настоящем Mac он не запускался, мостов Tor в нём нет. Ничего не подписано.**
 - В этой версии нет того, что было в 0.4.2: сканирования QR-кодов, GlauxNet, «Проверю сам» от первого блока, «Try the future».
 

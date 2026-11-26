@@ -120,3 +120,37 @@ fn the_cyrillic_layout_pastes_copies_and_cuts() -> Result<(), Box<dyn std::error
     assert_eq!(probe.get_secret(), "pass phrase");
     Ok(())
 }
+
+/// O74: "Copy the words" puts the words on the clipboard as one line; the
+/// clipboard is emptied later only if it still holds them, never when the
+/// owner has put something else there meanwhile.
+#[test]
+fn the_words_go_to_the_clipboard_and_are_taken_back() -> Result<(), Box<dyn std::error::Error>> {
+    let window = MinimalSoftwareWindow::new(RepaintBufferType::NewBuffer);
+    let held = Rc::new(RefCell::new(String::new()));
+    slint::platform::set_platform(Box::new(WithClipboard { window: window.clone(), held: held.clone() }))?;
+    let app = crate::ui::App::new()?;
+    window.set_size(PhysicalSize::new(900, 700));
+    app.show()?;
+    let line = "one two three four";
+    app.set_words_line(line.into());
+    app.invoke_copy_words();
+    assert_eq!(held.borrow().as_str(), line);
+    app.invoke_clear_copied_words();
+    assert_eq!(held.borrow().as_str(), " ", "the words are gone from the clipboard");
+    // copied, then the owner copies something of their own: that stays
+    app.invoke_copy_words();
+    *held.borrow_mut() = "something else".into();
+    app.invoke_clear_copied_words();
+    assert_eq!(held.borrow().as_str(), "something else");
+    // nothing copied: nothing is touched
+    *held.borrow_mut() = "untouched".into();
+    app.invoke_clear_copied_words();
+    assert_eq!(held.borrow().as_str(), "untouched");
+    // no words shown: nothing to copy
+    app.set_words_line("".into());
+    app.invoke_copy_words();
+    app.invoke_clear_copied_words();
+    assert_eq!(held.borrow().as_str(), "untouched");
+    Ok(())
+}

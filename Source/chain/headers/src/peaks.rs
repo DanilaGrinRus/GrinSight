@@ -145,3 +145,135 @@ impl Peaks {
         Ok(peaks)
     }
 }
+
+/// One leaf followed through a range as the range grows (K202): the peaks,
+/// and the siblings of that leaf from the bottom up to the peak of its
+/// mountain. With them the Merkle proof of the leaf under the root of the
+/// range can be given at any size, without keeping the range itself - this
+/// is how a starting point made by the wallet carries the proof that the
+/// point the program came with is in its history.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Track {
+    peaks: Peaks,
+    target: u64,
+    up: Vec<Hash>,
+}
+
+/// The mountain of the range with `leaves` leaves that holds leaf `target`:
+/// its place among the peaks (left to right), its first leaf and its height.
+fn mountain_of(leaves: u64, target: u64) -> Option<(usize, u64, u32)> {
+    if target >= leaves {
+        return None;
+    }
+    let mut first = 0u64;
+    let mut place = 0usize;
+    for level in (0..64u32).rev() {
+        let size = 1u64.checked_shl(level)?;
+        if leaves & size == 0 {
+            continue;
+        }
+        let end = first.checked_add(size)?;
+        if target < end {
+            return Some((place, first, level));
+        }
+        first = end;
+        place = place.checked_add(1)?;
+    }
+    None
+}
+
+impl Track {
+    /// The range `before`, and `leaf` added to it as the leaf followed.
+    pub fn begin(before: &Peaks, leaf: &BlockHeader) -> Result<Track, PeaksError> {
+        let mut track = Track { peaks: before.clone(), target: before.leaves(), up: Vec::new() };
+        track.append(leaf)?;
+        Ok(track)
+    }
+
+    /// Takes up a leaf again from its Merkle proof in the range `peaks`
+    /// (as [`Track::path`] gives it): the part of the path above the peak of
+    /// its mountain has to be what those peaks give. Whether the path leads
+    /// from the leaf to that peak is not known here: that is checked where
+    /// the leaf itself is known (see [`crate::proof::history_of`]).
+    pub fn from_path(peaks: &Peaks, target: u64, path: &[Hash]) -> Result<Track, PeaksError> {
+        let (_, _, level) = mountain_of(peaks.leaves(), target).ok_or(PeaksError::Shape)?;
+        let climb = usize::try_from(level).map_err(|_| PeaksError::Shape)?;
+        if path.len() < climb {
+            return Err(PeaksError::Shape);
+        }
+        let (up, above) = path.split_at(climb);
+        let track = Track { peaks: peaks.clone(), target, up: up.to_vec() };
+        if track.above() != Some(above.to_vec()) {
+            return Err(PeaksError::Shape);
+        }
+        Ok(track)
+    }
+
+    /// The height (leaf index) of the leaf followed.
+    pub fn target(&self) -> u64 {
+        self.target
+    }
+
+    /// The range as it is now.
+    pub fn peaks(&self) -> &Peaks {
+        &self.peaks
+    }
+
+    /// Add the next header to the range. On an error nothing has changed.
+    pub fn append(&mut self, header: &BlockHeader) -> Result<(), PeaksError> {
+        let leaves = self.peaks.leaves();
+        let mut peaks = self.peaks.clone();
+        peaks.append(header)?;
+        // the merges the new leaf made, again, to see which of them took in
+        // the mountain of the leaf followed, and what it met there
+        let mut up = self.up.clone();
+        let mut hashes = self.peaks.hashes.clone();
+        let mut pos = self.peaks.size();
+        let mut node = header.hash_with_index(pos);
+        let mut bit = 1u64;
+        while leaves & bit != 0 {
+            let left = hashes.pop().ok_or(PeaksError::Shape)?;
+            // the right part ends with the new leaf and has `bit` leaves
+            let right_first = leaves.checked_add(1).and_then(|n| n.checked_sub(bit)).ok_or(PeaksError::Shape)?;
+            let left_first = right_first.checked_sub(bit).ok_or(PeaksError::Shape)?;
+            if self.target >= right_first && self.target <= leaves {
+                up.push(left);
+            } else if self.target >= left_first && self.target < right_first {
+                up.push(node);
+            }
+            pos = pos.checked_add(1).ok_or(PeaksError::Shape)?;
+            node = (left, node).hash_with_index(pos);
+            bit = bit.checked_mul(2).ok_or(PeaksError::Shape)?;
+        }
+        self.peaks = peaks;
+        self.up = up;
+        Ok(())
+    }
+
+    /// The part of the path above the peak of the leaf's mountain, as the
+    /// Grin code gives it: the peaks to the right hashed together, then the
+    /// peaks to the left, right to left.
+    fn above(&self) -> Option<Vec<Hash>> {
+        let (place, _, _) = mountain_of(self.peaks.leaves(), self.target)?;
+        let size = self.peaks.size();
+        let hashes = self.peaks.hashes();
+        let mut right: Option<Hash> = None;
+        for peak in hashes.get(place.checked_add(1)?..)?.iter().rev() {
+            right = Some(match right {
+                None => *peak,
+                Some(r) => (*peak, r).hash_with_index(size),
+            });
+        }
+        let mut out: Vec<Hash> = right.into_iter().collect();
+        out.extend(hashes.get(..place)?.iter().rev().copied());
+        Some(out)
+    }
+
+    /// The Merkle proof of the leaf followed under the root of the range,
+    /// in the form of the Grin code's `MerkleProof::path`.
+    pub fn path(&self) -> Option<Vec<Hash>> {
+        let mut path = self.up.clone();
+        path.extend(self.above()?);
+        Some(path)
+    }
+}

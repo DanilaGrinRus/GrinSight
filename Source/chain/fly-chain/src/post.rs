@@ -324,6 +324,9 @@ pub struct Outbox {
     /// The user agreed that a transaction Tor fails to send goes out over
     /// this program's own connections.
     direct: bool,
+    /// The owner switched Tor off (K189, K193): the direct way is the only
+    /// one for as long as it is.
+    tor_off: bool,
     /// Why the last try through Tor failed, until one succeeds.
     trouble: Option<String>,
 }
@@ -338,9 +341,37 @@ impl Outbox {
         }
     }
 
-    /// Whether the user agreed to the direct way.
+    /// The same, with Tor switched off from the start or not.
+    pub fn with_tor(direct: bool, tor_off: bool) -> Outbox {
+        Outbox {
+            direct,
+            tor_off,
+            ..Outbox::default()
+        }
+    }
+
+    /// Whether a transaction Tor fails to send goes the direct way: the
+    /// user agreed to it, or switched Tor off.
     pub fn direct(&self) -> bool {
-        self.direct
+        self.direct || self.tor_off
+    }
+
+    /// K193: the owner switched Tor off or back on while the program runs.
+    /// Off: every transaction whose try through Tor has failed and that no
+    /// try is under way for goes over the program's own connections now;
+    /// one a try is under way for goes when that try ends. Back on: what
+    /// has not gone out yet is tried through Tor again, and the direct way
+    /// is open only where the owner agreed to it - for everything, or for
+    /// one transaction (K192). A transaction that went out directly is not
+    /// taken back.
+    pub fn tor_switched(&mut self, off: bool, now: Instant, peers: &[SocketAddr]) -> Vec<Do> {
+        self.tor_off = off;
+        if !off {
+            return Vec::new();
+        }
+        // what Tor could not do is no trouble any more: it is not asked to
+        self.trouble = None;
+        self.sent.iter_mut().filter(|sent| matches!(sent.route, Route::Tor { busy: false, failed: Some(_), .. })).filter_map(|sent| sent.go_direct(now, peers)).collect()
     }
 
     /// Why a transaction is not out, in words, while it is not.
@@ -371,7 +402,12 @@ impl Outbox {
     pub fn announced(&self) -> Vec<(Hash, Transaction)> {
         self.sent
             .iter()
-            .filter(|sent| sent.mined.is_none() && sent.route == Route::Direct && matches!(sent.stage, Stage::Open { .. }))
+            .filter(|sent| {
+                (self.direct() || sent.direct)
+                    && sent.mined.is_none()
+                    && sent.route == Route::Direct
+                    && matches!(sent.stage, Stage::Open { .. })
+            })
             .flat_map(|sent| sent.tx.kernels().iter().map(|kernel| (kernel.hash(), sent.tx.clone())))
             .collect()
     }
@@ -464,7 +500,7 @@ impl Outbox {
     /// When it failed and the user agreed, the transaction goes out over
     /// this program's own connections, `peers`, from then on.
     pub fn sent(&mut self, key: &[[u8; 33]], result: Result<(), String>, now: Instant, peers: &[SocketAddr]) -> Option<Do> {
-        let direct = self.direct;
+        let direct = self.direct();
         let sent = self.sent.iter_mut().find(|sent| sent.excesses == key)?;
         let Route::Tor { tries, .. } = sent.route else {
             return None;
@@ -545,6 +581,7 @@ impl Outbox {
     /// for, one node at a time.
     pub fn tend(&mut self, now: Instant, peers: &[SocketAddr]) -> Vec<Do> {
         let mut due = Vec::new();
+        let direct = self.direct();
         for sent in &mut self.sent {
             if sent.mined.is_some() || sent.seen {
                 continue;
@@ -573,7 +610,9 @@ impl Outbox {
                 }
                 continue;
             }
-            if peers.is_empty() {
+            // Keep the history of a stem sent while Tor was off, but
+            // require current permission for another direct transmission.
+            if !(direct || sent.direct) || peers.is_empty() {
                 continue;
             }
             match sent.stage {

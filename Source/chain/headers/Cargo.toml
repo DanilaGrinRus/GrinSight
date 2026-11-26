@@ -7,6 +7,8 @@ description = "The header chain of Grin from a built-in starting point: the reco
 
 [dependencies]
 grin_core = { path = "../../vendor/grin/core" }
+# the hash of the work tree: the same crate and version the node's code uses
+blake2 = { package = "blake2-rfc", version = "0.2" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = { version = "0.4", optional = true }
@@ -15,6 +17,10 @@ chrono = { version = "0.4", optional = true }
 # Builds `testkit`: a miner of short chains on the automated-testing network
 # and a writer of starting-point records for them. Never part of a product build.
 testkit = ["dep:chrono"]
+# The proof of the history before the starting point of mainnet
+# (points/main.history, about 8 MB) is compiled in and checked when the chain
+# is opened. Every product build of 0.4.6 has it (through fly-chain).
+history-proof = []
 
 [dev-dependencies]
 getrandom = "0.2"

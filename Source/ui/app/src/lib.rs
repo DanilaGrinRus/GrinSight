@@ -81,24 +81,38 @@ fn fill_sample_sheets(app: &App) {
     app.set_in_from_note(tr("Check the address with the sender some other way.", "Сверьте адрес с отправителем по другому каналу.").into());
     app.set_in_from_groups(model(groups));
     app.set_words(model(SAMPLE_WORDS.iter().map(|w| SharedString::from(*w)).collect()));
+    app.set_words_line(SAMPLE_WORDS.join(" ").into());
     app.set_chat_name(name(tr("Anna", "Аня")));
+    app.set_chat_picked_at_start(0);
+    app.set_chat_can_write(true);
     let line = |mine: bool, text: &str, when: &str, state: &str, warn: bool| ChatLine {
         mine,
         text: fly_safe_display::foreign_text(text, fly_safe_display::MESSAGE_CHARS).text.into(),
         when: when.into(),
         state: state.into(),
         warn,
+        kind: 0,
     };
+    let mark = |kind: i32, text: &str, state: &str| ChatLine { mine: true, text: text.into(), when: SharedString::new(), state: state.into(), warn: false, kind };
     app.set_chat_lines(model(vec![
+        mark(2, tr("Today", "Сегодня"), ""),
         line(false, tr("Hi! Can you send 0.5 for lunch?\nhttps://example.com — a link is shown as text only", "Привет! Скинешь 0.5 за обед?\nhttps://example.com — ссылка только текстом"), tr("2 h ago", "2 ч назад"), "", false),
         line(true, tr("Sure, sending now", "Да, сейчас отправлю"), tr("2 h ago", "2 ч назад"), tr("accepted for delivery", "принято к доставке"), false),
+        mark(1, &fill(tr("You sent {} GRIN", "Вы отправили {} GRIN"), &[&amount(NANO / 2)]), tr("in a block · confirmations: 10", "в блоке · подтверждений: 10")),
         line(false, tr("Got it, thanks 🙂", "Пришло, спасибо 🙂"), tr("1 h ago", "1 ч назад"), "", false),
         line(true, tr("Great", "Отлично"), tr("just now", "только что"), tr("waiting to be delivered", "ждёт доставки"), false),
         line(true, tr("This went out while the network was down", "Это ушло, когда сеть лежала"), "21.11.2026", tr("not sent: the delivery window closed", "не отправлено: окно доставки закрылось"), true),
     ]));
     app.set_all_ops(model(vec![
-        OpLine { who: name(tr("Anna", "Аня")), sub: tr("waiting for your signature", "ждёт вашей подписи").into(), amount: format!("−{}", amount(NANO / 2)).into(), tone: 2, show: true },
-        OpLine { who: name(tr("Paul", "Павел")), sub: tr("in block 4 118 590", "в блоке 4 118 590").into(), amount: format!("+{}", amount(2 * NANO)).into(), tone: 1, show: false },
+        OpLine { who: name(tr("Anna", "Аня")), sub: tr("waiting for your signature", "ждёт вашей подписи").into(), amount: format!("−{}", amount(NANO / 2)).into(), tone: 2, show: true, block: "—".into(), incoming: false, contact: name(tr("Anna", "Аня")) },
+        OpLine { who: name(tr("Paul", "Павел")), sub: tr("in block 4 118 590", "в блоке 4 118 590").into(), amount: format!("+{}", amount(2 * NANO)).into(), tone: 1, show: false, block: "4 118 590".into(), incoming: true, contact: SharedString::new() },
+    ]));
+    app.set_op_contacts(model(vec![name(tr("Anna", "Аня"))]));
+    let out = |value: u64, block: &str, state: &str, free: bool, kept: bool| ui::OutLine { amount: amount(value).into(), block: block.into(), state: state.into(), free, kept, picked: false };
+    app.set_outs(model(vec![
+        out(20 * NANO, "4 117 902", "", true, true),
+        out(4 * NANO + 137_000_000, "4 118 590", "", true, false),
+        out(NANO / 2, "4 118 611", tr("held by a payment under way", "занят платежом в пути"), false, false),
     ]));
     app.set_identity_made(true);
     app.set_ask(model(vec![3, 11, 20]));
@@ -168,6 +182,30 @@ pub(crate) fn confirmations() -> u64 {
     CONFIRMATIONS.load(std::sync::atomic::Ordering::Relaxed)
 }
 
+/// The block up to which the owner hid the history in the window (O50);
+/// 0: nothing is hidden. The wallet's file knows nothing of it.
+static HISTORY_HIDDEN: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+pub(crate) fn set_history_hidden(through: u64) {
+    HISTORY_HIDDEN.store(through, std::sync::atomic::Ordering::Relaxed);
+}
+
+pub(crate) fn history_hidden() -> u64 {
+    HISTORY_HIDDEN.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// K196: the owner's standing word that payments take the wallet's small
+/// outputs along. Off until the owner says so.
+static GATHER: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub(crate) fn set_gather(on: bool) {
+    GATHER.store(on, std::sync::atomic::Ordering::Relaxed);
+}
+
+pub(crate) fn gather() -> bool {
+    GATHER.load(std::sync::atomic::Ordering::Relaxed)
+}
+
 pub(crate) fn set_tor_off(off: bool) {
     TOR_OFF.store(off, std::sync::atomic::Ordering::Relaxed);
 }
@@ -186,16 +224,19 @@ pub(crate) fn nostr_off() -> bool {
 
 /// The wallet process's arguments as the owner's choices make them, from
 /// the arguments the program has for everything switched on. Nostr off:
-/// no message program. Tor off: no message program either (it speaks
-/// through Tor), no program for the address, and the chain program is told
-/// to bring no Tor up. The consent to the direct way is passed as it is.
+/// no message program. Tor off: the wallet process is told so with the
+/// chain program's flag, and starts nothing that needs Tor until the
+/// switch is turned (K193) - so the programs stay named. Without a chain
+/// program there is no such flag, and what needs Tor is not named at
+/// all. The consent to the direct way is passed as it is.
 pub(crate) fn chosen_args(base: &[String], direct: bool, tor_off: bool, nostr_off: bool) -> Vec<String> {
     let mut out = Vec::with_capacity(base.len().saturating_add(2));
+    let unflagged = tor_off && !base.iter().any(|a| a == "--chain");
     let mut it = base.iter();
     while let Some(arg) = it.next() {
         let dropped = match arg.as_str() {
-            "--transport" | "--relay" => tor_off || nostr_off,
-            "--onion" => tor_off,
+            "--transport" | "--relay" => unflagged || nostr_off,
+            "--onion" => unflagged,
             "--chain-direct-post" | "--chain-no-tor" => {
                 // said anew below, never twice
                 continue;
@@ -263,9 +304,15 @@ fn wire_settings(app: &App, path: Option<PathBuf>) {
                 "direct=on" => set_direct(true),
                 "tor=off" => set_tor_off(true),
                 "nostr=off" => set_nostr_off(true),
+                "gather=on" => set_gather(true),
                 word if word.starts_with("received=") => {
                     if let Some(count) = word.strip_prefix("received=").and_then(|n| n.parse::<u64>().ok()).filter(|n| (1..=1000).contains(n)) {
                         set_confirmations(count);
+                    }
+                }
+                word if word.starts_with("history-hidden=") => {
+                    if let Some(through) = word.strip_prefix("history-hidden=").and_then(|n| n.parse::<u64>().ok()) {
+                        set_history_hidden(through);
                     }
                 }
                 "delivery=hand" => app.global::<Settings>().set_by_hand(true),
@@ -286,13 +333,14 @@ fn wire_settings(app: &App, path: Option<PathBuf>) {
         set_language(russian);
         // what the program wrote once, again in the new language
         fill_common(&app);
+        live::say_again(&app);
         let (en, ru) = NOTE.with(|n| *n.borrow());
         if !en.is_empty() && !app.get_login_note().is_empty() {
             app.set_login_note(tr(en, ru).into());
         }
         if let Some(path) = &path {
             let text = format!(
-                "lang={}\ntheme={}\ndirect={}\ndelivery={}\ntor={}\nnostr={}\n{}",
+                "lang={}\ntheme={}\ndirect={}\ndelivery={}\ntor={}\nnostr={}\n{}{}{}",
                 if russian { "ru" } else { "en" },
                 theme_word(app.global::<Theme>().get_name()),
                 if direct() { "on" } else { "off" },
@@ -300,7 +348,9 @@ fn wire_settings(app: &App, path: Option<PathBuf>) {
                 if tor_off() { "off" } else { "on" },
                 if nostr_off() { "off" } else { "on" },
                 // only once chosen: until then the wallet's own number stands
-                if confirmations() == 0 { String::new() } else { format!("received={}\n", confirmations()) }
+                if confirmations() == 0 { String::new() } else { format!("received={}\n", confirmations()) },
+                if history_hidden() == 0 { String::new() } else { format!("history-hidden={}\n", history_hidden()) },
+                if gather() { "gather=on\n" } else { "" }
             );
             if let Some(dir) = path.parent() {
                 let _ = std::fs::create_dir_all(dir);
@@ -314,7 +364,7 @@ fn wire_settings(app: &App, path: Option<PathBuf>) {
 /// The scripts that pack the Windows installer, the APK and the Linux and
 /// macOS packages read it here, so the window and the package it came in
 /// cannot name different versions.
-pub const APP_VERSION: &str = "0.4.4";
+pub const APP_VERSION: &str = "0.4.6";
 
 /// Shows the synchronisation block and the troubles of this session.
 pub(crate) fn show_sync(app: &App, facts: &sync::Facts, journal: &sync::Journal) {
@@ -353,6 +403,8 @@ pub(crate) fn show_sync(app: &App, facts: &sync::Facts, journal: &sync::Journal)
                 detail: e.trouble.detail.clone().into(),
                 help: help.into(),
                 open: e.open,
+                // O66: offered only while the trouble is there
+                restart: e.open && sync::restart_offered(e.trouble.kind),
             }
         })
         .collect();
@@ -434,9 +486,9 @@ fn fill_sample(app: &App) {
         Waiting { who: tr("Incoming", "Входящий").into(), what: fill(tr("{} GRIN from grin18z5…9h2ykv — accept?", "{} GRIN от grin18z5…9h2ykv — принять?"), &[&amount(NANO)]).into(), action: tr("Accept", "Принять").into(), second: tr("Decline", "Отклонить").into() },
     ]));
     app.set_contacts(model(vec![
-        Contact { initial: tr("A", "А").into(), name: name(tr("Anna", "Аня")), last: tr("waiting for a signature", "ждёт подписи").into(), attention: true },
-        Contact { initial: tr("P", "П").into(), name: name(tr("Paul", "Павел")), last: tr("Thanks, it arrived", "Спасибо, дошло").into(), attention: false },
-        Contact { initial: tr("C", "К").into(), name: name(tr("“Coffee shop”", "«Кофейня»")), last: tr("invoice paid", "счёт оплачен").into(), attention: false },
+        Contact { initial: tr("A", "А").into(), name: name(tr("Anna", "Аня")), last: tr("waiting for a signature", "ждёт подписи").into(), attention: true, traded: false, checked: false, time: tr("2 h ago", "2 ч назад").into(), unread: 0 },
+        Contact { initial: tr("P", "П").into(), name: name(tr("Paul", "Павел")), last: tr("Thanks, it arrived", "Спасибо, дошло").into(), attention: false, traded: true, checked: true, time: tr("1 h ago", "1 ч назад").into(), unread: 2 },
+        Contact { initial: tr("C", "К").into(), name: name(tr("“Coffee shop”", "«Кофейня»")), last: tr("invoice paid", "счёт оплачен").into(), attention: false, traded: false, checked: false, time: "21.11.2026".into(), unread: 0 },
     ]));
     app.set_ops(model(vec![
         Op { who: name(tr("Anna", "Аня")), sub: tr("waiting for your signature", "ждёт вашей подписи").into(), amount: format!("−{}", amount(NANO / 2)).into(), tone: 2, show: true },
@@ -628,9 +680,33 @@ fn run_window(args: &Args) {
             None
         }
     };
-    if app.run().is_err() {
+    // O56: a closed window means an ended program. Whatever is still at
+    // work then - a thread, a child that will not go - gets a few seconds,
+    // and the process ends all the same: a program left behind unseen
+    // would keep the wallet's files to itself. Ending like this is, for
+    // the wallet's file, a power cut, which its journal is made to survive.
+    app.window().on_close_requested(|| {
+        // O70: the conversations in windows of their own go with the main one
+        live::apart::close_all();
+        end_within(CLOSE_GRACE);
+        slint::CloseRequestResponse::HideWindow
+    });
+    let ran = app.run();
+    end_within(CLOSE_GRACE);
+    if ran.is_err() {
         std::process::exit(1);
     }
+}
+
+/// How long the program may go on after its window is closed (O56).
+const CLOSE_GRACE: std::time::Duration = std::time::Duration::from_secs(12);
+
+/// Ends the process after `grace`, unless it has ended by itself before.
+fn end_within(grace: std::time::Duration) {
+    let _ = std::thread::Builder::new().name("close".into()).spawn(move || {
+        std::thread::sleep(grace);
+        std::process::exit(0);
+    });
 }
 
 /// Android: Slint's NativeActivity calls this. The wallet's programs are
@@ -750,7 +826,7 @@ mod snapshot {
             fill_sample_sheets(&app);
             app.global::<Theme>().set_name(ThemeName::Emerald);
             let mut shots: Vec<(i32, i32, i32, &str)> = vec![(2, 0, 0, "create-1"), (2, 1, 0, "create-2-words"), (2, 2, 0, "create-3-check"), (3, 0, 0, "restore")];
-            for (sheet, what) in [(1, "send"), (2, "slatepack"), (3, "sign"), (4, "receive"), (5, "incoming"), (6, "contact"), (7, "security"), (10, "invoice"), (11, "release")] {
+            for (sheet, what) in [(1, "send"), (2, "slatepack"), (3, "sign"), (4, "receive"), (5, "incoming"), (6, "contact"), (7, "security"), (10, "invoice"), (11, "release"), (13, "outputs"), (14, "contacts"), (8, "words"), (16, "settings")] {
                 shots.push((1, 0, sheet, what));
             }
             shots.push((4, 0, 0, "chat"));
@@ -767,10 +843,26 @@ mod snapshot {
                 slint::platform::update_timers_and_animations();
                 draw(&window, &dir.join(format!("{what}.bmp")))?;
             }
+            // a contact being changed, with its check code shown (O64, O65)
+            app.set_page(1);
+            app.set_contact_editing(true);
+            app.set_contact_edit_name(tr("Paul", "Павел").into());
+            app.set_contact_edit_address(SAMPLE_ADDRESS.into());
+            app.set_contact_code("able – bird – cabin – delay – eagle – fabric".into());
+            app.set_sheet(6);
+            std::thread::sleep(std::time::Duration::from_millis(50));
+            slint::platform::update_timers_and_animations();
+            draw(&window, &dir.join("contact-edit.bmp"))?;
+            app.set_contact_editing(false);
+            app.set_contact_edit_name(SharedString::new());
+            app.set_contact_edit_address(SharedString::new());
+            app.set_contact_code(SharedString::new());
             app.set_sheet(0);
             app.set_create_step(0);
             // a phone-sized window: the same screens must fit 430 px
-            window.set_size(PhysicalSize::new(430u32.saturating_mul(scale()), 930u32.saturating_mul(scale())));
+            // `GRINSIGHT_SNAPSHOT_PHONE`: another width, for a narrower phone
+            let phone = std::env::var("GRINSIGHT_SNAPSHOT_PHONE").ok().and_then(|w| w.parse::<u32>().ok()).filter(|w| (280..=600).contains(w)).unwrap_or(430);
+            window.set_size(PhysicalSize::new(phone.saturating_mul(scale()), 930u32.saturating_mul(scale())));
             app.global::<Device>().set_phone(true);
             app.set_has_profile(false);
             // the phone pictures in Russian: proves the bundled .po is used
@@ -794,13 +886,23 @@ mod snapshot {
             window.set_size(PhysicalSize::new(WIDTH.saturating_mul(scale()), height().saturating_mul(scale())));
             // what stands under "Details", with a point just made (O38)
             app.set_page(1);
-            app.set_sync_details(true);
+            app.set_sheet(15);
             app.set_point_good(true);
             app.set_point_note(fill(tr("Your own starting point is made: block {}. The wallet starts from it at the next unlock.", "Своя стартовая точка сделана: блок {}. Кошелёк начнёт с неё со следующего входа."), &["4 115 760"]).into());
             std::thread::sleep(std::time::Duration::from_millis(50));
             slint::platform::update_timers_and_animations();
             draw(&window, &dir.join("main-details.bmp"))?;
-            app.set_sync_details(false);
+            // O73: what a "?" says, over the main screen
+            app.set_sheet(0);
+            let help = app.global::<crate::ui::Help>();
+            help.set_title(tr("Make my own starting point", "Сделать свою стартовую точку").into());
+            help.set_text(tr("The wallet starts checking the network from a starting point built into the program. It can make one of its own from the chain it has checked itself — a block well below the tip.", "Кошелёк начинает проверять сеть со стартовой точки, вшитой в программу. Он может сделать свою — из цепи, которую проверил сам, на блоке заметно ниже вершины.").into());
+            help.set_open(true);
+            std::thread::sleep(std::time::Duration::from_millis(50));
+            slint::platform::update_timers_and_animations();
+            draw(&window, &dir.join("help.bmp"))?;
+            help.set_open(false);
+            app.set_sheet(0);
             app.set_point_note(SharedString::new());
             // with Tor switched off by the owner (O42): the main screen and the options
             let off = sync::Facts { tor_off: true, transport: sync::Part::default(), onion: sync::Part::default(), ..sample_facts() };
@@ -956,10 +1058,17 @@ mod scenario {
     struct Headless {
         window: Rc<MinimalSoftwareWindow>,
         queue: Queue,
+        /// Whether the main window has been handed out.
+        given: std::cell::Cell<bool>,
     }
 
     impl Platform for Headless {
         fn create_window_adapter(&self) -> Result<Rc<dyn WindowAdapter>, slint::PlatformError> {
+            // the first window is the wallet's; a conversation in a window of
+            // its own (O70) gets one of its own here too
+            if self.given.replace(true) {
+                return Ok(MinimalSoftwareWindow::new(RepaintBufferType::NewBuffer));
+            }
             Ok(self.window.clone())
         }
         fn new_event_loop_proxy(&self) -> Option<Box<dyn EventLoopProxy>> {
@@ -986,6 +1095,9 @@ mod scenario {
     const INVOICE: &str = "BEGINSLATEPACK. 2qUejGAHXXLSiuy 5Z3DMLkXyC21BdP EhnDjGnXn9GtwXQ PiXYjhmSAsdGRMo 4V3iHdWYaRvA8bm ZASzUNrSXmW6Jxz Khwqmh5c8txZe65 Yi6j4gfFuJhh1zU BbD1ZZraad7ZWtR 6K8AzC7UszUSLPe 79ZwcyB7k52ghun 8fUk3xV7Lyom6ET YqNMSLuvNcHZjE6 66t29GJ6hewhq. ENDSLATEPACK.";
     /// A valid key for a contact: the x coordinate of the curve's generator.
     const NPUB: &str = "npub10xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqpkge6d";
+    // two more keys that are message keys, for a list of contacts
+    const NPUB2: &str = "npub1ccz8l9zpa47k6vz9gphftsrumpw80rjt3nhnefat4symjhrsnmjs38mnyd";
+    const NPUB3: &str = "npub1lycg5qvjtrp3qjf5f7zl382j9x6nrjz9sdhenvyxq8c3808qxmus6gq266";
     const SLOW: Duration = Duration::from_secs(150);
     const QUICK: Duration = Duration::from_secs(30);
 
@@ -1072,7 +1184,7 @@ mod scenario {
         std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
         let window = MinimalSoftwareWindow::new(RepaintBufferType::NewBuffer);
         let queue: Queue = Arc::new(Mutex::new(VecDeque::new()));
-        slint::platform::set_platform(Box::new(Headless { window: window.clone(), queue: queue.clone() })).map_err(|e| e.to_string())?;
+        slint::platform::set_platform(Box::new(Headless { window: window.clone(), queue: queue.clone(), given: std::cell::Cell::new(false) })).map_err(|e| e.to_string())?;
         let app = App::new().map_err(|e| e.to_string())?;
         window.set_size(PhysicalSize::new(snapshot::WIDTH, snapshot::HEIGHT));
         app.show().map_err(|e| e.to_string())?;
@@ -1248,7 +1360,10 @@ mod scenario {
         let made = run.pump(&app, QUICK, |a| a.get_identity_made());
         run.check("a message key is made", made && app.get_phrase().starts_with("npub1"), &app.get_phrase());
         app.invoke_open_chat(0);
-        run.check("the conversation opens with the contact's name", app.get_page() == 4 && app.get_chat_name() == "Тест" && app.get_chat_can_write(), &app.get_chat_name());
+        // O63: on a wide window it opens on the main screen, on a narrow one on a page of its own
+        run.check("the conversation opens with the contact's name", (app.get_page() == 1) == app.get_chat_inline() && app.get_chat_name() == "Тест" && app.get_chat_can_write(), &app.get_chat_name());
+        // the sign "on a page of its own"
+        app.set_page(4);
         app.invoke_chat_send("Привет".into());
         run.pump(&app, QUICK, |a| !a.get_chat_busy() && !a.get_chat_error().is_empty());
         run.check("without delivery a message is refused and says why", app.get_chat_error() == "Доставка через Tor не настроена — отправьте вручную", &app.get_chat_error());
@@ -1262,6 +1377,114 @@ mod scenario {
         app.global::<Settings>().set_by_hand(false);
         app.set_sheet(0);
         app.invoke_chat_closed();
+
+        // ---- O63-O65: all contacts, a list of them, one changed, the check code
+        app.set_page(1);
+        let names = |a: &App| -> Vec<String> { a.get_contact_names().iter().map(|n| n.to_string()).collect() };
+        let at = |a: &App, name: &str| a.get_contact_names().iter().position(|n| n == name).and_then(|i| i32::try_from(i).ok()).unwrap_or(-1);
+        let marked = |a: &App, name: &str| a.get_contacts().iter().find(|c| c.name == name).map(|c| c.checked);
+        app.set_sheet(14);
+        app.set_sheet_error("".into());
+        app.invoke_contacts_add_list(format!("{NPUB2}\nnot a key").into(), "".into());
+        run.check("a list with a wrong line names the line and adds nobody", app.get_sheet_error() == "Строка 2: ключ для сообщений начинается с npub1" && names(&app).len() == 1, &app.get_sheet_error());
+        app.set_sheet_error("".into());
+        app.invoke_contacts_add_list(format!("{NPUB2}\n{NPUB3}").into(), format!("\n{mine}").into());
+        let added = run.pump(&app, QUICK, |a| a.get_contact_names().row_count() == 3 && !a.get_sheet_busy());
+        run.check("a list of contacts is added, each named in turn", added && app.get_contacts_note() == "Добавлено: 2" && names(&app).contains(&"Контакт 2".to_string()) && names(&app).contains(&"Контакт 3".to_string()), &format!("{:?} {}", names(&app), app.get_sheet_error()));
+        run.draw("live-contacts");
+        app.set_sheet(0);
+        app.invoke_sheet_closed(14);
+        // one changed: the same window, with its name and address
+        app.invoke_contact_edit(at(&app, "Тест"));
+        run.check("a contact opens to be changed, with its name", app.get_sheet() == 6 && app.get_contact_editing() && app.get_contact_edit_name() == "Тест" && app.get_contact_edit_address() == mine.as_str(), &app.get_contact_edit_name());
+        // the check code: six words, and the owner's mark
+        app.invoke_contact_code_ask();
+        let coded = run.pump(&app, QUICK, |a| !a.get_contact_code().is_empty() || !a.get_sheet_error().is_empty());
+        let code = app.get_contact_code().to_string();
+        run.check("the check code is six words", coded && code.split(" – ").count() == 6 && code.chars().all(|c| c.is_ascii_lowercase() || c == ' ' || c == '–'), &format!("{code} {}", app.get_sheet_error()));
+        run.draw("live-contact-check");
+        app.invoke_contact_check(true);
+        let checked = run.pump(&app, QUICK, |a| a.get_contact_checked() && marked(a, "Тест") == Some(true));
+        run.check("«the words are the same» marks the contact as checked", checked, &app.get_sheet_error());
+        // a new name keeps the mark; without the address there is nothing it was for
+        app.invoke_contact_add("Тест 2".into(), "".into(), mine.clone().into());
+        let renamed = run.pump(&app, QUICK, |a| a.get_sheet() == 0 && marked(a, "Тест 2") == Some(true));
+        run.check("a changed name is saved and keeps the mark", renamed && names(&app).len() == 3 && !app.get_contact_editing(), &format!("{:?} {}", names(&app), app.get_sheet_error()));
+        app.invoke_contact_edit(at(&app, "Тест 2"));
+        app.invoke_contact_add("Тест 2".into(), "".into(), "".into());
+        let unmarked = run.pump(&app, QUICK, |a| a.get_sheet() == 0 && marked(a, "Тест 2") == Some(false));
+        run.check("with the address gone the mark is gone", unmarked, &app.get_sheet_error());
+        app.invoke_contact_edit(at(&app, "Тест 2"));
+        app.invoke_contact_code_ask();
+        run.pump(&app, QUICK, |a| !a.get_sheet_error().is_empty() || !a.get_contact_code().is_empty());
+        run.check("a contact without an address has no code, and the window says what to do", app.get_contact_code().is_empty() && app.get_sheet_error() == "Сверять пока нечего: сначала сохраните адрес кошелька контакта", &app.get_sheet_error());
+        app.set_sheet(0);
+        app.invoke_sheet_closed(6);
+        // O70: conversations in windows of their own
+        let apart = || live::apart::keys().len();
+        app.invoke_chat_apart(at(&app, "Контакт 2"));
+        run.check("a conversation opens in a window of its own and the main screen stays", apart() == 1 && app.get_page() == 1 && app.get_apart_note().is_empty(), &app.get_apart_note());
+        app.invoke_chat_apart(at(&app, "Контакт 2"));
+        run.check("one contact has one window", apart() == 1, &apart().to_string());
+        app.invoke_chat_apart(at(&app, "Контакт 3"));
+        app.invoke_chat_apart(at(&app, "Тест 2"));
+        app.invoke_chat_apart(-1);
+        run.check("three windows at most, and none for nobody", apart() == live::apart::MOST, &apart().to_string());
+        run.pump(&app, QUICK, |a| !a.get_busy());
+        // the sign «send GRIN» of a contact, then one deleted, then all
+        app.invoke_contact_pay(at(&app, "Контакт 3"));
+        run.check("«send GRIN» next to a contact opens the send window with that contact", app.get_sheet() == 1 && app.get_send_to() == at(&app, "Контакт 3"), &app.get_send_to().to_string());
+        app.set_sheet(0);
+        app.invoke_contact_remove(at(&app, "Контакт 2"));
+        let removed = run.pump(&app, QUICK, |a| a.get_contact_names().row_count() == 2);
+        run.check("a contact is deleted", removed && !names(&app).contains(&"Контакт 2".to_string()), &format!("{:?}", names(&app)));
+        run.check("the window of a deleted contact closes", apart() == 2, &apart().to_string());
+        app.invoke_contacts_remove_all();
+        let none = run.pump(&app, QUICK, |a| a.get_contact_names().row_count() == 0);
+        run.check("all contacts are deleted", none, &format!("{:?}", names(&app)));
+        run.check("with the contacts their windows go", apart() == 0, &apart().to_string());
+
+        // ---- O61: a QR code as a picture in the wallet's folder
+        let said = files.invoke_save_qr(mine.as_str().into()).to_string();
+        let picture = said.strip_prefix("Сохранено: ").map(|p| std::fs::read(p).unwrap_or_default()).unwrap_or_default();
+        run.check("the QR code of the address is saved as a PNG picture", said.contains("qr-") && said.ends_with(".png") && picture.starts_with(&[0x89, b'P', b'N', b'G']), &said);
+        run.check("no picture of a text too long for a code, and a picture is not offered as a text", files.invoke_save_qr("a".repeat(3000).into()) == "Нет QR-кода для сохранения" && files.invoke_list().row_count() == 1, "");
+
+        // ---- K196 in the window: the outputs, collecting, small ones with payments
+        app.set_sheet(13);
+        app.set_sheet_error("".into());
+        app.invoke_collect_ask();
+        run.pump(&app, QUICK, |a| !a.get_sheet_error().is_empty() || !a.get_collect_plan().is_empty());
+        run.check("with nothing to collect the wallet says so and asks nothing", app.get_collect_plan().is_empty() && app.get_sheet_error() == "Собирать нечего: сейчас можно потратить меньше двух выходов", &app.get_sheet_error());
+        app.set_sheet_error("".into());
+        app.invoke_set_gather(true);
+        let told = run.pump(&app, Duration::from_secs(8), |_| live::gather_at_host() == Some(true));
+        run.check("«small ones go along» is switched on, and the wallet process is told", told && app.get_gather(), "");
+        app.invoke_set_gather(false);
+        let untold = run.pump(&app, Duration::from_secs(8), |_| live::gather_at_host() == Some(false));
+        run.check("and switched off again", untold && !app.get_gather(), "");
+        app.set_sheet(0);
+        app.invoke_sheet_closed(13);
+
+        // ---- O64: asking for GRIN from the window
+        app.set_sheet(4);
+        app.set_sheet_error("".into());
+        app.invoke_invoice_make("много".into());
+        run.check("an amount that is not a number makes no invoice", app.get_sheet() == 4 && !app.get_sheet_error().is_empty(), &app.get_sheet_error());
+        app.set_sheet_error("".into());
+        app.invoke_invoice_make("1.5".into());
+        run.pump(&app, QUICK, |a| a.get_sheet() == 2 || !a.get_sheet_error().is_empty());
+        let made = app.get_sheet() == 2 && app.get_out_text().starts_with("BEGINSLATEPACK.") && app.get_out_wants_reply();
+        let vague = "Кошелёк сейчас этого не делает: например, цепь ещё не проверена или платёж уже закрыт";
+        run.check("an invoice is made and shown to pass on, or the wallet says in its own words why not", made || (app.get_sheet() == 4 && !app.get_sheet_error().is_empty() && app.get_sheet_error() != vague), &format!("sheet {} {}", app.get_sheet(), app.get_sheet_error()));
+        if made {
+            app.invoke_out_reply("это не ответ".into());
+            run.pump(&app, QUICK, |a| !a.get_sheet_busy() && !a.get_sheet_error().is_empty());
+            run.check("a text that is not the payer's answer is refused in the invoice's window", app.get_sheet() == 2 && !app.get_sheet_error().is_empty(), &app.get_sheet_error());
+            run.draw("live-invoice-made");
+        }
+        app.set_sheet(0);
+        app.invoke_sheet_closed(2);
         app.set_page(5);
         run.check("all payments open", app.get_page() == 5, "");
         app.set_page(1);
@@ -1288,9 +1511,16 @@ mod scenario {
         app.set_sheet(0);
         run.check("closing drops the words from the window", app.get_words().row_count() == 0, "");
 
+        // O70: a conversation open in a window of its own does not outlive the lock
+        app.set_sheet(6);
+        app.invoke_contact_add("Окно".into(), NPUB2.into(), "".into());
+        let again = run.pump(&app, QUICK, |a| a.get_contact_names().row_count() == 1 && a.get_sheet() == 0);
+        app.invoke_chat_apart(0);
+        let open_before = live::apart::keys().len();
         app.invoke_leave();
         let locked = run.pump(&app, SLOW, |a| !a.get_busy());
         run.check("leaving locks and shows the login", locked && app.get_page() == 0 && app.get_login_error().is_empty(), "");
+        run.check("locking closes the conversations in windows of their own", again && open_before == 1 && live::apart::keys().is_empty(), &format!("{again} {open_before}"));
         app.invoke_enter(PASSWORD.into());
         run.pump(&app, SLOW, |a| !a.get_busy() && !a.get_login_error().is_empty());
         run.check("the old password no longer opens it", app.get_page() == 0 && app.get_login_error() == "Пароль не подошёл", &app.get_login_error());

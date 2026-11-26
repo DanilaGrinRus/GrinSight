@@ -44,8 +44,53 @@ pub struct ChainProgram {
     pub retry: Duration,
     /// The user agreed to send a transaction directly when Tor fails.
     pub direct_post: bool,
-    /// The user switched Tor off: no Tor is brought up, transactions go directly.
-    pub tor_off: bool,
+    /// The user's Tor switch: while it is set no Tor is used and
+    /// transactions go directly. It can change while the wallet is open.
+    pub tor_off: TorSwitch,
+}
+
+/// What the owner set about Tor, shared by everything the host starts
+/// that uses Tor: the switch (K189, K193) and how many times the bridges
+/// were changed while the host runs (K201).
+#[derive(Debug, Default)]
+pub struct TorSet {
+    /// Set: Tor is off.
+    off: std::sync::atomic::AtomicBool,
+    /// Grows with every change of the bridges the host is told of.
+    turn: std::sync::atomic::AtomicU64,
+}
+
+/// The switch itself, as it is set and read.
+impl std::ops::Deref for TorSet {
+    type Target = std::sync::atomic::AtomicBool;
+    fn deref(&self) -> &Self::Target {
+        &self.off
+    }
+}
+
+/// The owner's Tor settings, one for the whole host.
+pub type TorSwitch = Arc<TorSet>;
+
+/// A switch that starts as `off` says.
+pub fn tor_switch(off: bool) -> TorSwitch {
+    Arc::new(TorSet { off: std::sync::atomic::AtomicBool::new(off), turn: std::sync::atomic::AtomicU64::new(0) })
+}
+
+/// What the switch says now.
+pub fn tor_is_off(switch: &TorSwitch) -> bool {
+    switch.load(std::sync::atomic::Ordering::SeqCst)
+}
+
+/// K201: which change of the bridges is the latest. A process started
+/// under an earlier one runs on lines the owner has since replaced.
+pub fn bridges_turn(switch: &TorSwitch) -> u64 {
+    switch.turn.load(std::sync::atomic::Ordering::SeqCst)
+}
+
+/// K201: the owner changed the bridges. Every process that uses Tor is
+/// let go and started anew, with the lines as they are now.
+pub fn bridges_changed(switch: &TorSwitch) {
+    switch.turn.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 }
 
 /// The chain program together with what the open profile adds.
@@ -67,8 +112,9 @@ pub struct ChainLauncher {
     pub retry: Duration,
     /// The user agreed to send a transaction directly when Tor fails.
     pub direct_post: bool,
-    /// The user switched Tor off: no Tor is brought up, transactions go directly.
-    pub tor_off: bool,
+    /// The user's Tor switch: while it is set no Tor is used and
+    /// transactions go directly. It can change while the wallet is open.
+    pub tor_off: TorSwitch,
 }
 
 /// The reading end of a stream that never leaves the program. It ends when
@@ -184,6 +230,10 @@ pub struct HostChain {
     launcher: ChainLauncher,
     stage: Stage,
     report: SharedChainReport,
+    /// What the running chain process was last told about Tor.
+    told_off: bool,
+    /// The change of the bridges the running process was started under (K201).
+    turn: u64,
 }
 
 impl HostChain {
@@ -194,12 +244,17 @@ impl HostChain {
             launcher,
             stage: Stage::Down(Instant::now()),
             report,
+            told_off: false,
+            turn: 0,
         };
         chain.launch();
         chain
     }
 
     fn launch(&mut self) {
+        // a process is told at its start what the switch says then
+        self.told_off = tor_is_off(&self.launcher.tor_off);
+        self.turn = bridges_turn(&self.launcher.tor_off);
         let config = Config {
             network: self.launcher.network,
             genesis: self.launcher.genesis,
@@ -207,7 +262,7 @@ impl HostChain {
             peers: self.launcher.peers.clone(),
             start_timeout_secs: START_TIMEOUT_SECS,
             direct_post: self.launcher.direct_post,
-            tor_off: self.launcher.tor_off,
+            tor_off: self.told_off,
             // read at every start: a change is taken up when the process is next started
             tor_bridges: crate::tor_bridges::text(),
         };
@@ -241,6 +296,16 @@ impl HostChain {
 
     /// Move the state on and return the chain process if it can be asked.
     fn live(&mut self) -> Option<&mut PipeChain> {
+        // K201: the bridges were changed - the process that runs on the old
+        // lines is let go and one is started at once on the new. With Tor
+        // switched off too: the lines it starts with are the ones its Tor
+        // would use if the switch were moved back.
+        if bridges_turn(&self.launcher.tor_off) != self.turn {
+            // the old one first, to its end: two at once would contend for
+            // the same files, and the new one would be the one to lose
+            self.stage = Stage::Down(Instant::now());
+            self.launch();
+        }
         match &mut self.stage {
             Stage::Starting(starting) => match starting.poll() {
                 None => {}
@@ -259,6 +324,14 @@ impl HostChain {
                 if since.elapsed() >= self.launcher.retry {
                     self.launch();
                 }
+            }
+        }
+        // K193: the switch moved while the process runs - it is told, and
+        // told again at the next call if it did not take it up
+        let want = tor_is_off(&self.launcher.tor_off);
+        if let Stage::Ready(chain) = &mut self.stage {
+            if want != self.told_off && chain.set_tor(want) {
+                self.told_off = want;
             }
         }
         match &mut self.stage {
@@ -458,7 +531,7 @@ mod tests {
             genesis: [7; 32],
             retry: Duration::from_secs(3600),
             direct_post: false,
-            tor_off: false,
+            tor_off: TorSwitch::default(),
         };
         let mut link = Link::start(launcher, report.clone());
         let seen = |r: &SharedChainReport| r.lock().unwrap().clone();
@@ -498,7 +571,18 @@ mod tests {
         fn post_direct(&mut self, _: &[u8]) -> Posted {
             Posted::Accepted
         }
+        fn set_tor(&mut self, off: bool) -> bool {
+            // the first turn is not taken up: it has to be said again
+            let n = TURNS.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            if n > 0 {
+                SWITCH.store(if off { 1 } else { 2 }, std::sync::atomic::Ordering::SeqCst);
+            }
+            n > 0
+        }
     }
+
+    static TURNS: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+    static SWITCH: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
 
     static ENDED: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
 
@@ -527,7 +611,7 @@ mod tests {
             genesis: [7; 32],
             retry: Duration::from_secs(3600),
             direct_post: false,
-            tor_off: false,
+            tor_off: TorSwitch::default(),
         }
     }
 
@@ -550,7 +634,9 @@ mod tests {
         let report = SharedChainReport::default();
         let seen = |r: &SharedChainReport| r.lock().unwrap().clone();
         let before = ENDED.load(std::sync::atomic::Ordering::SeqCst);
-        let mut link = Link::start(inside(3), report.clone());
+        let launcher = inside(3);
+        let switch = launcher.tor_off.clone();
+        let mut link = Link::start(launcher, report.clone());
         assert_eq!(seen(&report).starts, 1);
         assert!(until(|| link.status().is_some()), "{:?}", seen(&report));
         assert_eq!(seen(&report).phase, Phase::Ready);
@@ -559,9 +645,40 @@ mod tests {
         assert!(matches!(got, Ok(Step::Nothing)), "{got:?}");
         // the layer's own answer, not a cautious one made up for it
         assert!(matches!(link.post_tx(b"tx"), Broadcast::Rejected));
+        // K193: the owner's switch, turned while the layer runs, is told to
+        // it - again if it did not take it up - and once when it has
+        let said = |n: u32| SWITCH.load(std::sync::atomic::Ordering::SeqCst) == n;
+        assert!(said(0), "nothing is said while the switch is as it was at the start");
+        switch.store(true, std::sync::atomic::Ordering::SeqCst);
+        let _ = link.status();
+        assert!(said(0), "the layer did not take the first turn up");
+        let _ = link.status();
+        assert!(said(1));
+        let turns = TURNS.load(std::sync::atomic::Ordering::SeqCst);
+        let _ = link.status();
+        assert_eq!(TURNS.load(std::sync::atomic::Ordering::SeqCst), turns, "said once");
+        switch.store(false, std::sync::atomic::Ordering::SeqCst);
+        let _ = link.status();
+        assert!(said(2));
         // K192: the agreement to the direct way reaches the layer as such
         assert!(matches!(link.post_tx_direct(b"tx"), Broadcast::Accepted));
         assert!(matches!(link.post_tx(b"tx"), Broadcast::Rejected), "the agreement was for that one");
+        assert!(ENDED.load(std::sync::atomic::Ordering::SeqCst) >= before);
+        // K201: while the bridges are as they were, nothing is started anew;
+        // changed, the layer that ran on the old lines is let go and a new
+        // one started at once - once
+        let starts = seen(&report).starts;
+        let _ = link.status();
+        assert_eq!(seen(&report).starts, starts, "no change, no new start");
+        let ended = ENDED.load(std::sync::atomic::Ordering::SeqCst);
+        bridges_changed(&switch);
+        let _ = link.status();
+        assert_eq!(seen(&report).starts, starts.saturating_add(1), "started anew at once, without the pause between tries");
+        assert!(until(|| ENDED.load(std::sync::atomic::Ordering::SeqCst) > ended), "the layer on the old lines is let go");
+        assert!(until(|| link.status().is_some()), "{:?}", seen(&report));
+        let _ = link.status();
+        assert_eq!(seen(&report).starts, starts.saturating_add(1), "and once");
+        let before = ENDED.load(std::sync::atomic::Ordering::SeqCst);
         drop(link);
         assert!(until(|| ENDED.load(std::sync::atomic::Ordering::SeqCst) > before), "the layer goes on after the wallet let go of it");
         assert_eq!(seen(&report).phase, Phase::None);

@@ -1417,6 +1417,7 @@ dependencies = [
 name = "fly-chain-headers"
 version = "0.1.0"
 dependencies = [
+ "blake2-rfc",
  "chrono",
  "grin_core",
  "serde",

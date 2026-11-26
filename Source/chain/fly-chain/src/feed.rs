@@ -97,6 +97,13 @@ pub fn describe(view: &View) -> String {
         text.push_str("; signs: ");
         text.push_str(signs);
     }
+    // K202: the history before the point goes last, in short words: the
+    // text is cut at 240 characters, and what is cut must never be the
+    // tip or a transaction that is not sent
+    if let Some(history) = view.history {
+        text.push_str("; ");
+        text.push_str(history);
+    }
     text
 }
 
@@ -174,6 +181,13 @@ impl ChainFeed for Feed {
     /// is selected, and not provisionally. What is asked of the node's
     /// thread is the record alone; the decision is made here, from the
     /// same view the wallet's status is made from.
+    fn set_tor(&mut self, off: bool) -> bool {
+        let (reply, answer) = sync_channel(1);
+        if self.events.try_send(Event::Tor { off, reply }).is_err() {
+            return false;
+        }
+        answer.recv_timeout(ANSWER_WITHIN).unwrap_or(false)
+    }
     fn point(&mut self) -> Result<Vec<u8>, String> {
         let status = self.status();
         match status {
@@ -198,6 +212,24 @@ pub const POINT_BUSY: &str = "the chain process is busy; ask again in a moment";
 #[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
+
+    /// K202: what the build knows of the history before its starting
+    /// point is said last, after everything else, and a build without the
+    /// proof says what it always said; in the longest text the program
+    /// makes, the tip is still within the 240 characters.
+    #[test]
+    fn the_history_before_the_start_is_said_last() {
+        let plain = View { ready: true, height: 9, start: 4, ..View::default() };
+        let said = describe(&plain);
+        assert!(!said.contains("history:"), "{said}");
+        for words in [crate::node::HISTORY_SAMPLED, crate::node::HISTORY_EXTENDED, crate::node::HISTORY_OTHER_POINT, crate::node::HISTORY_REFUSED] {
+            let with = describe(&View { history: Some(words), ..plain.clone() });
+            assert_eq!(with, format!("{said}; {words}"));
+            assert!(words.starts_with("history: ") && words.len() <= 40);
+        }
+        // while the stored headers are still verified, nothing is said of it yet
+        assert_eq!(describe(&View { history: Some(crate::node::HISTORY_SAMPLED), ..View::default() }), "verifying the stored headers");
+    }
     use crate::node::BlocksView;
     use std::sync::{Arc, Mutex};
 

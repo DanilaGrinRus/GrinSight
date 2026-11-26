@@ -24,7 +24,12 @@ pub struct OnionProgram {
     pub data_dir: String,
     /// Pause before a process that is down is started again.
     pub retry: Duration,
+    /// The owner's Tor switch: while it is set there is no process.
+    pub off: crate::chain::TorSwitch,
 }
+
+/// Said while the owner has Tor switched off.
+pub const TOR_OFF: &str = "Tor is switched off";
 
 enum Stage {
     Starting(Starting),
@@ -40,6 +45,10 @@ pub struct HostOnion {
     stage: Stage,
     /// Since when the process says its Tor has failed.
     failed_since: Option<Instant>,
+    /// How many times a process was tried for this wallet session.
+    tries: u32,
+    /// The change of the bridges the process was started under (K201).
+    turn: u64,
 }
 
 impl HostOnion {
@@ -51,8 +60,14 @@ impl HostOnion {
             public: *public,
             stage: Stage::Down(Instant::now(), String::new()),
             failed_since: None,
+            tries: 0,
+            turn: 0,
         };
-        onion.launch();
+        if crate::chain::tor_is_off(&onion.given.off) {
+            onion.stage = Stage::Down(Instant::now(), TOR_OFF.to_string());
+        } else {
+            onion.launch();
+        }
         onion
     }
 
@@ -66,6 +81,8 @@ impl HostOnion {
             tor_bridges: crate::tor_bridges::text(),
         };
         self.failed_since = None;
+        self.tries = self.tries.saturating_add(1);
+        self.turn = crate::chain::bridges_turn(&self.given.off);
         self.stage = match PipeOnion::spawn_begin(&self.given.program, &config, CALL_TIMEOUT) {
             Ok(starting) => Stage::Starting(starting),
             Err(why) => Stage::Down(Instant::now(), why.chars().take(200).collect()),
@@ -79,6 +96,23 @@ impl HostOnion {
 
     /// Move the state on and return the process if it can be asked.
     fn live(&mut self) -> Option<&mut PipeOnion> {
+        // K193: with Tor switched off there is no process - the one that
+        // ran is let go at once; switched back on, one is started at once
+        if crate::chain::tor_is_off(&self.given.off) {
+            if !matches!(&self.stage, Stage::Down(_, why) if why == TOR_OFF) {
+                self.down(TOR_OFF);
+            }
+            return None;
+        }
+        if matches!(&self.stage, Stage::Down(_, why) if why == TOR_OFF) {
+            self.launch();
+        }
+        // K201: the bridges were changed - a new process, on the new lines, at once
+        if crate::chain::bridges_turn(&self.given.off) != self.turn {
+            // the old one first, to its end: two at once would contend for the same files
+            self.stage = Stage::Down(Instant::now(), String::new());
+            self.launch();
+        }
         match &mut self.stage {
             Stage::Starting(starting) => match starting.poll() {
                 None => {}
@@ -149,6 +183,7 @@ mod tests {
             program: std::env::temp_dir().join("no-such-tor-program"),
             data_dir: String::new(),
             retry: Duration::from_secs(3600),
+            off: crate::chain::TorSwitch::default(),
         };
         let mut onion = HostOnion::start(&given, &Zeroizing::new([1; 32]), &[2; 32]);
         assert!(!onion.post(&[2; 16], &[3; 32], "{}"));
@@ -157,5 +192,48 @@ mod tests {
         let state = onion.state();
         assert_eq!(state.phase, Phase::Failed);
         assert_eq!(state.problem, "the Tor process could not be started");
+    }
+
+    /// K193: with Tor switched off there is no process and none is tried;
+    /// switched on, one is started at once, without the pause between
+    /// tries; switched off again, it is let go at once.
+    #[test]
+    fn the_tor_process_follows_the_switch() {
+        let off = crate::chain::tor_switch(true);
+        let given = OnionProgram {
+            program: std::env::temp_dir().join("no-such-tor-program"),
+            data_dir: String::new(),
+            retry: Duration::from_secs(3600),
+            off: off.clone(),
+        };
+        let mut onion = HostOnion::start(&given, &Zeroizing::new([1; 32]), &[2; 32]);
+        assert_eq!(onion.tries, 0, "not even tried");
+        assert_eq!(onion.state().problem, TOR_OFF);
+        assert!(!onion.post(&[2; 16], &[3; 32], "{}"));
+        assert_eq!(onion.tries, 0);
+        off.store(false, std::sync::atomic::Ordering::SeqCst);
+        assert_eq!(onion.state().problem, "the Tor process could not be started", "tried at once");
+        assert_eq!(onion.tries, 1);
+        // K201: changed bridges start it anew at once; unchanged, the pause
+        // between tries is kept
+        assert!(onion.next().is_none());
+        assert_eq!(onion.tries, 1);
+        crate::chain::bridges_changed(&off);
+        assert!(onion.next().is_none());
+        assert_eq!(onion.tries, 2, "tried again at once");
+        assert!(onion.next().is_none());
+        assert_eq!(onion.tries, 2, "and once");
+        off.store(true, std::sync::atomic::Ordering::SeqCst);
+        // with Tor off a change starts nothing
+        crate::chain::bridges_changed(&off);
+        assert_eq!(onion.state().problem, TOR_OFF);
+        assert_eq!(onion.tries, 2);
+        off.store(false, std::sync::atomic::Ordering::SeqCst);
+        assert_eq!(onion.state().problem, "the Tor process could not be started");
+        assert_eq!(onion.tries, 3);
+        off.store(true, std::sync::atomic::Ordering::SeqCst);
+        assert_eq!(onion.state().problem, TOR_OFF);
+        assert!(onion.next().is_none());
+        assert_eq!(onion.tries, 3, "and not again while it is off");
     }
 }

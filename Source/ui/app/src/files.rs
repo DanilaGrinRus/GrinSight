@@ -63,8 +63,39 @@ fn civil(secs: u64) -> (i64, i64, i64, u64, u64, u64) {
 
 /// The name a text saved at `secs` (seconds since 1970, UTC) gets.
 pub(crate) fn name_at(secs: u64) -> String {
+    named("slatepack", "txt", secs)
+}
+
+/// The name of a QR code saved at `secs` (O61).
+pub(crate) fn qr_name_at(secs: u64) -> String {
+    named("qr", "png", secs)
+}
+
+fn named(what: &str, ending: &str, secs: u64) -> String {
     let (y, mo, d, h, mi, s) = civil(secs);
-    format!("slatepack-{y:04}{mo:02}{d:02}-{h:02}{mi:02}{s:02}.txt")
+    format!("{what}-{y:04}{mo:02}{d:02}-{h:02}{mi:02}{s:02}.{ending}")
+}
+
+/// O61: save the picture of a QR code as a new file of `dir`. Nothing is
+/// ever written over. The picture is of a text the window already shows.
+pub(crate) fn save_qr(dir: &Path, png: &[u8], now: SystemTime) -> Result<PathBuf, FileError> {
+    if png.is_empty() {
+        return Err(FileError::Empty);
+    }
+    plain_dir(dir)?;
+    let secs = now.duration_since(SystemTime::UNIX_EPOCH).unwrap_or(Duration::ZERO).as_secs();
+    for step in 0..60u64 {
+        let path = dir.join(qr_name_at(secs.saturating_add(step)));
+        match std::fs::OpenOptions::new().write(true).create_new(true).open(&path) {
+            Ok(mut file) => {
+                use std::io::Write;
+                return file.write_all(png).map(|()| path).map_err(|_| FileError::Write);
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {}
+            Err(_) => return Err(FileError::Write),
+        }
+    }
+    Err(FileError::Write)
 }
 
 fn plain_dir(dir: &Path) -> Result<(), FileError> {
@@ -171,6 +202,21 @@ mod tests {
     fn the_folder_is_next_to_the_profile() {
         assert_eq!(folder(Path::new("/data/profile")), Some(PathBuf::from("/data/slatepack")));
         assert_eq!(folder(Path::new("/")), None);
+    }
+
+    /// O61: a QR code is saved as a picture of its own name; a second one
+    /// in the same second gets the next name, nothing is written over, and
+    /// a picture is not offered as a text to read.
+    #[test]
+    fn a_qr_code_is_saved_as_a_new_picture() {
+        let dir = temp("qr").join(FOLDER);
+        let now = SystemTime::UNIX_EPOCH.checked_add(Duration::from_secs(1_795_504_325)).unwrap();
+        let first = save_qr(&dir, b"\x89PNG one", now).unwrap();
+        let second = save_qr(&dir, b"\x89PNG two", now).unwrap();
+        assert_eq!((first.file_name().unwrap().to_str(), second.file_name().unwrap().to_str()), (Some("qr-20261124-071205.png"), Some("qr-20261124-071206.png")));
+        assert_eq!((std::fs::read(&first).unwrap(), std::fs::read(&second).unwrap()), (b"\x89PNG one".to_vec(), b"\x89PNG two".to_vec()));
+        assert_eq!(save_qr(&dir, b"", now), Err(FileError::Empty));
+        assert!(list(&dir).is_empty());
     }
 
     /// A text is saved as a new file and read back the same; nothing is

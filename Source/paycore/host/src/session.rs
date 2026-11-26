@@ -36,6 +36,8 @@ pub(crate) struct Places {
     /// The key the device keeps for the tail guard, where whoever started
     /// the host has one (`--device-key-stdin`).
     pub device_key: Option<zeroize::Zeroizing<[u8; 32]>>,
+    /// The owner's Tor switch, shared with what is started from here.
+    pub tor: crate::chain::TorSwitch,
 }
 
 /// What the tail guard's key is tied to: `os_user` - this user on this
@@ -322,7 +324,7 @@ pub(crate) fn open(
                 genesis: identity.genesis,
                 retry: given.retry,
                 direct_post: given.direct_post,
-                tor_off: given.tor_off,
+                tor_off: given.tor_off.clone(),
             };
             Some(crate::chain::Link::start(launcher, chain_report.clone()))
         }

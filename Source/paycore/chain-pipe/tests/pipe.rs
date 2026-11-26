@@ -63,6 +63,8 @@ struct Script {
     problems: Vec<Option<String>>,
     old: Vec<Result<OldOutputs, Unknown>>,
     points: Vec<Result<Vec<u8>, String>>,
+    /// What the layer says to each turn of the Tor switch.
+    switches: Vec<bool>,
 }
 fn old(outputs: usize, next: Option<u64>, pieces: u64) -> OldOutputs {
     OldOutputs {
@@ -94,6 +96,10 @@ impl ChainFeed for Script {
     fn post(&mut self, tx: &[u8]) -> Posted {
         self.asked.lock().unwrap().push(format!("post {} {}", tx.len(), tx[0]));
         self.posts.remove(0)
+    }
+    fn set_tor(&mut self, off: bool) -> bool {
+        self.asked.lock().unwrap().push(format!("tor {}", if off { "off" } else { "on" }));
+        self.switches.remove(0)
     }
     fn post_direct(&mut self, tx: &[u8]) -> Posted {
         self.asked.lock().unwrap().push(format!("post-direct {} {}", tx.len(), tx[0]));
@@ -159,6 +165,7 @@ fn every_answer_crosses_and_comes_back() {
                 problems: vec![Some(format!("peer said: no\n\u{1b}[31mway\u{7} \u{e9}{}", "x".repeat(500))), Some(String::new()), None],
                 old: Vec::new(),
                 points: Vec::new(),
+                switches: Vec::new(),
             })
         })
     });
@@ -501,6 +508,59 @@ fn old_outputs_cross_and_come_back() {
     drop(c);
     server.join().unwrap().unwrap();
     assert_eq!(*asked.lock().unwrap(), ["old 0", "old 7", "old 8", "old 4611", "old 9"]);
+}
+
+/// K193: the owner's Tor switch crosses the pipe as it was turned, and
+/// "taken up" comes back only from a layer that said so: a layer without
+/// the switch, silence and an answer to another question are all "no".
+#[test]
+fn the_tor_switch_crosses_as_it_was_turned() {
+    let e = ends();
+    let asked = Arc::new(Mutex::new(Vec::new()));
+    let asked2 = asked.clone();
+    let (mut sr, mut sw) = (e.server_reads, e.server_writes);
+    let server = std::thread::spawn(move || {
+        serve(&mut sr, &mut sw, move |_c: Config| {
+            Ok(Script {
+                asked: asked2,
+                switches: vec![true, true, false],
+                ..Script::default()
+            })
+        })
+    });
+    let mut c = PipeChain::connect(e.client_reads, e.client_writes, &config(), Duration::from_secs(5)).unwrap();
+    assert!(c.set_tor(true));
+    assert!(c.set_tor(false));
+    assert!(!c.set_tor(true), "the layer did not take it up");
+    assert!(c.alive());
+    drop(c);
+    server.join().unwrap().unwrap();
+    assert_eq!(*asked.lock().unwrap(), ["tor off", "tor on", "tor off"]);
+
+    // a layer that has no switch says so
+    struct Plain;
+    impl ChainFeed for Plain {
+        fn status(&mut self) -> Option<Status> {
+            None
+        }
+        fn next(&mut self, _at: Option<Tip>) -> Result<Step, Unknown> {
+            Err(Unknown)
+        }
+        fn post(&mut self, _tx: &[u8]) -> Posted {
+            Posted::Unknown
+        }
+    }
+    assert!(!Plain.set_tor(true));
+    // silence, and an answer to another question
+    let mut c = raw_peer(vec![], true);
+    assert!(!c.set_tor(true));
+    let mut c = raw_peer(vec![frame(0x88, &[])], false);
+    assert!(!c.set_tor(true));
+    assert!(!c.alive());
+    // the answer "taken up" carries nothing
+    let mut c = raw_peer(vec![frame(0x8C, &[1])], false);
+    assert!(!c.set_tor(false));
+    assert!(!c.alive());
 }
 
 /// K192: the owner's agreement to the direct way for one transaction

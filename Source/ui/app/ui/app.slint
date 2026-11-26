@@ -1,14 +1,14 @@
-import { Theme, ThemeName, Device, Settings, Files, Qr } from "theme.slint";
-import { Card, Btn, Chip, Heading, Muted, Logo, Ground, Ask, Explained } from "parts.slint";
-import { ChatPage, OpsPage, SecuritySheet, WordsSheet, OwnSheet, TorSheet, ChatLine, OpLine } from "pages.slint";
-import { AddressLine, CreatePage, RestorePage, SendSheet, SlateSheet, SignSheet, ReceiveSheet, IncomingSheet, InvoiceSheet, ReleaseSheet, ContactSheet } from "flows.slint";
+import { Theme, ThemeName, Device, Settings, Files, Qr, Help, Find } from "theme.slint";
+import { Card, Btn, Chip, Heading, Muted, Logo, Ground, Ask, Explained, OutLine, Icons, Icon, IconBtn, MenuItem } from "parts.slint";
+import { ChatPage, ChatBox, ChatWindow, OpsPage, SecuritySheet, WordsSheet, OwnSheet, TorSheet, ChatLine, OpLine } from "pages.slint";
+import { AddressLine, CreatePage, RestorePage, SendSheet, SlateSheet, SignSheet, ReceiveSheet, IncomingSheet, InvoiceSheet, ReleaseSheet, ContactSheet, OutputsSheet, Sheet, TextBox } from "flows.slint";
 
 import "../fonts/Inter-Regular.otf";
 import "../fonts/Inter-SemiBold.otf";
 import "../fonts/DejaVuSansMono.ttf";
 import "../fonts/DejaVuSansMono-Bold.ttf";
 
-export { Theme, ThemeName, Device, Settings, Files, Qr, ChatLine, OpLine }
+export { Theme, ThemeName, Device, Settings, Files, Qr, Help, Find, ChatLine, OpLine, ChatWindow }
 
 export struct Waiting {
     who: string,
@@ -32,6 +32,14 @@ export struct Contact {
     name: string,
     last: string,
     attention: bool,
+    // a payment to this contact is in a block (O63)
+    traded: bool,
+    // the owner compared the check code with this contact (O65)
+    checked: bool,
+    // O75: when the newest message was, and how many came since the
+    // conversation was last open in this unlock
+    time: string,
+    unread: int,
 }
 
 // A line of the synchronisation block. tone: 0 plain, 1 good, 2 needs attention.
@@ -48,35 +56,95 @@ export struct Problem {
     detail: string,
     help: string,
     open: bool,
+    // the wallet's processes can be started anew for this one (O66)
+    restart: bool,
 }
 
 // The whole path of following the chain, with the wallet's own numbers (О14).
-component SyncCard inherits Card {
+// O73: the numbers of synchronisation, in a window of their own; what the
+// chain process says of itself in its own words is behind one more press.
+component SyncSheet inherits Sheet {
     in property <[SyncRow]> rows;
+    // O75: the wallet's own starting point, made from the chain it verified
+    // (O38), here and not on the main screen; O67: what a new one would give
+    in property <string> point-note;
+    in property <string> point-hint;
+    in property <bool> point-good;
+    in property <bool> point-busy;
+    callback make-point();
     // what the chain process says about itself, a statement to a line
     in property <[string]> words;
-    VerticalLayout {
-        alignment: start;
-        padding: 18px;
-        spacing: 7px;
-        Heading { text: @tr("Details"); }
-        for r in root.rows: HorizontalLayout {
-            spacing: 10px;
-            Muted { text: r.label; font-size: 12px; width: 132px; vertical-alignment: top; }
-            Text {
-                horizontal-stretch: 1;
-                min-width: 80px;
-                preferred-width: 80px;
-                text: r.value;
-                color: r.tone == 2 ? Theme.warn : r.tone == 1 ? Theme.text : Theme.muted;
-                font-size: 12px;
-                wrap: word-wrap;
-                horizontal-alignment: right;
-            }
+    property <bool> raw: false;
+    title: @tr("Details");
+    card-width: 640px;
+    for r in root.rows: HorizontalLayout {
+        spacing: 14px;
+        Text { text: r.label; color: Theme.muted; font-size: 14px; width: 200px; vertical-alignment: top; wrap: word-wrap; }
+        Text {
+            horizontal-stretch: 1;
+            min-width: 80px;
+            preferred-width: 80px;
+            text: r.value;
+            color: r.tone == 2 ? Theme.warn : r.tone == 1 ? Theme.text : Theme.muted;
+            font-size: 14px;
+            wrap: word-wrap;
         }
-        if root.words.length > 0: Rectangle { height: 1px; background: Theme.line; }
-        if root.words.length > 0: Muted { text: @tr("What the program reports"); font-size: 12px; font-weight: 600; }
-        for w in root.words: Text { text: w; color: Theme.muted; font-family: "DejaVu Sans Mono"; font-size: 11px; wrap: word-wrap; }
+    }
+    Rectangle { height: 1px; background: Theme.line; }
+    HorizontalLayout {
+        alignment: start;
+        spacing: 8px;
+        Btn { text: root.point-busy ? @tr("Making the point…") : @tr("Make my own starting point"); font-size: 13px; min-height: 34px; clicked => { if (!root.point-busy) { root.make-point(); } } }
+        VerticalLayout { alignment: center; Ask { title: @tr("Make my own starting point"); text: @tr("The wallet starts from the point built into the program, and the history before that point is proved by sampling its work. The wallet can make a point of its own further up, from the chain it has checked itself since then. From the next unlock it starts from there, so the start is shorter.") + "\n\n" + @tr("Your point carries the proof of the built-in one: up to the built-in point the history stays proved, and from it to your point this wallet vouches. A point is made only from a chain that keeps that proof. Money, keys and history are not touched.") + "\n\n" + @tr("To carry the point to another device of yours: on the login screen there, Options → Own nodes and a point from another device, paste it whole. To go back to the built-in point: clear that field and save."); } }
+    }
+    if root.point-hint != "": Muted { text: root.point-hint; font-size: 13px; }
+    if root.point-note != "": Text { text: root.point-note; color: root.point-good ? Theme.accent : Theme.warn; font-size: 13px; wrap: word-wrap; }
+    if root.words.length > 0: Rectangle { height: 1px; background: Theme.line; }
+    if root.words.length > 0: HorizontalLayout {
+        alignment: start;
+        Btn { text: root.raw ? @tr("Hide what the program reports") : @tr("What the program reports"); font-size: 13px; min-height: 34px; clicked => { root.raw = !root.raw; } }
+    }
+    if root.raw: VerticalLayout {
+        spacing: 6px;
+        for w in root.words: Text { text: w; color: Theme.muted; font-family: "DejaVu Sans Mono"; font-size: 13px; wrap: word-wrap; }
+    }
+}
+
+// O73: what belongs to the program rather than to a payment, in one window.
+component SettingsSheet inherits Sheet {
+    callback open(int);
+    callback bridges();
+    title: @tr("Settings");
+    Heading { text: @tr("Look"); }
+    HorizontalLayout {
+        spacing: 10px;
+        Text { text: @tr("Theme"); color: Theme.text; font-size: 14px; vertical-alignment: center; horizontal-stretch: 1; }
+        Btn { text: Theme.label; font-size: 14px; min-height: 38px; clicked => { Theme.next(); Settings.save(); } }
+    }
+    HorizontalLayout {
+        spacing: 10px;
+        Text { text: @tr("Language"); color: Theme.text; font-size: 14px; vertical-alignment: center; horizontal-stretch: 1; }
+        Btn { text: "Русский"; primary: Settings.russian; font-size: 14px; min-height: 38px; clicked => { Settings.russian = true; Settings.save(); } }
+        Btn { text: "English"; primary: !Settings.russian; font-size: 14px; min-height: 38px; clicked => { Settings.russian = false; Settings.save(); } }
+    }
+    Rectangle { height: 1px; background: Theme.line; }
+    Heading { text: @tr("Safety"); }
+    HorizontalLayout {
+        spacing: 10px;
+        Text { text: @tr("Change the password, see the 24 words again, delete the wallet from this computer"); color: Theme.muted; font-size: 14px; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; }
+        VerticalLayout { alignment: center; Btn { text: @tr("Password and words"); font-size: 14px; min-height: 38px; clicked => { root.open(7); } } }
+    }
+    Rectangle { height: 1px; background: Theme.line; }
+    Heading { text: @tr("Network"); }
+    HorizontalLayout {
+        spacing: 10px;
+        Text { text: @tr("Bridges, for where Tor is blocked"); color: Theme.muted; font-size: 14px; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; }
+        VerticalLayout { alignment: center; Btn { text: @tr("Tor bridges"); font-size: 14px; min-height: 38px; clicked => { root.bridges(); } } }
+    }
+    HorizontalLayout {
+        spacing: 10px;
+        Text { text: @tr("How far the wallet has checked the network, and what its programs say"); color: Theme.muted; font-size: 14px; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; }
+        VerticalLayout { alignment: center; Btn { text: @tr("Details"); font-size: 14px; min-height: 38px; clicked => { root.open(15); } } }
     }
 }
 
@@ -84,6 +152,7 @@ component SyncCard inherits Card {
 component ProblemsCard inherits Card {
     in property <[Problem]> problems;
     in property <string> more;
+    callback restart();
     VerticalLayout {
         alignment: start;
         padding: 18px;
@@ -93,11 +162,12 @@ component ProblemsCard inherits Card {
         for p in root.problems: VerticalLayout {
             spacing: 2px;
             Text { text: p.what; color: p.open ? Theme.warn : Theme.text; font-size: 13px; font-weight: 600; wrap: word-wrap; }
-            Muted { text: p.when; font-size: 11px; }
-            if p.detail != "": Text { text: p.detail; color: Theme.muted; font-family: "DejaVu Sans Mono"; font-size: 11px; wrap: char-wrap; }
+            Muted { text: p.when; font-size: 12px; }
+            if p.detail != "": Text { text: p.detail; color: Theme.muted; font-family: "DejaVu Sans Mono"; font-size: 12px; wrap: char-wrap; }
             Muted { text: p.help; font-size: 12px; }
+            if p.restart: HorizontalLayout { alignment: start; Btn { text: @tr("Restart the wallet"); font-size: 13px; min-height: 30px; clicked => { root.restart(); } } }
         }
-        if root.more != "": Muted { text: root.more; font-size: 11px; }
+        if root.more != "": Muted { text: root.more; font-size: 12px; }
     }
 }
 
@@ -134,24 +204,26 @@ component OptionRow inherits Rectangle {
     // the words of `why` are shown to whoever pressed the "?" (O41)
     in-out property <bool> asked: false;
     in property <bool> last: false;
-    HorizontalLayout {
+    // O58: the title with its control on one line, the explanations under
+    // them at the full width of the row - so that a narrow phone has room
+    // for both, and nothing is pushed out of the screen
+    VerticalLayout {
         padding: 10px;
         padding-left: 14px;
         padding-right: 14px;
-        spacing: 10px;
-        VerticalLayout {
-            alignment: center;
-            spacing: 2px;
+        spacing: 4px;
+        HorizontalLayout {
+            spacing: 10px;
             HorizontalLayout {
                 spacing: 8px;
-                alignment: start;
-                Text { text: root.title; color: Theme.text; font-size: 14px; font-weight: 600; wrap: word-wrap; vertical-alignment: center; }
-                if root.why != "": Ask { open <=> root.asked; }
+                horizontal-stretch: 1;
+                Text { text: root.title; color: Theme.text; font-size: 14px; font-weight: 600; wrap: word-wrap; vertical-alignment: center; horizontal-stretch: 0; }
+                if root.why != "": VerticalLayout { alignment: center; Ask { title: root.title; text: root.why; } }
+                Rectangle { horizontal-stretch: 1; }
             }
-            if root.note != "": Muted { text: root.note; font-size: 12px; }
-            if root.why != "" && root.asked: Text { text: root.why; color: Theme.muted; font-size: 12px; wrap: word-wrap; }
+            @children
         }
-        @children
+        if root.note != "": Muted { text: root.note; font-size: 12px; }
     }
     if !last: Rectangle { y: parent.height - 1px; height: 1px; background: Theme.line; }
 }
@@ -221,7 +293,7 @@ component Login inherits Rectangle {
         width: parent.width;
         content-height: max(col.preferred-height, self.height);
         col := VerticalLayout {
-            width: min(420px, parent.width - 48px);
+            width: min(420px, parent.width - (parent.width < 360px ? 24px : 48px));
             x: (parent.width - self.width) / 2;
             height: parent.height;
             alignment: center;
@@ -286,6 +358,9 @@ component Login inherits Rectangle {
             if root.error != "": Text { text: root.error; color: Theme.warn; font-size: 14px; wrap: word-wrap; horizontal-alignment: center; }
             if root.has-profile: Btn { text: root.busy ? @tr("Unlocking…") : @tr("Unlock"); primary: true; height: 52px; font-size: 16px; clicked => { root.submit(); } }
             if !root.has-profile: Btn { text: @tr("Create a wallet"); primary: true; height: 52px; font-size: 16px; clicked => { root.create(); } }
+            // O58: the three buttons stand together above the options, so that
+            // restoring is seen without scrolling, whatever the options take
+            if !root.has-profile || !root.live: Btn { text: Device.phone ? @tr("Restore from words") : @tr("Restore a wallet from words"); height: 46px; clicked => { root.restore(); } }
             Btn { text: root.options-open ? @tr("Hide options") : @tr("Options"); height: 46px; clicked => { root.options-open = !root.options-open; } }
             if root.options-open: Card {
                 VerticalLayout {
@@ -296,14 +371,14 @@ component Login inherits Rectangle {
                         HorizontalLayout {
                             alignment: center;
                             spacing: 4px;
-                            Btn { text: "Mainnet"; font-size: 12px; primary: !root.testnet; clicked => { root.testnet = false; } }
-                            Btn { text: "Testnet"; font-size: 12px; primary: root.testnet; clicked => { root.testnet = true; } }
+                            Btn { text: "Mainnet"; font-size: 13px; primary: !root.testnet; clicked => { root.testnet = false; } }
+                            Btn { text: "Testnet"; font-size: 13px; primary: root.testnet; clicked => { root.testnet = true; } }
                         }
                     }
                     // one row and one window for both: they are set together (О34)
                     OptionRow {
-                        title: @tr("Own nodes and own point");
-                        why: @tr("Usually not needed. Own nodes: servers of yours the wallet also asks. Own point: the place in the chain the wallet starts checking from.");
+                        title: @tr("Own nodes and a point from another device");
+                        why: @tr("Usually not needed. Own nodes: servers of yours the wallet also asks. A point from another device: a starting point your wallet made there, so that this one starts shorter.");
                         note: root.start-point + "\n" + root.own-nodes;
                         VerticalLayout { alignment: center; Btn { text: @tr("Set"); font-size: 13px; clicked => { root.options(); } } }
                     }
@@ -333,7 +408,6 @@ component Login inherits Rectangle {
                     }
                 }
             }
-            if !root.has-profile || !root.live: HorizontalLayout { alignment: center; Btn { text: @tr("Restore a wallet from words"); font-size: 14px; clicked => { root.restore(); } } }
             HorizontalLayout { alignment: center; Muted { text: root.version; } }
         }
     }
@@ -354,6 +428,38 @@ component BalanceCard inherits Card {
     VerticalLayout {
         padding: 22px;
         spacing: 10px;
+        // O73: how far the wallet has checked, above the money it speaks of;
+        // pressed, it opens the details
+        Rectangle {
+            border-radius: 10px;
+            background: state-touch.has-hover ? Theme.soft : transparent;
+            accessible-role: button;
+            accessible-label: root.verified-chip + " " + root.verified;
+            accessible-action-default => { root.open(15); }
+            state-touch := TouchArea { mouse-cursor: pointer; clicked => { root.open(15); } }
+            // one layout under the area, so the row takes the height of what it shows
+            VerticalLayout {
+            if !root.narrow: HorizontalLayout {
+                spacing: 10px;
+                padding-top: 2px;
+                padding-bottom: 2px;
+                VerticalLayout { alignment: center; Chip { text: root.verified-chip; fg: root.verified-good ? Theme.accent : Theme.warn; fill: root.verified-good ? Theme.soft : Theme.warn-soft; height: 24px; } }
+                Text { text: root.verified; color: Theme.muted; font-size: 13px; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; }
+                Text { text: @tr("Details") + " ›"; color: state-touch.has-hover ? Theme.accent : Theme.muted; font-size: 13px; vertical-alignment: center; }
+            }
+            // a phone: the mark and the way to the details on one line, the words under them
+            if root.narrow: VerticalLayout {
+                spacing: 6px;
+                HorizontalLayout {
+                    spacing: 10px;
+                    VerticalLayout { alignment: center; Chip { text: root.verified-chip; fg: root.verified-good ? Theme.accent : Theme.warn; fill: root.verified-good ? Theme.soft : Theme.warn-soft; height: 24px; } }
+                    Rectangle { horizontal-stretch: 1; }
+                    Text { text: @tr("Details") + " ›"; color: Theme.muted; font-size: 13px; vertical-alignment: center; }
+                }
+                Text { text: root.verified; color: Theme.muted; font-size: 13px; wrap: word-wrap; }
+            }
+            }
+        }
         Muted { text: @tr("Available"); font-weight: 600; }
         HorizontalLayout {
             spacing: 10px;
@@ -361,18 +467,17 @@ component BalanceCard inherits Card {
             Text { text: root.balance; color: Theme.text; font-family: "DejaVu Sans Mono"; font-size: root.narrow ? 36px : 48px; font-weight: 700; vertical-alignment: bottom; }
             Text { text: "GRIN"; color: Theme.muted; font-family: "DejaVu Sans Mono"; font-size: 20px; vertical-alignment: bottom; }
         }
-        Muted { text: root.balance-note; font-size: 14px; }
+        HorizontalLayout {
+            spacing: 10px;
+            Muted { text: root.balance-note; font-size: 14px; vertical-alignment: center; horizontal-stretch: 1; }
+            // what the money is made of, and the owner's say over it (O51)
+            VerticalLayout { alignment: center; Btn { text: @tr("Outputs"); font-size: 13px; min-height: 32px; clicked => { root.open(13); } } }
+        }
         if root.incoming != "": HorizontalLayout { alignment: start; Chip { text: root.incoming; text-size: 15px; } }
         HorizontalLayout {
             spacing: 10px;
             Btn { text: @tr("Send"); primary: true; height: 52px; horizontal-stretch: 1; font-size: 16px; clicked => { root.open(1); } }
             Btn { text: @tr("Receive"); height: 52px; horizontal-stretch: 1; font-size: 16px; clicked => { root.open(4); } }
-        }
-        Rectangle { height: 1px; background: Theme.line; }
-        HorizontalLayout {
-            spacing: 10px;
-            VerticalLayout { alignment: center; Chip { text: root.verified-chip; fg: root.verified-good ? Theme.accent : Theme.warn; fill: root.verified-good ? Theme.soft : Theme.warn-soft; height: 26px; } }
-            Text { text: root.verified; color: Theme.text; font-size: 13px; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; }
         }
     }
 }
@@ -455,43 +560,360 @@ component RequisitesCard inherits Card {
     key-box := TextInput { text: root.phrase; read-only: true; width: 0px; height: 0px; visible: false; }
 }
 
+// A contact's first letter in a circle.
+component Avatar inherits Rectangle {
+    in property <string> letter;
+    in property <length> side: 38px;
+    width: root.side;
+    height: root.side;
+    border-radius: root.side / 2;
+    background: Theme.line;
+    Text { text: root.letter; color: Theme.text; font-size: root.side * 0.4; font-weight: 600; }
+}
+
+// O75: the contacts on a phone: a line each, its time and what is new;
+// "⋯" opens the actions on it from the bottom of the screen.
 component ContactsCard inherits Card {
     in property <[Contact]> contacts;
     callback open(int);
     callback chat(int);
+    callback menu(int);
     VerticalLayout {
-        padding: 18px;
-        spacing: 6px;
+        padding: 16px;
+        spacing: 4px;
         alignment: start;
-        Heading { text: @tr("Contacts"); }
-        if root.contacts.length == 0: Muted { text: @tr("No contacts yet"); }
+        HorizontalLayout {
+            spacing: 8px;
+            Heading { text: @tr("Your contacts"); font-size: 16px; vertical-alignment: center; horizontal-stretch: 1; }
+            IconBtn { sign: Icons.plus; says: @tr("Add a contact"); side: 40px; clicked => { root.open(6); } }
+        }
+        if root.contacts.length == 0: Muted { text: @tr("No contacts yet."); font-size: 14px; }
         for c[i] in root.contacts: Rectangle {
-          height: 46px;
-          border-radius: 10px;
-          background: row.has-hover ? Theme.soft : transparent;
-          row := TouchArea { mouse-cursor: pointer; clicked => { root.chat(i); } }
-          HorizontalLayout {
+            height: 64px;
+            border-radius: 10px;
+            background: row.has-hover ? Theme.soft : transparent;
+            row := TouchArea { mouse-cursor: pointer; clicked => { root.chat(i); } }
+            HorizontalLayout {
+                spacing: 10px;
+                VerticalLayout { alignment: center; Avatar { letter: c.initial; side: 42px; } }
+                VerticalLayout {
+                    alignment: center;
+                    horizontal-stretch: 1;
+                    spacing: 2px;
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Text { text: c.checked ? c.name + " ✓" : c.name; color: Theme.text; font-size: 15px; font-weight: 600; overflow: elide; horizontal-stretch: 1; }
+                        Text { text: c.time; color: Theme.muted; font-size: 12px; }
+                    }
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Text { text: c.last; color: c.attention ? Theme.warn : c.unread > 0 ? Theme.text : Theme.muted; font-size: 13px; overflow: elide; horizontal-stretch: 1; }
+                        if c.unread > 0: Rectangle {
+                            min-width: 22px;
+                            height: 22px;
+                            border-radius: 11px;
+                            background: Theme.accent;
+                            HorizontalLayout {
+                                padding-left: 7px;
+                                padding-right: 7px;
+                                Text { text: c.unread; color: Theme.on-accent; font-size: 12px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
+                            }
+                        }
+                    }
+                }
+                VerticalLayout { alignment: center; IconBtn { sign: Icons.more; says: @tr("Actions on the contact"); side: 40px; clicked => { root.menu(i); } } }
+            }
+        }
+        if root.contacts.length > 0: HorizontalLayout { alignment: start; Btn { text: @tr("All contacts") + " · " + root.contacts.length; font-size: 13px; clicked => { root.open(14); } } }
+        if root.contacts.length == 0: HorizontalLayout { alignment: start; Btn { text: @tr("Add a list"); font-size: 13px; clicked => { root.open(14); } } }
+    }
+}
+
+
+// O75: what is said of a contact under its name in a conversation.
+component ContactState inherits Text {
+    in property <Contact> c;
+    in property <string> note;
+    text: root.note != "" ? root.note
+        : root.c.checked && root.c.traded ? @tr("check code compared · you have paid them")
+        : root.c.checked ? @tr("check code compared")
+        : root.c.traded ? @tr("you have paid them · check code not compared")
+        : @tr("check code not compared");
+    color: root.note != "" ? Theme.warn : Theme.muted;
+    font-size: 12px;
+    overflow: elide;
+}
+
+// O75 (was O63): contacts on the left on a ground of their own, the
+// conversation with the chosen one on the right: its name and what is
+// said of it, the main action, the rest under "⋯"; the actions on a
+// contact are signs in its line once it is chosen.
+component ContactsPanel inherits Card {
+    in property <[Contact]> contacts;
+    in property <string> chat-name;
+    in property <string> chat-note;
+    in property <[ChatLine]> chat-lines;
+    in property <bool> chat-busy;
+    in property <string> chat-error;
+    in property <bool> chat-can-write;
+    // the contact whose conversation is shown; -1: none chosen yet - as the
+    // program says, so that a deleted contact is not left chosen
+    in property <int> picked: -1;
+    // why a window for a conversation did not open (O70)
+    in property <string> apart-note;
+    property <string> search;
+    property <Contact> current: root.picked >= 0 && root.picked < root.contacts.length ? root.contacts[root.picked] : { name: "", initial: "" };
+    callback open(int);
+    callback chat(int);
+    callback pay(int);
+    callback ask-remove(int);
+    callback apart(int);
+    callback edit(int);
+    callback chat-send(string);
+    min-height: 440px;
+    clip: true;
+    HorizontalLayout {
+        // the contacts, on a ground of their own
+        Rectangle {
+            width: 276px;
+            background: Theme.card.mix(Theme.bg, 0.45);
+            border-top-left-radius: 18px;
+            border-bottom-left-radius: 18px;
+            VerticalLayout {
+                padding: 14px;
+                padding-right: 10px;
+                spacing: 8px;
+                HorizontalLayout {
+                    spacing: 8px;
+                    Heading { text: @tr("Your contacts"); font-size: 16px; vertical-alignment: center; horizontal-stretch: 1; }
+                    IconBtn { sign: Icons.plus; says: @tr("Add a contact"); side: 34px; clicked => { root.open(6); } }
+                }
+                if root.contacts.length > 0: Rectangle {
+                    height: 38px;
+                    border-radius: 10px;
+                    border-width: 1px;
+                    border-color: find.has-focus ? Theme.accent : Theme.line;
+                    background: Theme.bg;
+                    HorizontalLayout {
+                        padding-left: 10px;
+                        padding-right: 10px;
+                        spacing: 8px;
+                        VerticalLayout { alignment: center; Icon { sign: Icons.find; size: 16px; tint: Theme.muted; } }
+                        Rectangle {
+                            horizontal-stretch: 1;
+                            find := TextInput {
+                                y: (parent.height - self.height) / 2;
+                                width: parent.width;
+                                height: self.preferred-height;
+                                single-line: true;
+                                color: Theme.text;
+                                font-size: 14px;
+                                text <=> root.search;
+                                accessible-label: @tr("Find a contact");
+                            }
+                            if root.search == "": Text { text: @tr("Find by name"); color: Theme.muted; font-size: 14px; vertical-alignment: center; horizontal-alignment: left; width: parent.width; height: parent.height; }
+                        }
+                    }
+                }
+                if root.contacts.length == 0: Muted { text: @tr("No contacts yet."); font-size: 14px; }
+                if root.contacts.length == 0: Btn { text: @tr("Add a contact"); primary: true; font-size: 14px; clicked => { root.open(6); } }
+                if root.contacts.length == 0: Btn { text: @tr("Add a list"); font-size: 14px; clicked => { root.open(14); } }
+                Flickable {
+                    vertical-stretch: 1;
+                    content-height: rows.preferred-height;
+                    rows := VerticalLayout {
+                        width: parent.width;
+                        alignment: start;
+                        spacing: 2px;
+                        for c[i] in root.contacts: Rectangle {
+                            visible: root.search == "" || Find.matches(c.name, root.search);
+                            height: self.visible ? 60px : 0px;
+                            border-radius: 10px;
+                            background: root.picked == i ? Theme.soft : row.has-hover ? Theme.soft.with-alpha(0.08) : transparent;
+                            row := TouchArea { mouse-cursor: pointer; clicked => { root.chat(i); } }
+                            HorizontalLayout {
+                                padding-left: 8px;
+                                padding-right: 6px;
+                                spacing: 10px;
+                                VerticalLayout { alignment: center; Avatar { letter: c.initial; } }
+                                VerticalLayout {
+                                    alignment: center;
+                                    horizontal-stretch: 1;
+                                    spacing: 2px;
+                                    HorizontalLayout {
+                                        spacing: 6px;
+                                        Text { text: c.checked ? c.name + " ✓" : c.name; color: Theme.text; font-size: 14px; font-weight: 600; overflow: elide; horizontal-stretch: 1; }
+                                        if root.picked != i: Text { text: c.time; color: Theme.muted; font-size: 12px; }
+                                    }
+                                    HorizontalLayout {
+                                        spacing: 6px;
+                                        Text { text: c.last; color: c.attention ? Theme.warn : c.unread > 0 ? Theme.text : Theme.muted; font-size: 13px; overflow: elide; horizontal-stretch: 1; }
+                                        if c.unread > 0 && root.picked != i: Rectangle {
+                                            min-width: 20px;
+                                            height: 20px;
+                                            border-radius: 10px;
+                                            background: Theme.accent;
+                                            HorizontalLayout {
+                                                padding-left: 6px;
+                                                padding-right: 6px;
+                                                Text { text: c.unread; color: Theme.on-accent; font-size: 12px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
+                                            }
+                                        }
+                                    }
+                                }
+                                // the actions on the chosen contact, as signs
+                                if root.picked == i: VerticalLayout { alignment: center; IconBtn { sign: Icons.send; says: @tr("Send GRIN to the contact"); side: 30px; clicked => { root.pay(i); } } }
+                                if root.picked == i: VerticalLayout { alignment: center; IconBtn { sign: Icons.edit; says: @tr("Change the contact's details"); side: 30px; clicked => { root.edit(i); } } }
+                                if root.picked == i: VerticalLayout { alignment: center; IconBtn { sign: Icons.trash; says: @tr("Delete the contact"); danger: true; side: 30px; clicked => { root.ask-remove(i); } } }
+                            }
+                        }
+                    }
+                }
+                if root.apart-note != "": Text { text: root.apart-note; color: Theme.warn; font-size: 13px; wrap: word-wrap; }
+                if root.contacts.length > 0: Btn { text: @tr("All contacts") + " · " + root.contacts.length; font-size: 13px; min-height: 38px; clicked => { root.open(14); } }
+            }
+        }
+        Rectangle { width: 1px; background: Theme.line; }
+        // the conversation
+        VerticalLayout {
+            horizontal-stretch: 1;
+            if root.picked < 0: VerticalLayout {
+                vertical-stretch: 1;
+                alignment: center;
+                padding: 28px;
+                spacing: 12px;
+                HorizontalLayout {
+                    alignment: center;
+                    Rectangle {
+                        width: 52px;
+                        height: 52px;
+                        border-radius: 26px;
+                        background: Theme.soft;
+                        Icon { x: 14px; y: 14px; sign: Icons.send; size: 24px; tint: Theme.accent; }
+                    }
+                }
+                Text { text: root.contacts.length == 0 ? @tr("The conversation will be here") : @tr("Choose a contact"); color: Theme.text; font-size: 17px; font-weight: 600; horizontal-alignment: center; }
+                Muted {
+                    text: root.contacts.length == 0
+                        ? @tr("Add a contact by their message key (npub1…): you can write to them and pay them by name. Messages travel over Tor.")
+                        : @tr("Choose a contact on the left to see the conversation.");
+                    font-size: 14px;
+                    horizontal-alignment: center;
+                }
+            }
+            if root.picked >= 0: Rectangle {
+                height: 66px;
+                HorizontalLayout {
+                    padding-left: 18px;
+                    padding-right: 14px;
+                    spacing: 10px;
+                    VerticalLayout { alignment: center; Avatar { letter: root.current.initial; side: 40px; } }
+                    VerticalLayout {
+                        alignment: center;
+                        horizontal-stretch: 1;
+                        spacing: 2px;
+                        Text { text: root.current.checked ? root.chat-name + " ✓" : root.chat-name; color: Theme.text; font-size: 16px; font-weight: 700; overflow: elide; }
+                        ContactState { c: root.current; note: root.chat-note; }
+                    }
+                    VerticalLayout { alignment: center; Btn { text: @tr("Send GRIN"); primary: true; font-size: 13px; min-height: 38px; clicked => { root.pay(root.picked); } } }
+                    VerticalLayout { alignment: center; IconBtn { sign: Icons.window; says: @tr("Open the conversation in a window of its own"); side: 38px; clicked => { root.apart(root.picked); } } }
+                    VerticalLayout { alignment: center; IconBtn { sign: Icons.more; says: @tr("More"); side: 38px; clicked => { menu.show(); } } }
+                }
+                menu := PopupWindow {
+                    x: parent.width - 270px;
+                    y: 58px;
+                    width: 256px;
+                    Rectangle {
+                        background: Theme.card.mix(Theme.bg, 0.45);
+                        border-radius: 12px;
+                        border-width: 1px;
+                        border-color: Theme.line;
+                        VerticalLayout {
+                            padding: 6px;
+                            MenuItem { sign: Icons.send; text: @tr("Send GRIN to the contact"); clicked => { root.pay(root.picked); } }
+                            MenuItem { sign: Icons.ask; text: @tr("Ask for GRIN"); clicked => { root.open(4); } }
+                            MenuItem { sign: Icons.shield; text: @tr("Compare the check code"); clicked => { root.edit(root.picked); } }
+                            MenuItem { sign: Icons.edit; text: @tr("Change the contact's details"); clicked => { root.edit(root.picked); } }
+                            Rectangle { height: 1px; background: Theme.line; }
+                            MenuItem { sign: Icons.trash; text: @tr("Delete the contact…"); danger: true; clicked => { root.ask-remove(root.picked); } }
+                        }
+                    }
+                }
+            }
+            if root.picked >= 0: Rectangle { height: 1px; background: Theme.line; }
+            if root.picked >= 0: VerticalLayout {
+                vertical-stretch: 1;
+                padding: 14px;
+                padding-top: 8px;
+                ChatBox {
+                    vertical-stretch: 1;
+                    flat: true;
+                    name: root.chat-name;
+                    lines: root.chat-lines;
+                    busy: root.chat-busy;
+                    error: root.chat-error;
+                    can-write: root.chat-can-write;
+                    send(t) => { root.chat-send(t); }
+                }
+            }
+        }
+    }
+}
+
+// O63: every contact, the mark of those the owner has paid, deleting one
+// or all, and adding many at once: keys one a line, addresses one a line,
+// line to line.
+component ContactsSheet inherits Sheet {
+    in property <[Contact]> contacts;
+    in property <string> note;
+    in property <bool> busy;
+    in property <string> error;
+    callback remove(int);
+    callback remove-all();
+    callback add-list(string, string);
+    property <int> asking: -1;
+    property <bool> asking-all: false;
+    property <bool> adding: false;
+    property <string> keys;
+    property <string> addresses;
+    title: @tr("All contacts");
+    card-width: 620px;
+    if root.contacts.length == 0: Muted { text: @tr("No contacts yet"); }
+    for c[i] in root.contacts: Rectangle {
+        min-height: 44px;
+        border-radius: 10px;
+        background: Theme.bg;
+        HorizontalLayout {
+            padding: 8px;
+            padding-left: 12px;
             spacing: 10px;
             VerticalLayout {
                 alignment: center;
-                Rectangle {
-                    width: 34px;
-                    height: 34px;
-                    border-radius: 17px;
-                    background: Theme.line;
-                    Text { text: c.initial; color: Theme.text; font-weight: 600; }
-                }
-            }
-            VerticalLayout {
-                alignment: center;
                 horizontal-stretch: 1;
-                Text { text: c.name; color: Theme.text; font-size: 14px; font-weight: 600; }
-                Text { text: c.last; color: c.attention ? Theme.warn : Theme.muted; font-size: 12px; overflow: elide; }
+                Text { text: c.name; color: Theme.text; font-size: 14px; font-weight: 600; overflow: elide; }
+                if c.checked: Muted { text: @tr("✓ checked: the check code was compared"); font-size: 12px; }
+                if c.traded: Muted { text: @tr("you have paid them: a payment is in a block"); font-size: 12px; }
             }
-          }
+            if root.asking != i: VerticalLayout { alignment: center; Btn { text: @tr("Delete"); font-size: 13px; min-height: 28px; clicked => { root.asking = i; } } }
+            if root.asking == i: VerticalLayout { alignment: center; Btn { text: @tr("Delete with the conversation"); primary: true; font-size: 13px; min-height: 28px; clicked => { root.asking = -1; root.remove(i); } } }
+            if root.asking == i: VerticalLayout { alignment: center; Btn { text: @tr("No"); font-size: 13px; min-height: 28px; clicked => { root.asking = -1; } } }
         }
-        HorizontalLayout { alignment: start; Btn { text: @tr("Add a contact"); font-size: 13px; clicked => { root.open(6); } } }
     }
+    if root.adding: Muted { text: @tr("Message keys one a line; wallet addresses one a line, each on the line of its key (a line may be left empty). The contacts get the names “Contact 1”, “Contact 2”…"); font-size: 12px; }
+    if root.adding: TextBox { label: @tr("Message keys (npub1…)"); hint: "npub1…"; text <=> root.keys; box-height: 90px; }
+    if root.adding: TextBox { label: @tr("Wallet addresses (grin1…), optional"); hint: "grin1…"; text <=> root.addresses; box-height: 90px; }
+    if root.adding: Btn { text: root.busy ? @tr("Saving…") : @tr("Add these contacts"); primary: true; height: 44px; clicked => { if (!root.busy) { root.add-list(root.keys, root.addresses); } } }
+    if root.note != "": Muted { text: root.note; font-size: 12px; }
+    if root.error != "": Text { text: root.error; color: Theme.warn; font-size: 14px; wrap: word-wrap; }
+    HorizontalLayout {
+        spacing: 8px;
+        alignment: start;
+        Btn { text: root.adding ? @tr("Close the list to add") : @tr("Add a list"); font-size: 13px; clicked => { root.adding = !root.adding; } }
+        if root.contacts.length > 0 && !root.asking-all: Btn { text: @tr("Delete all"); font-size: 13px; clicked => { root.asking-all = true; } }
+        if root.asking-all: Btn { text: @tr("Delete every contact and conversation"); primary: true; font-size: 13px; clicked => { root.asking-all = false; root.remove-all(); } }
+        if root.asking-all: Btn { text: @tr("No"); font-size: 13px; clicked => { root.asking-all = false; } }
+    }
+    Btn { text: @tr("Done"); primary: true; height: 46px; clicked => { root.close(); } }
 }
 
 component LinkCard inherits Card {
@@ -515,13 +937,7 @@ component LinkCard inherits Card {
     // what the chain process says that is not a stage, as it said it
     in property <[string]> rest;
     in-out property <bool> details;
-    // the wallet's own starting point, made from the chain it verified (O38)
-    in property <string> point-note;
-    in property <bool> point-good;
-    in property <bool> point-busy;
-    callback make-point();
     property <bool> asked: false;
-    property <bool> point-asked: false;
     // the two parts that can be switched off, and the one being asked about: 0 none, 1 Tor, 2 Nostr (O42)
     in property <bool> tor-on: true;
     in property <bool> nostr-on: true;
@@ -534,9 +950,9 @@ component LinkCard inherits Card {
         spacing: 10px;
         HorizontalLayout {
             Heading { text: @tr("Connection and synchronisation"); vertical-alignment: center; }
-            VerticalLayout { alignment: center; padding-left: 8px; Ask { open <=> root.asked; } }
+            VerticalLayout { alignment: center; padding-left: 8px; Ask { title: @tr("Connection and synchronisation"); text: @tr("Through Tor everything goes slower. That is the price of privacy, not a fault.") + "\n\n" + @tr("A faint ring: not begun. A ring: under way. A filled mark: done. The warning colour: needs your attention."); } }
             Rectangle { horizontal-stretch: 1; }
-            if root.tor-on: Btn { text: @tr("Tor bridges"); font-size: 12px; min-height: 30px; clicked => { root.bridges(); } }
+            if root.tor-on: Btn { text: @tr("Tor bridges"); font-size: 13px; min-height: 30px; clicked => { root.bridges(); } }
         }
         HorizontalLayout {
             spacing: 8px;
@@ -560,10 +976,9 @@ component LinkCard inherits Card {
             Rectangle { width: 8px; }
             Muted { text: "Nostr"; font-size: 12px; vertical-alignment: center; }
             VerticalLayout { alignment: center; Toggle { on: root.nostr-on; label: "Nostr"; toggled(v) => { root.ask-part = root.ask-part == 2 ? 0 : 2; } } }
-            VerticalLayout { alignment: center; padding-left: 4px; Ask { open <=> root.parts-asked; } }
+            VerticalLayout { alignment: center; padding-left: 4px; Ask { title: "Tor · Nostr"; text: @tr("Each of the two can be switched off, in case you need to. Off means its program does not run. Tor is switched at once and the wallet stays open; for Nostr the wallet locks and asks for the password again."); } }
             Rectangle { horizontal-stretch: 1; }
         }
-        if root.parts-asked: Muted { text: @tr("Each of the two can be switched off, in case you need to. Off means its program is not started at all. Switching takes effect at once: the wallet locks and asks for the password again."); font-size: 12px; wrap: word-wrap; }
         if root.ask-part != 0: Rectangle {
             background: Theme.bg;
             border-radius: 10px;
@@ -573,8 +988,8 @@ component LinkCard inherits Card {
                 Text {
                     text: root.ask-part == 1
                         ? (root.tor-on
-                            ? @tr("Switch Tor off? Without it there are no payments to an address and no messages, and a transaction goes to the network directly: the node sees the address of your device. The wallet locks and asks for the password again.")
-                            : @tr("Switch Tor on? The wallet locks and asks for the password again."))
+                            ? @tr("Switch Tor off? Without it there are no payments to an address and no messages, and a transaction goes to the network directly: the node sees the address of your device. It takes effect at once; the wallet stays open.")
+                            : @tr("Switch Tor on? It takes effect at once; Tor needs a little time to come up."))
                         : (root.nostr-on
                             ? @tr("Switch Nostr off? Without it there are no messages and no payments to saved contacts; everything else works. The wallet locks and asks for the password again.")
                             : @tr("Switch Nostr on? The wallet locks and asks for the password again."));
@@ -595,12 +1010,10 @@ component LinkCard inherits Card {
                             root.ask-part = 0;
                         }
                     }
-                    Btn { text: @tr("Cancel"); font-size: 12px; min-height: 30px; clicked => { root.ask-part = 0; } }
+                    Btn { text: @tr("Cancel"); font-size: 13px; min-height: 30px; clicked => { root.ask-part = 0; } }
                 }
             }
         }
-        if root.asked: Muted { text: @tr("Through Tor everything goes slower. That is the price of privacy, not a fault."); font-size: 12px; wrap: word-wrap; }
-        if root.asked: Muted { text: @tr("A faint ring: not begun. A ring: under way. A filled mark: done. The warning colour: needs your attention."); font-size: 12px; wrap: word-wrap; }
         if root.stages.length > 0: Rectangle { height: 1px; background: Theme.line; }
         // a filled mark: done (or, in the warning colour, needs attention);
         // a ring: under way; a faint ring: not begun. Shape as well as colour.
@@ -619,26 +1032,15 @@ component LinkCard inherits Card {
                 }
             }
             Muted { text: r.label; font-size: 12px; width: 112px; vertical-alignment: top; }
-            Text { text: r.value; color: r.tone == 2 ? Theme.warn : r.tone == 0 ? Theme.muted : Theme.text; font-size: 12px; wrap: word-wrap; horizontal-stretch: 1; min-width: 60px; preferred-width: 60px; }
+            Text { text: r.value; color: r.tone == 2 ? Theme.warn : r.tone == 0 ? Theme.muted : Theme.text; font-size: 13px; wrap: word-wrap; horizontal-stretch: 1; min-width: 60px; preferred-width: 60px; }
         }
-        for w in root.rest: Text { text: w; color: Theme.warn; font-size: 12px; wrap: word-wrap; }
-        HorizontalLayout {
-            alignment: start;
-            Btn { text: root.details ? @tr("Hide details") : @tr("Details"); font-size: 12px; min-height: 28px; clicked => { root.details = !root.details; } }
-        }
-        if root.details: HorizontalLayout {
-            alignment: start;
-            spacing: 8px;
-            Btn { text: root.point-busy ? @tr("Making the point…") : @tr("Make my own starting point"); font-size: 12px; min-height: 28px; clicked => { if (!root.point-busy) { root.make-point(); } } }
-            VerticalLayout { alignment: center; Ask { open <=> root.point-asked; } }
-        }
-        if root.details && root.point-asked: Muted { text: @tr("The wallet starts checking the network from a starting point built into the program. It can make one of its own from the chain it has checked itself; from the next unlock it then starts from that one."); font-size: 12px; wrap: word-wrap; }
-        if root.details && root.point-note != "": Text { text: root.point-note; color: root.point-good ? Theme.accent : Theme.warn; font-size: 12px; wrap: word-wrap; }
+        for w in root.rest: Text { text: w; color: Theme.warn; font-size: 13px; wrap: word-wrap; }
         Muted { text: @tr("Payment delivery"); font-size: 12px; }
         HorizontalLayout {
             spacing: 6px;
-            Btn { text: "Tor"; primary: root.tor-on && (root.link-good || root.addr-good) && !Settings.by-hand; font-size: 13px; horizontal-stretch: 1; clicked => { Settings.by-hand = false; Settings.save(); } }
-            Btn { text: @tr("By hand"); primary: Settings.by-hand || !root.tor-on || !(root.link-good || root.addr-good); font-size: 13px; horizontal-stretch: 1; clicked => { Settings.by-hand = true; Settings.save(); } }
+            // the choice shows at once; whether Tor works now is said under it
+            Btn { text: "Tor"; primary: root.tor-on && !Settings.by-hand; font-size: 13px; horizontal-stretch: 1; clicked => { Settings.by-hand = false; Settings.save(); } }
+            Btn { text: @tr("By hand"); primary: Settings.by-hand || !root.tor-on; font-size: 13px; horizontal-stretch: 1; clicked => { Settings.by-hand = true; Settings.save(); } }
             // not in this wallet yet: shown, not pressed
             Rectangle {
                 horizontal-stretch: 1;
@@ -707,7 +1109,7 @@ component OpsCard inherits Card {
                 }
                 Text { text: op.amount; font-family: "DejaVu Sans Mono"; font-size: 14px; font-weight: 700; color: op.tone == 1 ? Theme.accent : op.tone == 2 ? Theme.warn : Theme.text; }
             }
-            Text { text: op.sub; color: op.tone == 2 ? Theme.warn : Theme.muted; font-size: 12px; wrap: word-wrap; }
+            Text { text: op.sub; color: op.tone == 2 ? Theme.warn : Theme.muted; font-size: 13px; wrap: word-wrap; }
         }
         HorizontalLayout { alignment: start; padding-top: 6px; Btn { text: @tr("All payments"); font-size: 13px; clicked => { root.all(); } } }
     }
@@ -748,11 +1150,6 @@ component Dashboard inherits Rectangle {
     in property <int> addr-tone;
     in property <[SyncRow]> sync-stages;
     in property <[string]> sync-rest;
-    in-out property <bool> sync-details;
-    in property <string> point-note;
-    in property <bool> point-good;
-    in property <bool> point-busy;
-    callback make-point();
     in property <bool> tor-on: true;
     in property <bool> nostr-on: true;
     callback switch-tor(bool);
@@ -760,6 +1157,7 @@ component Dashboard inherits Rectangle {
     in property <[Problem]> problems;
     in property <string> problems-more;
     callback leave();
+    callback restart-wallet();
     callback act(int, bool);
     callback open(int);
     callback chat(int);
@@ -768,7 +1166,26 @@ component Dashboard inherits Rectangle {
     callback op-show(int);
     callback tor-options();
     callback all-ops();
+    // the conversation on the main screen (O63)
+    in property <string> chat-name;
+    in property <string> chat-note;
+    in property <[ChatLine]> chat-lines;
+    in property <bool> chat-busy;
+    in property <string> chat-error;
+    in property <bool> chat-can-write;
+    callback chat-send(string);
+    callback contact-pay(int);
+    callback contact-remove(int);
+    // O75: deleting a contact is asked in a window of its own; a phone's "⋯"
+    callback ask-remove(int);
+    callback contact-menu(int);
+    callback contact-apart(int);
+    callback contact-edit(int);
+    in property <string> apart-note;
+    // the contact whose conversation is shown when the screen opens; -1: none
+    in property <int> picked-at-start: -1;
     property <bool> narrow: root.width < 760px;
+
 
     Ground { }
     VerticalLayout {
@@ -789,9 +1206,9 @@ component Dashboard inherits Rectangle {
             if !root.narrow: Muted { text: root.app-version; font-size: 12px; vertical-alignment: center; wrap: no-wrap; }
             Rectangle { horizontal-stretch: 1; }
             // what belongs to the program rather than to a payment sits together here (О34)
-            Btn { text: root.narrow ? @tr("Password") : @tr("Password and words"); font-size: 13px; clicked => { root.open(7); } }
-            Btn { text: root.narrow ? @tr("Theme") : @tr("Theme: ") + Theme.label; font-size: 13px; clicked => { Theme.next(); Settings.save(); } }
-            Btn { text: Settings.russian ? "RU" : "EN"; font-size: 13px; clicked => { Settings.russian = !Settings.russian; Settings.save(); } }
+            // O63: the numbers of synchronisation, for when something is looked into
+            // O73: what belongs to the program rather than to a payment is in one window
+            Btn { text: @tr("Settings"); font-size: 13px; clicked => { root.open(16); } }
             Btn { text: @tr("Lock"); font-size: 13px; clicked => { root.leave(); } }
         }
 
@@ -814,19 +1231,36 @@ component Dashboard inherits Rectangle {
                     vertical-stretch: 0;
                     spacing: 14px;
                     RequisitesCard { horizontal-stretch: 1; address-groups: root.address-groups; address-full: root.address-full; phrase: root.phrase; phrase-label: root.phrase-label; identity-made: root.identity-made; open(n) => { root.open(n); } make-identity => { root.make-identity(); } }
-                    ContactsCard { horizontal-stretch: 1; contacts: root.contacts; open(n) => { root.open(n); } chat(i) => { root.chat(i); } }
+                    ProblemsCard { horizontal-stretch: 1; problems: root.problems; more: root.problems-more; restart => { root.restart-wallet(); } }
                 }
                 // the last card of each column takes what is left, so that both columns end at one line (O44)
-                ProblemsCard { vertical-stretch: 1; problems: root.problems; more: root.problems-more; }
+                ContactsPanel {
+                    vertical-stretch: 1;
+                    picked: root.picked-at-start;
+                    contacts: root.contacts;
+                    chat-name: root.chat-name;
+                    chat-note: root.chat-note;
+                    chat-lines: root.chat-lines;
+                    chat-busy: root.chat-busy;
+                    chat-error: root.chat-error;
+                    chat-can-write: root.chat-can-write;
+                    apart-note: root.apart-note;
+                    open(n) => { root.open(n); }
+                    chat(i) => { root.chat(i); }
+                    pay(i) => { root.contact-pay(i); }
+                    ask-remove(i) => { root.ask-remove(i); }
+                    edit(i) => { root.contact-edit(i); }
+                    apart(i) => { root.contact-apart(i); }
+                    chat-send(t) => { root.chat-send(t); }
+                }
             }
             VerticalLayout {
                 horizontal-stretch: 1;
                 preferred-width: 100px;
                 min-width: 340px;
                 spacing: 14px;
-                LinkCard { vertical-stretch: 0; tor-tone: root.tor-tone; tx-tone: root.tx-tone; addr-tone: root.addr-tone; stages: root.sync-stages; rest: root.sync-rest; details <=> root.sync-details; tor-on: root.tor-on; nostr-on: root.nostr-on; switch-tor(v) => { root.switch-tor(v); } switch-nostr(v) => { root.switch-nostr(v); } point-note: root.point-note; point-good: root.point-good; point-busy: root.point-busy; make-point => { root.make-point(); } tor-line: root.tor-line; link-good: root.link-good; tx-line: root.tx-line; tx-good: root.tx-good; addr-line: root.addr-line; addr-good: root.addr-good; auto-receive: root.auto-receive; auto-on: root.auto-on; auto-known: root.auto-known; set-auto(v) => { root.set-auto(v); } bridges => { root.tor-options(); } }
-                OpsCard { vertical-stretch: root.sync-details ? 0 : 1; ops: root.ops; all => { root.all-ops(); } show(i) => { root.op-show(i); } }
-                if root.sync-details: SyncCard { vertical-stretch: 1; rows: root.sync-rows; words: root.sync-words; }
+                LinkCard { vertical-stretch: 0; tor-tone: root.tor-tone; tx-tone: root.tx-tone; addr-tone: root.addr-tone; stages: root.sync-stages; rest: root.sync-rest; tor-on: root.tor-on; nostr-on: root.nostr-on; switch-tor(v) => { root.switch-tor(v); } switch-nostr(v) => { root.switch-nostr(v); } tor-line: root.tor-line; link-good: root.link-good; tx-line: root.tx-line; tx-good: root.tx-good; addr-line: root.addr-line; addr-good: root.addr-good; auto-receive: root.auto-receive; auto-on: root.auto-on; auto-known: root.auto-known; set-auto(v) => { root.set-auto(v); } bridges => { root.tor-options(); } }
+                OpsCard { vertical-stretch: 1; ops: root.ops; all => { root.all-ops(); } show(i) => { root.op-show(i); } }
             }
           }
         }
@@ -844,12 +1278,11 @@ component Dashboard inherits Rectangle {
                 if root.waiting.length > 0: WaitCard { waiting: root.waiting; note: root.wait-note; narrow: true; act(i, yes) => { root.act(i, yes); } }
                 OpsCard { ops: root.ops; all => { root.all-ops(); } show(i) => { root.op-show(i); } }
                 RequisitesCard { address-groups: root.address-groups; address-full: root.address-full; phrase: root.phrase; phrase-label: root.phrase-label; identity-made: root.identity-made; open(n) => { root.open(n); } make-identity => { root.make-identity(); } }
-                ContactsCard { contacts: root.contacts; open(n) => { root.open(n); } chat(i) => { root.chat(i); } }
-                LinkCard { tor-tone: root.tor-tone; tx-tone: root.tx-tone; addr-tone: root.addr-tone; stages: root.sync-stages; rest: root.sync-rest; details <=> root.sync-details; tor-on: root.tor-on; nostr-on: root.nostr-on; switch-tor(v) => { root.switch-tor(v); } switch-nostr(v) => { root.switch-nostr(v); } point-note: root.point-note; point-good: root.point-good; point-busy: root.point-busy; make-point => { root.make-point(); } tor-line: root.tor-line; link-good: root.link-good; tx-line: root.tx-line; tx-good: root.tx-good; addr-line: root.addr-line; addr-good: root.addr-good; auto-receive: root.auto-receive; auto-on: root.auto-on; auto-known: root.auto-known; set-auto(v) => { root.set-auto(v); } bridges => { root.tor-options(); } }
-                ProblemsCard { problems: root.problems; more: root.problems-more; }
-                if root.sync-details: SyncCard { rows: root.sync-rows; words: root.sync-words; }
+                ContactsCard { contacts: root.contacts; open(n) => { root.open(n); } chat(i) => { root.chat(i); } menu(i) => { root.contact-menu(i); } }
+                LinkCard { tor-tone: root.tor-tone; tx-tone: root.tx-tone; addr-tone: root.addr-tone; stages: root.sync-stages; rest: root.sync-rest; tor-on: root.tor-on; nostr-on: root.nostr-on; switch-tor(v) => { root.switch-tor(v); } switch-nostr(v) => { root.switch-nostr(v); } tor-line: root.tor-line; link-good: root.link-good; tx-line: root.tx-line; tx-good: root.tx-good; addr-line: root.addr-line; addr-good: root.addr-good; auto-receive: root.auto-receive; auto-on: root.auto-on; auto-known: root.auto-known; set-auto(v) => { root.set-auto(v); } bridges => { root.tor-options(); } }
+                ProblemsCard { problems: root.problems; more: root.problems-more; restart => { root.restart-wallet(); } }
                 // a phone has no room for it in the top row
-                Muted { text: "GrinSight " + root.app-version; font-size: 11px; horizontal-alignment: center; }
+                Muted { text: "GrinSight " + root.app-version; font-size: 12px; horizontal-alignment: center; }
             }
         }
     }
@@ -910,6 +1343,15 @@ export component App inherits Window {
     in property <string> sign-who-note;
     in property <[string]> sign-who-groups;
     in property <bool> sign-can-cancel;
+    in property <string> sign-tor-doubt;
+    // O71: the wallet tries the built-in Tor bridges by itself
+    in property <bool> sign-bridges-offered;
+    in property <bool> sign-bridges-busy;
+    in property <string> sign-bridges-note;
+    callback sign-try-bridges();
+    callback sign-stop-bridges();
+    callback sign-direct();
+    callback sign-tor-off();
     in property <string> in-amount;
     in property <string> in-from;
     in property <string> in-from-note;
@@ -930,6 +1372,17 @@ export component App inherits Window {
     callback incoming-accept();
     callback incoming-decline();
     callback contact-add(string, string, string);
+    // O64: asking for GRIN, and changing a contact
+    callback invoice-make(string);
+    callback contact-edit(int);
+    in property <bool> contact-editing;
+    // O65: the check code of the contact being changed, and the owner's mark
+    in property <bool> contact-checked;
+    in property <string> contact-code;
+    callback contact-code-ask();
+    callback contact-check(bool);
+    in property <string> contact-edit-name;
+    in property <string> contact-edit-address;
     callback sheet-closed(int);
 
     // the conversation (page 4), all payments (page 5), password and words (sheets 7, 8)
@@ -943,13 +1396,52 @@ export component App inherits Window {
     in property <string> chat-error;
     in property <bool> chat-can-write: true;
     in property <[OpLine]> all-ops;
+    // the wallet's outputs, the owner's marks and the choice for a payment (O51)
+    in property <[OutLine]> outs;
+    in property <string> picked-sum;
+    in property <bool> picked-kept;
+    in-out property <bool> spend-kept;
+    callback out-keep(int, bool);
+    in property <bool> gather;
+    in property <string> collect-plan;
+    in property <string> collect-done;
+    in property <bool> collect-busy;
+    callback set-gather(bool);
+    callback collect-ask();
+    callback collect-do();
+    callback collect-cancel();
+    callback out-pick(int);
+    callback outs-unpick();
+    // the history hidden in this window (O50)
+    in property <int> ops-hidden;
+    in property <[string]> op-contacts;
+    callback hide-history();
+    callback show-history();
     in-out property <string> security-note;
     in-out property <int> send-to: -1;
     callback op-show(int);
     callback open-chat(int);
+    // O63: on a wide window a chosen contact's conversation stays on the main screen
+    out property <bool> chat-inline: root.width >= 760px;
+    callback contact-pay(int);
+    callback contact-remove(int);
+    callback contacts-remove-all();
+    callback contacts-add-list(string, string);
+    in property <string> contacts-note;
+    // O70: a conversation in a window of its own (a computer only), and
+    // why one did not open
+    callback chat-apart(int);
+    in property <string> apart-note;
+    // for the sample screens: the conversation that is open on the main screen
+    in property <int> chat-picked-at-start: -1;
     callback chat-send(string);
     callback chat-pay();
     callback chat-closed();
+    // O75: the contact whose conversation is open (-1: none); the contact
+    // whose deletion is asked; the contact whose actions a phone shows
+    in property <int> chat-index: -1;
+    in-out property <int> remove-asking: -1;
+    in-out property <int> menu-for: -1;
     callback make-identity();
     callback set-auto(bool);
     callback change-password(string, string, string);
@@ -960,6 +1452,37 @@ export component App inherits Window {
     in property <int> delete-place-a: 1;
     in property <int> delete-place-b: 2;
     callback words-closed();
+    // O74: the 24 words as one line, for "Copy the words"; empty when they are not shown
+    in property <string> words-line;
+    // what was put on the clipboard, until the clipboard is emptied again
+    property <string> words-clip;
+    // O74: the words go to the clipboard; in a minute, or when the wallet
+    // locks, the clipboard is emptied if it still holds them
+    callback copy-words();
+    copy-words => {
+        if (root.words-line == "") { return; }
+        words-out.text = root.words-line;
+        words-out.select-all();
+        words-out.copy();
+        words-out.text = "";
+        root.words-clip = root.words-line;
+        words-timer.running = false;
+        words-timer.running = true;
+    }
+    public function clear-copied-words() {
+        if (root.words-clip != "") {
+            words-probe.text = "";
+            words-probe.paste();
+            if (words-probe.text == root.words-clip) {
+                words-blank.select-all();
+                words-blank.copy();
+                words-blank.clear-selection();
+            }
+            words-probe.text = "";
+            root.words-clip = "";
+        }
+        words-timer.running = false;
+    }
     in-out property <string> own-nodes-text;
     in-out property <string> own-point-text;
     callback direct-changed(bool);
@@ -996,6 +1519,13 @@ export component App inherits Window {
     in property <bool> out-can-resend;
     in property <bool> out-can-direct;
     in property <string> out-resend-note;
+    in property <bool> out-can-back;
+    in property <bool> out-can-request;
+    callback out-request();
+    in property <string> out-back-plan;
+    callback out-back-ask();
+    callback out-back-do();
+    callback out-back-cancel();
     callback out-resend(bool);
     callback out-tor-off();
     // confirmations after which an incoming payment is called received (K190)
@@ -1014,8 +1544,9 @@ export component App inherits Window {
     in property <int> addr-tone;
     in property <[SyncRow]> sync-stages;
     in property <[string]> sync-rest;
-    in-out property <bool> sync-details;
     in property <string> point-note;
+    // O67: what a new point would give now, by how old the present one is
+    in property <string> point-hint;
     in property <bool> point-good;
     in property <bool> point-busy;
     callback make-point();
@@ -1027,6 +1558,8 @@ export component App inherits Window {
     in property <string> problems-more;
     callback act(int, bool);
     callback leave();
+    // O66: lock, start the wallet's processes anew, ask for the password again
+    callback restart-wallet();
 
     // Android: keep clear of the status bar, the camera cut-out and the
     // gesture bar; on the desktop the insets are zero.
@@ -1113,23 +1646,41 @@ export component App inherits Window {
             link-good: root.link-good;
             auto-receive: root.auto-receive;
             leave => { root.leave(); }
+            restart-wallet => { root.restart-wallet(); }
             act(i, yes) => { root.act(i, yes); }
             open(n) => { root.sheet-error = ""; root.security-note = ""; root.send-to = (n == 1 && root.tor-address && !Settings.by-hand) ? -2 : -1; root.sheet = n; }
             identity-made: root.identity-made;
             auto-on: root.auto-on; auto-known: root.auto-known;
             chat(i) => { root.open-chat(i); }
+            chat-name: root.chat-name;
+            chat-note: root.chat-note;
+            chat-lines: root.chat-lines;
+            chat-busy: root.chat-busy;
+            chat-error: root.chat-error;
+            chat-can-write: root.chat-can-write;
+            picked-at-start: root.chat-index >= 0 ? root.chat-index : root.chat-picked-at-start;
+            chat-send(t) => { root.chat-send(t); }
+            contact-pay(i) => { root.contact-pay(i); }
+            contact-remove(i) => { root.contact-remove(i); }
+            ask-remove(i) => { root.remove-asking = i; }
+            contact-menu(i) => { root.menu-for = i; }
+            contact-edit(i) => { root.contact-edit(i); }
+            contact-apart(i) => {
+                if (Device.phone) {
+                    root.open-chat(i);
+                    root.page = 4;
+                } else {
+                    root.chat-apart(i);
+                }
+            }
+            apart-note: root.apart-note;
             make-identity => { root.make-identity(); }
             set-auto(v) => { root.set-auto(v); }
             op-show(i) => { root.op-show(i); }
-            sync-details <=> root.sync-details;
             tor-on: root.tor-on;
             nostr-on: root.nostr-on;
             switch-tor(v) => { root.switch-tor(v); }
             switch-nostr(v) => { root.switch-nostr(v); }
-            point-note: root.point-note;
-            point-good: root.point-good;
-            point-busy: root.point-busy;
-            make-point => { root.make-point(); }
             tor-options => { root.open-tor(); }
             all-ops => { root.page = 5; }
         }
@@ -1143,9 +1694,17 @@ export component App inherits Window {
             back => { root.chat-closed(); root.page = 1; }
             send(t) => { root.chat-send(t); }
             pay => { root.chat-pay(); }
+            ask => { root.sheet-error = ""; root.sheet = 4; }
+            edit => { root.contact-edit(root.chat-index); }
+            remove => { root.remove-asking = root.chat-index; }
+            checked: root.chat-index >= 0 && root.chat-index < root.contacts.length && root.contacts[root.chat-index].checked;
         }
         if root.page == 5: OpsPage {
             ops: root.all-ops;
+            hidden-count: root.ops-hidden;
+            contacts: root.op-contacts;
+            hide => { root.hide-history(); }
+            unhide => { root.show-history(); }
             confirmations: root.confirmations;
             set-confirmations(n) => { root.set-confirmations(n); }
             back => { root.page = 1; }
@@ -1161,6 +1720,36 @@ export component App inherits Window {
             error: root.sheet-error;
             close => { root.sheet-closed(root.sheet); root.sheet = 0; }
             prepare(a, to, addr) => { root.send-prepare(a, to, addr); }
+            outs: root.outs;
+            picked-sum: root.picked-sum;
+            picked-kept: root.picked-kept;
+            spend-kept <=> root.spend-kept;
+            pick(i) => { root.out-pick(i); }
+            unpick => { root.outs-unpick(); }
+        }
+        if root.page == 1 && root.sheet == 14: ContactsSheet {
+            contacts: root.contacts;
+            note: root.contacts-note;
+            busy: root.sheet-busy;
+            error: root.sheet-error;
+            close => { root.sheet-closed(root.sheet); root.sheet = 0; }
+            remove(i) => { root.contact-remove(i); }
+            remove-all => { root.contacts-remove-all(); }
+            add-list(keys, addresses) => { root.contacts-add-list(keys, addresses); }
+        }
+        if (root.page == 1 || root.page == 4) && root.sheet == 13: OutputsSheet {
+            outs: root.outs;
+            error: root.sheet-error;
+            close => { root.sheet-closed(root.sheet); root.sheet = 0; }
+            keep(i, on) => { root.out-keep(i, on); }
+            gather: root.gather;
+            plan: root.collect-plan;
+            done: root.collect-done;
+            busy: root.collect-busy;
+            set-gather(on) => { root.set-gather(on); }
+            collect-ask => { root.collect-ask(); }
+            collect-do => { root.collect-do(); }
+            collect-cancel => { root.collect-cancel(); }
         }
         if (root.page == 1 || root.page == 4) && root.sheet == 2: SlateSheet {
             title: root.out-title;
@@ -1171,6 +1760,13 @@ export component App inherits Window {
             can-resend: root.out-can-resend;
             can-direct: root.out-can-direct;
             resend-note: root.out-resend-note;
+            can-back: root.out-can-back;
+            can-request: root.out-can-request;
+            request => { root.out-request(); }
+            back-plan: root.out-back-plan;
+            back-ask => { root.out-back-ask(); }
+            back-do => { root.out-back-do(); }
+            back-cancel => { root.out-back-cancel(); }
             resend(d) => { root.out-resend(d); }
             tor-off => { root.out-tor-off(); }
             waiting: root.out-waiting;
@@ -1189,6 +1785,14 @@ export component App inherits Window {
             who-note: root.sign-who-note;
             who-groups: root.sign-who-groups;
             can-cancel: root.sign-can-cancel;
+            tor-doubt: root.sign-tor-doubt;
+            bridges-offered: root.sign-bridges-offered;
+            bridges-busy: root.sign-bridges-busy;
+            bridges-note: root.sign-bridges-note;
+            try-bridges => { root.sign-try-bridges(); }
+            stop-bridges => { root.sign-stop-bridges(); }
+            sign-direct => { root.sign-direct(); }
+            tor-off => { root.sign-tor-off(); }
             busy: root.sheet-busy;
             error: root.sheet-error;
             close => { root.sheet-closed(root.sheet); root.sheet = 0; }
@@ -1203,6 +1807,7 @@ export component App inherits Window {
             card-width: 640px;
             close => { root.sheet-closed(root.sheet); root.sheet = 0; }
             read(t) => { root.receive-read(t); }
+            invoice(a) => { root.invoice-make(a); }
         }
         if root.page == 1 && root.sheet == 5: IncomingSheet {
             amount: root.in-amount;
@@ -1247,8 +1852,25 @@ export component App inherits Window {
         }
         if root.page == 1 && root.sheet == 8: WordsSheet {
             words: root.words;
+            line: root.words-line;
             card-width: 720px;
+            copy-words => { root.copy-words(); }
             close => { root.words-closed(); root.sheet = 0; }
+        }
+        if (root.page == 1 || root.page == 4 || root.page == 5) && root.sheet == 15: SyncSheet {
+            rows: root.sync-rows;
+            words: root.sync-words;
+            point-note: root.point-note;
+            point-hint: root.point-hint;
+            point-good: root.point-good;
+            point-busy: root.point-busy;
+            make-point => { root.make-point(); }
+            close => { root.sheet = 0; }
+        }
+        if (root.page == 1 || root.page == 4 || root.page == 5) && root.sheet == 16: SettingsSheet {
+            open(n) => { root.sheet-error = ""; root.security-note = ""; root.sheet = n; }
+            bridges => { root.open-tor(); }
+            close => { root.sheet = 0; }
         }
         if root.page == 0 && root.sheet == 9: OwnSheet {
             nodes <=> root.own-nodes-text;
@@ -1272,8 +1894,109 @@ export component App inherits Window {
         if root.page == 1 && root.sheet == 6: ContactSheet {
             busy: root.sheet-busy;
             error: root.sheet-error;
+            editing: root.contact-editing;
+            checked: root.contact-checked;
+            code: root.contact-code;
+            show-code => { root.contact-code-ask(); }
+            check(on) => { root.contact-check(on); }
+            start-name: root.contact-edit-name;
+            start-address: root.contact-edit-address;
             close => { root.sheet-closed(root.sheet); root.sheet = 0; }
             add(n, k, a) => { root.contact-add(n, k, a); }
         }
+        // O73: what a "?" says, over everything, at the size of ordinary text
+        // O75: a phone's actions on one contact, from the bottom of the screen
+        if root.menu-for >= 0 && root.menu-for < root.contacts.length: Rectangle {
+            background: #000000a0;
+            TouchArea { clicked => { root.menu-for = -1; } }
+            Rectangle {
+                x: 0px;
+                y: parent.height - self.height;
+                width: parent.width;
+                height: sheet-items.preferred-height;
+                background: Theme.card;
+                border-top-left-radius: 20px;
+                border-top-right-radius: 20px;
+                TouchArea { }
+                sheet-items := VerticalLayout {
+                    padding: 14px;
+                    padding-bottom: 26px;
+                    spacing: 2px;
+                    Text { text: root.contacts[root.menu-for].name; color: Theme.text; font-size: 16px; font-weight: 700; overflow: elide; }
+                    Rectangle { height: 8px; }
+                    MenuItem { sign: Icons.send; text: @tr("Send GRIN to the contact"); clicked => { root.contact-pay(root.menu-for); root.menu-for = -1; } }
+                    MenuItem { sign: Icons.edit; text: @tr("Change the contact's details"); clicked => { root.contact-edit(root.menu-for); root.menu-for = -1; } }
+                    MenuItem { sign: Icons.trash; text: @tr("Delete the contact…"); danger: true; clicked => { root.remove-asking = root.menu-for; root.menu-for = -1; } }
+                    Rectangle { height: 8px; }
+                    Btn { text: @tr("Cancel"); min-height: 46px; clicked => { root.menu-for = -1; } }
+                }
+            }
+        }
+        // O75: deleting a contact is asked in a window of its own
+        if root.remove-asking >= 0 && root.remove-asking < root.contacts.length: Rectangle {
+            background: #000000b0;
+            TouchArea { clicked => { root.remove-asking = -1; } }
+            Card {
+                width: min(460px, root.width - 32px);
+                height: remove-words.preferred-height;
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                TouchArea { }
+                remove-words := VerticalLayout {
+                    padding: 24px;
+                    spacing: 14px;
+                    Text { text: @tr("Delete the contact “{}”?", root.contacts[root.remove-asking].name); color: Theme.text; font-size: 18px; font-weight: 700; wrap: word-wrap; }
+                    Text { text: @tr("The conversation with them is deleted too. Payments stay in the list of payments."); color: Theme.text; font-size: 15px; wrap: word-wrap; }
+                    HorizontalLayout {
+                        alignment: end;
+                        spacing: 8px;
+                        Btn { text: @tr("Cancel"); min-height: 42px; clicked => { root.remove-asking = -1; } }
+                        Btn {
+                            text: @tr("Delete");
+                            primary: true;
+                            min-height: 42px;
+                            clicked => {
+                                if (root.remove-asking == root.chat-index && root.page == 4) {
+                                    root.chat-closed();
+                                    root.page = 1;
+                                }
+                                root.contact-remove(root.remove-asking);
+                                root.remove-asking = -1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if Help.open: Rectangle {
+            background: #000000b0;
+            TouchArea { clicked => { Help.open = false; } }
+            help-card := Card {
+                width: min(560px, root.width - 32px);
+                height: min(help-words.preferred-height, root.height - 32px);
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                TouchArea { }
+                Flickable {
+                    content-height: help-words.preferred-height;
+                    help-words := VerticalLayout {
+                        width: parent.width;
+                        padding: 26px;
+                        spacing: 16px;
+                        Text { text: Help.title; color: Theme.text; font-size: 19px; font-weight: 700; wrap: word-wrap; }
+                        Text { text: Help.text; color: Theme.text; font-size: 15px; wrap: word-wrap; }
+                        HorizontalLayout {
+                            alignment: end;
+                            Btn { text: @tr("Got it"); primary: true; min-height: 42px; clicked => { Help.open = false; } }
+                        }
+                    }
+                }
+            }
+        }
     }
+    // O74: the clipboard, through fields nobody sees
+    words-out := TextInput { width: 0px; height: 0px; visible: false; }
+    words-probe := TextInput { width: 0px; height: 0px; visible: false; }
+    words-blank := TextInput { text: " "; read-only: true; width: 0px; height: 0px; visible: false; }
+    words-timer := Timer { interval: 60s; running: false; triggered => { root.clear-copied-words(); } }
 }

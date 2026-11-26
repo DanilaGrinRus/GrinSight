@@ -175,6 +175,9 @@ struct HostParams {
     words: Option<Secret>,
     #[serde(default)]
     reset_guard: Option<bool>,
+    /// `host.tor`: Tor off (`true`) or on.
+    #[serde(default)]
+    off: Option<bool>,
     #[serde(default)]
     test: Option<Value>,
 }
@@ -423,10 +426,6 @@ fn parse_args(args: &[String]) -> Result<Args, String> {
     if tor_off && chain.is_none() {
         return Err("--chain-no-tor needs --chain".to_string());
     }
-    // with Tor switched off nothing that needs Tor is started (K189)
-    if tor_off && (launcher.is_some() || onion.is_some()) {
-        return Err("--chain-no-tor goes with neither --transport nor --onion".to_string());
-    }
     Ok(Args {
         profile,
         guard_root,
@@ -507,13 +506,17 @@ fn places(args: Args, setup: &Setup, device_key: Option<Zeroizing<[u8; 32]>>) ->
     if profile.to_str().is_none() {
         return Err("the profile path is not text".to_string());
     }
+    // one switch for everything that uses Tor (K189, K193)
+    let tor = chain::tor_switch(args.tor_off);
     let launcher = args.launcher.map(|(program, relay)| Launcher {
         program,
         relay,
         data_dir: String::new(),
         retry: setup.transport_retry,
+        off: tor.clone(),
     });
-    let (direct_post, tor_off) = (args.direct_post, args.tor_off);
+    let direct_post = args.direct_post;
+    let tor_off = tor.clone();
     let chain = args.chain.map(|(program, peers)| chain::ChainProgram {
         inside: None,
         program,
@@ -529,6 +532,7 @@ fn places(args: Args, setup: &Setup, device_key: Option<Zeroizing<[u8; 32]>>) ->
         program,
         data_dir: String::new(),
         retry: setup.transport_retry,
+        off: tor.clone(),
     });
     Ok(Places {
         profile,
@@ -537,6 +541,7 @@ fn places(args: Args, setup: &Setup, device_key: Option<Zeroizing<[u8; 32]>>) ->
         chain,
         onion,
         device_key,
+        tor,
     })
 }
 
@@ -681,6 +686,8 @@ impl Host {
             },
             // its state is the wallet's to ask: `paycore.onion.status`
             "onion": { "configured": self.places.onion.is_some() },
+            // the owner's switch: with it set nothing here uses Tor
+            "tor_off": chain::tor_is_off(&self.places.tor),
             // how many Tor bridges the helper processes are given when they start
             "tor_bridges": { "lines": tor_bridges::count(&tor_bridges::text()), "usable": tor_bridges::text() != tor_bridges::UNUSABLE },
             "chain": {
@@ -824,6 +831,24 @@ impl Host {
             "host.lock" => {
                 self.lock();
                 Ok(json!({}))
+            }
+            // K193: the owner's Tor switch, locked or open, without a restart
+            "host.tor" => match (p.off, self.places.chain.is_some()) {
+                (Some(off), true) => {
+                    self.places.tor.store(off, std::sync::atomic::Ordering::SeqCst);
+                    Ok(json!({ "off": off }))
+                }
+                (Some(_), false) => Err(bad_params("off: there is no chain program to send without Tor")),
+                (None, _) => Err(bad_params("off: missing")),
+            },
+            // K201: the owner changed the bridges - locked or open, without
+            // a restart of the wallet. The host is told nothing but "now":
+            // the lines are in the file it was named at its start, and each
+            // process that uses Tor is started anew with them.
+            "host.tor.bridges" => {
+                chain::bridges_changed(&self.places.tor);
+                let text = tor_bridges::text();
+                Ok(json!({ "lines": tor_bridges::count(&text), "usable": text != tor_bridges::UNUSABLE }))
             }
             _ => Err(fail(-32601, "method_not_found", "")),
         };

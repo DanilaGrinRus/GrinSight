@@ -502,6 +502,14 @@ impl HeaderChain {
         let anchor = header(Some(height))?;
         let mut before_prev = before_older.clone();
         before_prev.append(&older).map_err(|_| lost())?;
+        // K202: the point this chain came from, followed up to S-1, so that
+        // the new record carries its path
+        let mut track = self.start.track.clone();
+        let mut at = self.start.height().checked_add(1).ok_or_else(lost)?;
+        while at < height {
+            track.append(&header(Some(at))?).map_err(|_| lost())?;
+            at = at.checked_add(1).ok_or_else(lost)?;
+        }
         Ok(checkpoint::write(&checkpoint::Parts {
             net: self.net,
             anchor: &anchor,
@@ -510,6 +518,7 @@ impl HeaderChain {
             before_prev: &before_prev,
             before_older: &before_older,
             release_time,
+            base: Some(&track),
         }))
     }
 

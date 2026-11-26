@@ -35,6 +35,9 @@ pub struct Launcher {
     pub data_dir: String,
     /// Pause before a transport that is down is started again.
     pub retry: Duration,
+    /// The owner's Tor switch: the transport speaks through Tor only, so
+    /// while it is set there is no process.
+    pub off: crate::chain::TorSwitch,
 }
 
 /// What the transport is doing, for the interface.
@@ -80,7 +83,12 @@ enum Stage {
     Starting(Starting),
     Ready(PipeMailbox),
     Down(Instant),
+    /// The owner has Tor switched off: nothing runs, nothing is retried.
+    Off,
 }
+
+/// Said while the owner has Tor switched off.
+pub const TOR_OFF: &str = "Tor is switched off";
 
 /// The `Mailbox` the host gives the bridge.
 pub struct HostMailbox {
@@ -88,6 +96,8 @@ pub struct HostMailbox {
     config: Config,
     stage: Stage,
     report: SharedReport,
+    /// The change of the bridges the process was started under (K201).
+    turn: u64,
 }
 
 impl HostMailbox {
@@ -112,12 +122,30 @@ impl HostMailbox {
             config,
             stage: Stage::Down(Instant::now()),
             report,
+            turn: 0,
         };
-        mailbox.launch();
+        if crate::chain::tor_is_off(&mailbox.launcher.off) {
+            mailbox.rest();
+        } else {
+            mailbox.launch();
+        }
         mailbox
     }
 
+    /// With Tor switched off: whatever ran is let go, and that is said.
+    fn rest(&mut self) {
+        self.stage = Stage::Off;
+        update(&self.report, |r| {
+            r.phase = Phase::Down;
+            r.error = Some(TOR_OFF.to_string());
+            r.problem = None;
+        });
+    }
+
     fn launch(&mut self) {
+        // read at every start: a change is taken up when the process is next started
+        self.config.tor_bridges = crate::tor_bridges::text();
+        self.turn = crate::chain::bridges_turn(&self.launcher.off);
         match PipeMailbox::spawn_begin(&self.launcher.program, &self.config, CALL_TIMEOUT) {
             Ok(starting) => {
                 self.stage = Stage::Starting(starting);
@@ -144,7 +172,20 @@ impl HostMailbox {
 
     /// Move the state on and return the transport if it can be asked.
     fn live(&mut self) -> Option<&mut PipeMailbox> {
+        // K193: the switch decides first, in both directions, at once
+        match (crate::chain::tor_is_off(&self.launcher.off), matches!(self.stage, Stage::Off)) {
+            (true, false) => self.rest(),
+            (false, true) => self.launch(),
+            // K201: the bridges were changed - a new process, on the new lines, at once
+            (false, false) if crate::chain::bridges_turn(&self.launcher.off) != self.turn => {
+                // the old one first, to its end: two at once would contend for the same files
+                self.stage = Stage::Down(Instant::now());
+                self.launch();
+            }
+            _ => {}
+        }
         match &mut self.stage {
+            Stage::Off => {}
             Stage::Starting(starting) => match starting.poll() {
                 None => {}
                 Some(Ok(mailbox)) => {
@@ -252,6 +293,7 @@ mod tests {
             relay: "wss://relay.example".into(),
             data_dir: String::new(),
             retry: Duration::from_secs(3600),
+            off: crate::chain::TorSwitch::default(),
         };
         let spec = TransportSpec {
             identity_secret: Zeroizing::new([1; 32]),
@@ -279,5 +321,56 @@ mod tests {
         drop(mailbox);
         assert_eq!(seen(&report).phase, Phase::None);
         assert!(seen(&report).error.is_none());
+    }
+
+    /// K193: with Tor switched off the transport, which speaks through Tor
+    /// only, is not started and that is said; switched on, it is started
+    /// at once; switched off again, it is let go at once.
+    #[test]
+    fn the_transport_follows_the_tor_switch() {
+        let report = SharedReport::default();
+        let off = crate::chain::tor_switch(true);
+        let launcher = Launcher {
+            program: std::env::temp_dir().join("no-such-transport-program"),
+            relay: "wss://relay.example".into(),
+            data_dir: String::new(),
+            retry: Duration::from_secs(3600),
+            off: off.clone(),
+        };
+        let spec = TransportSpec {
+            identity_secret: Zeroizing::new([1; 32]),
+            identity_public: [2; 32],
+            store_key: Zeroizing::new([3; 32]),
+            contacts: vec![[4; 32]],
+        };
+        let mut mailbox = HostMailbox::start(&launcher, &spec, report.clone());
+        let error = |r: &SharedReport| r.lock().unwrap().error.clone();
+        assert_eq!(error(&report).as_deref(), Some(TOR_OFF), "not even tried");
+        assert!(mailbox.next_incoming().is_none());
+        assert_eq!(error(&report).as_deref(), Some(TOR_OFF), "nor retried");
+        off.store(false, std::sync::atomic::Ordering::SeqCst);
+        assert!(mailbox.next_incoming().is_none());
+        assert_eq!(error(&report).as_deref(), Some("the transport process could not be started"), "tried at once");
+        // K201: changed bridges start it anew at once, without the pause
+        // between tries; unchanged, the pause is kept
+        assert_eq!(mailbox.turn, 0);
+        assert!(mailbox.next_incoming().is_none());
+        assert!(matches!(mailbox.stage, Stage::Down(_)), "waits for the next try");
+        crate::chain::bridges_changed(&off);
+        update(&report, |r| r.error = None);
+        assert!(mailbox.next_incoming().is_none());
+        assert_eq!(mailbox.turn, 1);
+        assert_eq!(error(&report).as_deref(), Some("the transport process could not be started"), "tried again at once");
+        off.store(true, std::sync::atomic::Ordering::SeqCst);
+        assert!(mailbox.next_incoming().is_none());
+        assert_eq!(error(&report).as_deref(), Some(TOR_OFF));
+        // with Tor off nothing is started for a change of the bridges; the
+        // lines are read when it is switched on
+        crate::chain::bridges_changed(&off);
+        assert!(mailbox.next_incoming().is_none());
+        assert_eq!((mailbox.turn, error(&report).as_deref()), (1, Some(TOR_OFF)));
+        off.store(false, std::sync::atomic::Ordering::SeqCst);
+        assert!(mailbox.next_incoming().is_none());
+        assert_eq!(mailbox.turn, 2);
     }
 }

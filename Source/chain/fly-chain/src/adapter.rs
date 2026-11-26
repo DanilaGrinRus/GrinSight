@@ -88,6 +88,13 @@ pub enum Event {
         /// Where the record, or why there is none, goes.
         reply: SyncSender<Result<Vec<u8>, String>>,
     },
+    /// The owner switched Tor off or back on (K193).
+    Tor {
+        /// Off.
+        off: bool,
+        /// Where "taken up" goes.
+        reply: SyncSender<bool>,
+    },
     /// The wallet hands a finished transaction over.
     Post {
         /// The transaction, as the wallet serialized it.

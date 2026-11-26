@@ -1177,7 +1177,7 @@ fn identity_and_contacts_drive_the_transport() {
     rpc(&mut b, "paycore.contacts.set", json!({"key": hex(&contact(3)), "name": "Carol"})).unwrap();
     let list = rpc(&mut b, "paycore.contacts.list", json!({})).unwrap();
     assert_eq!(list["contacts"][0]["name"], "Carol");
-    assert_eq!(list["contacts"][1], json!({"key": hex(&bob), "npub": npub_encode(&bob).unwrap(), "name": "Robert", "address": null}));
+    assert_eq!(list["contacts"][1], json!({"key": hex(&bob), "npub": npub_encode(&bob).unwrap(), "name": "Robert", "address": null, "checked": false}));
     for (params, kind) in [
         (json!({"npub": "npub1nonsense", "name": "X"}), "invalid_params"),
         (json!({"key": hex(&[0xFF; 32]), "name": "X"}), "refused"),

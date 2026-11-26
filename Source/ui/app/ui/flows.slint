@@ -2,7 +2,7 @@
 // send, receive, sign, add a contact. Text from others reaches these only
 // after `fly-safe-display` (О1–О8); the signing window follows О10.
 import { Theme, Device, Files, Qr } from "theme.slint";
-import { Card, Btn, Choice, Chip, Heading, Muted, Logo, Ground, Ask, Explained } from "parts.slint";
+import { Card, Btn, Choice, Chip, Heading, Muted, Logo, Ground, Ask, Explained, OutLine } from "parts.slint";
 
 // One line of input with a label and a hint.
 export component Field inherits VerticalLayout {
@@ -10,6 +10,8 @@ export component Field inherits VerticalLayout {
     in property <string> hint;
     in property <bool> secret: false;
     in property <bool> mono: false;
+    // a button that puts what was copied elsewhere into the field (O62)
+    in property <bool> with-paste: false;
     in-out property <string> text;
     callback accepted();
     spacing: 4px;
@@ -24,7 +26,7 @@ export component Field inherits VerticalLayout {
         background: Theme.bg;
         ti := TextInput {
             x: 12px;
-            width: parent.width - 24px;
+            width: parent.width - 24px - (root.with-paste ? paste.width + 6px : 0px);
             height: parent.height;
             vertical-alignment: center;
             input-type: root.secret ? InputType.password : InputType.text;
@@ -44,6 +46,18 @@ export component Field inherits VerticalLayout {
                 }
                 reject
             }
+        }
+        paste := Btn {
+            visible: root.with-paste;
+            x: parent.width - self.width - 6px;
+            y: 6px;
+            width: root.with-paste ? self.min-width : 0px;
+            height: parent.height - 12px;
+            min-height: 0px;
+            text: @tr("Paste");
+            font-size: 12px;
+            // what was in the field goes, what was copied comes
+            clicked => { ti.focus(); ti.select-all(); ti.paste(); }
         }
         if root.text == "": Text {
             x: 12px;
@@ -65,7 +79,30 @@ export component QrView inherits Rectangle {
     property <int> modules: root.picture.width;
     property <int> zoom: max(1, floor(min(root.width, root.max-side) / 1px / max(1, root.modules)));
     property <length> side: root.modules * root.zoom * 1px;
-    height: root.modules > 0 ? root.side : too-long.preferred-height;
+    // O61: what saving the picture answered
+    property <string> saved;
+    height: root.modules > 0 ? root.side + 8px + 32px + (root.saved != "" ? 6px + said.preferred-height : 0px) : too-long.preferred-height;
+    if root.modules > 0: Btn {
+        x: (root.width - self.width) / 2;
+        y: root.side + 8px;
+        width: self.min-width;
+        height: 32px;
+        min-height: 32px;
+        text: @tr("QR code to a file");
+        font-size: 12px;
+        clicked => { root.saved = Files.save-qr(root.text); }
+    }
+    said := Text {
+        x: 0px;
+        y: root.side + 8px + 32px + 6px;
+        width: root.width;
+        visible: root.modules > 0 && root.saved != "";
+        wrap: word-wrap;
+        horizontal-alignment: center;
+        font-size: 12px;
+        color: Theme.muted;
+        text: root.saved;
+    }
     if root.modules > 0: Rectangle {
         x: (root.width - root.side) / 2;
         y: 0px;
@@ -188,7 +225,7 @@ export component TextBox inherits VerticalLayout {
             read-only: root.read-only;
             color: Theme.text;
             font-family: "DejaVu Sans Mono";
-            font-size: 11px;
+            font-size: 12px;
             // Ctrl+V and its kin under a Cyrillic layout: the key gives «м», not "v"
             key-pressed(event) => {
                 if (event.modifiers.control && !event.modifiers.shift && !event.modifiers.alt) {
@@ -305,7 +342,7 @@ export component Sheet inherits Rectangle {
                 spacing: 12px;
                 HorizontalLayout {
                     Heading { text: root.title; font-size: 18px; horizontal-stretch: 1; vertical-alignment: center; }
-                    Btn { text: @tr("Close"); font-size: 12px; min-height: 32px; clicked => { root.close(); } }
+                    Btn { text: @tr("Close"); font-size: 13px; min-height: 32px; clicked => { root.close(); } }
                 }
                 @children
             }
@@ -325,8 +362,19 @@ export component SignSheet inherits Sheet {
     in property <bool> busy;
     in property <string> error;
     in property <bool> can-cancel;
+    // O60: Tor looks unable to send now - said before the signature, with the ways out
+    in property <string> tor-doubt;
     callback sign();
+    callback sign-direct();
+    callback tor-off();
+    // O71: the wallet tries the built-in Tor bridges by itself
+    in property <bool> bridges-offered;
+    in property <bool> bridges-busy;
+    in property <string> bridges-note;
+    callback try-bridges();
+    callback stop-bridges();
     callback cancel-payment();
+    property <string> sign-text: root.busy ? @tr("Signing…") : root.tor-doubt != "" || root.bridges-busy ? @tr("Sign and wait for Tor") : @tr("Sign and send");
     title: @tr("Sign the payment");
     GridLayout {
         spacing: 8px;
@@ -348,16 +396,31 @@ export component SignSheet inherits Sheet {
     Text { text: root.who; color: Theme.text; font-size: 15px; font-weight: 600; wrap: word-wrap; }
     if root.who-groups.length > 0: AddressLine { groups: root.who-groups; copyable: false; }
     if root.who-note != "": Text { text: root.who-note; color: Theme.warn; font-size: 13px; wrap: word-wrap; }
+    if root.tor-doubt != "" || root.bridges-note != "": Rectangle {
+        background: Theme.bg;
+        border-radius: 10px;
+        VerticalLayout {
+            padding: 12px;
+            spacing: 10px;
+            if root.tor-doubt != "": Text { text: root.tor-doubt; color: Theme.warn; font-size: 13px; wrap: word-wrap; }
+            if root.bridges-note != "": Text { text: root.bridges-note; color: root.bridges-busy ? Theme.muted : Theme.text; font-size: 13px; wrap: word-wrap; }
+            if root.bridges-offered && !root.bridges-busy && root.tor-doubt != "": Btn { text: @tr("Try through Tor bridges"); font-size: 13px; min-height: 36px; clicked => { if (!root.busy) { root.try-bridges(); } } }
+            if root.bridges-offered && !root.bridges-busy && root.tor-doubt != "": Muted { text: @tr("The wallet tries the built-in obfs4 bridges, then Snowflake, up to three minutes each. Tor still hides your device."); font-size: 12px; }
+            if root.bridges-busy: Btn { text: @tr("Stop trying the bridges"); font-size: 13px; min-height: 36px; clicked => { root.stop-bridges(); } }
+            if root.tor-doubt != "": Btn { text: @tr("Sign, and send this one directly"); font-size: 13px; min-height: 36px; clicked => { if (!root.busy) { root.sign-direct(); } } }
+            if root.tor-doubt != "": Btn { text: @tr("Switch Tor off for all payments"); font-size: 13px; min-height: 36px; clicked => { if (!root.busy) { root.tor-off(); } } }
+        }
+    }
     if root.error != "": Text { text: root.error; color: Theme.warn; font-size: 14px; wrap: word-wrap; }
     if root.width >= 520px: HorizontalLayout {
         spacing: 10px;
-        Btn { text: root.busy ? @tr("Signing…") : @tr("Sign and send"); primary: true; height: 50px; horizontal-stretch: 2; clicked => { if (!root.busy) { root.sign(); } } }
+        Btn { text: root.sign-text; primary: true; height: 50px; horizontal-stretch: 2; clicked => { if (!root.busy) { root.sign(); } } }
         if root.can-cancel: Btn { text: @tr("Cancel payment"); height: 50px; horizontal-stretch: 1; clicked => { if (!root.busy) { root.cancel-payment(); } } }
     }
     // a phone: one under the other
     if root.width < 520px: VerticalLayout {
         spacing: 8px;
-        Btn { text: root.busy ? @tr("Signing…") : @tr("Sign and send"); primary: true; height: 50px; clicked => { if (!root.busy) { root.sign(); } } }
+        Btn { text: root.sign-text; primary: true; height: 50px; clicked => { if (!root.busy) { root.sign(); } } }
         if root.can-cancel: Btn { text: @tr("Cancel payment"); height: 46px; clicked => { if (!root.busy) { root.cancel-payment(); } } }
     }
 }
@@ -536,6 +599,14 @@ export component SendSheet inherits Sheet {
     // the wallet has Tor for payments to an address
     in property <bool> tor-address: false;
     property <string> address;
+    // the outputs to pay with, when the owner chooses them (O51)
+    in property <[OutLine]> outs;
+    in property <string> picked-sum;
+    in property <bool> picked-kept;
+    in-out property <bool> spend-kept;
+    callback pick(int);
+    callback unpick();
+    property <bool> choosing: false;
     // `to`: a contact's number, -2 an address over Tor, -1 by hand
     title: @tr("Send");
     Field { label: @tr("Amount, GRIN"); hint: @tr("for example 1.5"); mono: true; text <=> root.amount; }
@@ -553,8 +624,106 @@ export component SendSheet inherits Sheet {
     if root.to == -2: Muted { text: @tr("The payment goes over Tor straight to the wallet at this address. You sign it when that wallet replies."); }
     if root.to == -1: Muted { text: @tr("You pass the text on yourself and paste the reply. An invoice is paid from “Receive”: paste its text there."); font-size: 12px; }
     if root.to >= 0: Muted { text: @tr("The payment goes to the contact over Tor. You sign it when the contact replies."); }
+    HorizontalLayout {
+        spacing: 8px;
+        alignment: start;
+        Btn { text: root.choosing ? @tr("Let the wallet choose the outputs") : @tr("Choose the outputs to pay with"); font-size: 13px; min-height: 30px; clicked => { root.choosing = !root.choosing; if (!root.choosing) { root.unpick(); } } }
+        VerticalLayout { alignment: center; Ask { title: @tr("Choose the outputs to pay with"); text: @tr("Your money is kept in outputs: one for every payment you got and for the change of every payment you made. By itself the wallet takes the largest first. Here you can name the outputs yourself: the payment is paid with exactly those, all of them, and the change comes back as one new output."); } }
+    }
+    if root.choosing: VerticalLayout {
+        spacing: 4px;
+        for o[i] in root.outs: Rectangle {
+            min-height: 36px;
+            border-radius: 10px;
+            border-width: o.picked ? 2px : 1px;
+            border-color: o.picked ? Theme.accent : Theme.line;
+            background: Theme.bg;
+            opacity: o.free ? 1 : 0.55;
+            HorizontalLayout {
+                padding-left: 10px;
+                padding-right: 10px;
+                spacing: 10px;
+                Text { text: o.picked ? "✓" : ""; color: Theme.accent; font-size: 14px; width: 14px; vertical-alignment: center; }
+                Text { text: o.amount; color: Theme.text; font-family: "DejaVu Sans Mono"; font-size: 13px; font-weight: 700; vertical-alignment: center; }
+                Muted { text: (o.kept ? @tr("marked “not to be spent”") + " · " : "") + (o.state != "" ? o.state : @tr("block ") + o.block); font-size: 13px; vertical-alignment: center; horizontal-stretch: 1; wrap: word-wrap; }
+            }
+            TouchArea { clicked => { if (o.free) { root.pick(i); } } }
+        }
+        if root.outs.length == 0: Muted { text: @tr("The wallet has no outputs yet"); font-size: 12px; }
+        if root.picked-sum != "": Muted { text: @tr("Chosen: ") + root.picked-sum + " GRIN"; font-size: 12px; }
+        if root.picked-kept: Rectangle {
+            background: Theme.bg;
+            border-radius: 10px;
+            VerticalLayout {
+                padding: 10px;
+                spacing: 8px;
+                Text { text: @tr("You chose an output you marked “not to be spent”. It is spent only if you say so here, for this payment."); color: Theme.warn; font-size: 13px; wrap: word-wrap; }
+                HorizontalLayout { alignment: start; Btn { text: root.spend-kept ? @tr("✓ Spend it in this payment") : @tr("Spend it in this payment"); primary: root.spend-kept; font-size: 13px; min-height: 30px; clicked => { root.spend-kept = !root.spend-kept; } } }
+            }
+        }
+    }
     if root.error != "": Text { text: root.error; color: Theme.warn; font-size: 14px; wrap: word-wrap; }
     Btn { text: root.busy ? @tr("Preparing…") : root.to == -1 ? @tr("Make the Slatepack text") : @tr("Send"); primary: true; height: 50px; clicked => { if (!root.busy) { root.prepare(root.amount, root.to, root.address); } } }
+}
+
+// The wallet's unspent outputs and the owner's marks on them (O51).
+export component OutputsSheet inherits Sheet {
+    in property <[OutLine]> outs;
+    in property <string> error;
+    callback keep(int, bool);
+    // K196: collecting into one, and the small ones going along with payments
+    in property <bool> gather;
+    in property <string> plan;
+    in property <string> done;
+    in property <bool> busy;
+    callback set-gather(bool);
+    callback collect-ask();
+    callback collect-do();
+    callback collect-cancel();
+    title: @tr("Outputs");
+    card-width: 620px;
+    Muted { text: @tr("Your money is kept in outputs: one for every payment you got and for the change of every payment you made. An output you mark “not to be spent” stays yours, but the wallet passes it by when it pays, and “Available” is shown without it. You take the mark off here whenever you like."); font-size: 13px; wrap: word-wrap; }
+    if root.outs.length == 0: Muted { text: @tr("The wallet has no outputs yet"); }
+    for o[i] in root.outs: Rectangle {
+        min-height: 44px;
+        border-radius: 10px;
+        background: Theme.bg;
+        HorizontalLayout {
+            padding: 8px;
+            padding-left: 12px;
+            spacing: 10px;
+            Text { text: o.amount; color: o.kept ? Theme.muted : Theme.text; font-family: "DejaVu Sans Mono"; font-size: 14px; font-weight: 700; vertical-alignment: center; min-width: 110px; }
+            Muted { text: (o.state != "" ? o.state + " · " : "") + @tr("block ") + o.block; font-size: 13px; vertical-alignment: center; horizontal-stretch: 1; wrap: word-wrap; }
+            VerticalLayout { alignment: center; Btn { text: o.kept ? @tr("✓ Not to be spent") : @tr("Do not spend"); primary: o.kept; font-size: 13px; min-height: 28px; clicked => { root.keep(i, !o.kept); } } }
+        }
+    }
+    Rectangle {
+        border-radius: 10px;
+        background: Theme.bg;
+        VerticalLayout {
+            padding: 12px;
+            spacing: 8px;
+            Text { text: @tr("Many small outputs"); color: Theme.text; font-size: 13px; font-weight: 700; }
+            Muted { text: @tr("Every output a payment spends adds to its fee, and a wallet restored from the words shows each as a line of its own in other programs. You can make one output of many: the wallet pays itself, for a fee. It is one transaction in the chain, and whoever looks at the chain sees from it that these outputs had one owner."); font-size: 13px; wrap: word-wrap; }
+            if root.plan == "": HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+                Btn { text: @tr("Collect into one"); font-size: 13px; min-height: 30px; clicked => { root.collect-ask(); } }
+                Btn { text: root.gather ? @tr("✓ Small ones go along with payments") : @tr("Take small ones along with payments"); primary: root.gather; font-size: 13px; min-height: 30px; clicked => { root.set-gather(!root.gather); } }
+            }
+            if root.plan == "" && root.gather: Muted { text: @tr("A payment that has change now also spends up to eight of the smallest outputs, and they come back inside the change. The amount paid is the same; the fee is a little higher; the outputs spent together are seen to have one owner. Marked outputs are not touched."); font-size: 13px; wrap: word-wrap; }
+            if root.plan != "": Text { text: root.plan; color: Theme.warn; font-size: 13px; wrap: word-wrap; }
+            if root.plan != "": HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+                Btn { text: root.busy ? @tr("Signing…") : @tr("Collect"); primary: true; font-size: 13px; min-height: 30px; clicked => { if (!root.busy) { root.collect-do(); } } }
+                Btn { text: @tr("Cancel"); font-size: 13px; min-height: 30px; clicked => { if (!root.busy) { root.collect-cancel(); } } }
+            }
+            if root.done != "": Text { text: root.done; color: Theme.accent; font-size: 13px; wrap: word-wrap; }
+        }
+    }
+    if root.error != "": Text { text: root.error; color: Theme.warn; font-size: 14px; wrap: word-wrap; }
+    Btn { text: @tr("Done"); primary: true; height: 46px; clicked => { root.close(); } }
 }
 
 // A Slatepack text to pass on, and — when an answer is expected — a place
@@ -575,6 +744,14 @@ export component SlateSheet inherits Sheet {
     // sending this one payment directly is a choice while Tor is in use (K192)
     in property <bool> can-direct;
     in property <string> resend-note;
+    in property <bool> can-back;
+    // K200: the sender's text of this payment can be shown too
+    in property <bool> can-request;
+    callback request();
+    in property <string> back-plan;
+    callback back-ask();
+    callback back-do();
+    callback back-cancel();
     callback resend(bool);
     callback tor-off();
     property <bool> direct-asked: false;
@@ -601,18 +778,36 @@ export component SlateSheet inherits Sheet {
         VerticalLayout {
             padding: 12px;
             spacing: 10px;
-            Text { text: @tr("Send this one payment without Tor? The node that takes it sees the address of your device. Other payments still go through Tor."); color: Theme.warn; font-size: 12px; wrap: word-wrap; }
+            Text { text: @tr("Send this one payment without Tor? The node that takes it sees the address of your device. Other payments still go through Tor."); color: Theme.warn; font-size: 13px; wrap: word-wrap; }
             HorizontalLayout {
                 spacing: 8px;
                 alignment: start;
-                Btn { text: @tr("Send it directly"); primary: true; font-size: 12px; min-height: 30px; clicked => { root.direct-asked = false; root.resend(true); } }
-                Btn { text: @tr("Cancel"); font-size: 12px; min-height: 30px; clicked => { root.direct-asked = false; } }
+                Btn { text: @tr("Send it directly"); primary: true; font-size: 13px; min-height: 30px; clicked => { root.direct-asked = false; root.resend(true); } }
+                Btn { text: @tr("Cancel"); font-size: 13px; min-height: 30px; clicked => { root.direct-asked = false; } }
             }
         }
     }
     if root.can-resend && root.can-direct: Btn { text: @tr("Switch Tor off for all payments"); height: 44px; clicked => { root.tor-off(); } }
-    if root.can-resend && root.can-direct: Muted { text: @tr("Switching Tor off locks the wallet and asks for the password again; after that payments go directly until you switch Tor back on."); font-size: 12px; wrap: word-wrap; }
-    if root.can-resend && root.resend-note != "": Muted { text: root.resend-note; font-size: 12px; wrap: word-wrap; }
+    if root.can-resend && root.can-direct: Muted { text: @tr("Tor is switched off at once, the wallet stays open; after that payments go directly until you switch Tor back on."); font-size: 13px; wrap: word-wrap; }
+    if root.can-request: Btn { text: @tr("Show the payment as it came"); height: 44px; clicked => { root.request(); } }
+    // K197: a signed payment that is in no block can be taken back - a try, not a promise
+    if root.can-back && root.back-plan == "": Btn { text: @tr("Take this payment back"); height: 44px; clicked => { root.back-ask(); } }
+    if root.can-back && root.back-plan != "": Rectangle {
+        background: Theme.bg;
+        border-radius: 10px;
+        VerticalLayout {
+            padding: 12px;
+            spacing: 10px;
+            Text { text: root.back-plan; color: Theme.warn; font-size: 13px; wrap: word-wrap; }
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+                Btn { text: @tr("Take it back"); primary: true; font-size: 13px; min-height: 30px; clicked => { root.back-do(); } }
+                Btn { text: @tr("Cancel"); font-size: 13px; min-height: 30px; clicked => { root.back-cancel(); } }
+            }
+        }
+    }
+    if root.resend-note != "": Muted { text: root.resend-note; font-size: 13px; wrap: word-wrap; }
     if root.wants-reply: TextBox { with-files: true; label: @tr("The recipient's reply"); hint: @tr("paste the BEGINSLATEPACK… ENDSLATEPACK. text here"); text <=> root.back-text; box-height: 110px; }
     if root.error != "": Text { text: root.error; color: Theme.warn; font-size: 14px; wrap: word-wrap; }
     if root.wants-reply: Btn { text: root.busy ? @tr("Checking…") : @tr("Next"); primary: true; height: 50px; clicked => { if (!root.busy) { root.reply(root.back-text); } } }
@@ -627,14 +822,24 @@ export component ReceiveSheet inherits Sheet {
     in property <bool> busy;
     in property <string> error;
     callback read(string);
+    // O64: ask for GRIN - an invoice made here, to pass on as text
+    callback invoice(string);
     property <string> text;
+    property <string> asked;
     title: @tr("Receive");
     Muted { text: @tr("Your address. A payment sent to it over Tor arrives by itself while the wallet is open; a sender can also name it for a payment proof."); }
     AddressLine { groups: root.groups; full: root.full; with-qr: true; }
     Rectangle { height: 1px; background: Theme.line; }
-    TextBox { with-files: true; label: @tr("Or a Slatepack you were sent: a payment or an invoice"); hint: @tr("paste the BEGINSLATEPACK… ENDSLATEPACK. text you were sent"); text <=> root.text; box-height: 110px; }
+    TextBox { with-files: true; label: @tr("Or a Slatepack you were sent: a payment, an invoice, or the answer to your invoice"); hint: @tr("paste the BEGINSLATEPACK… ENDSLATEPACK. text you were sent"); text <=> root.text; box-height: 110px; }
     if root.error != "": Text { text: root.error; color: Theme.warn; font-size: 14px; wrap: word-wrap; }
     Btn { text: root.busy ? @tr("Reading…") : @tr("Accept the Slatepack"); primary: true; height: 50px; clicked => { if (!root.busy) { root.read(root.text); } } }
+    Rectangle { height: 1px; background: Theme.line; }
+    Muted { text: @tr("Or ask for GRIN: the wallet makes an invoice for the amount, you pass its text to whoever pays, and paste their answer back here."); font-size: 12px; }
+    HorizontalLayout {
+        spacing: 8px;
+        Field { hint: @tr("amount to ask for, GRIN"); mono: true; text <=> root.asked; horizontal-stretch: 1; }
+        VerticalLayout { alignment: end; Btn { text: @tr("Make an invoice"); height: 46px; clicked => { if (!root.busy) { root.invoice(root.asked); } } } }
+    }
 }
 
 // An incoming payment waiting for a yes or a no.
@@ -740,14 +945,44 @@ export component ContactSheet inherits Sheet {
     in property <bool> busy;
     in property <string> error;
     callback add(string, string, string);
-    property <string> name;
+    // O64: a contact that is there already is changed in the same window:
+    // its name and address; the message key is the contact itself
+    in property <bool> editing;
+    // O65: the check code and the mark that it was compared
+    in property <bool> checked;
+    in property <string> code;
+    callback show-code();
+    callback check(bool);
+    in property <string> start-name;
+    in property <string> start-address;
+    property <string> name: root.start-name;
     property <string> npub;
-    property <string> address;
-    title: @tr("New contact");
-    Muted { text: @tr("The contact finds their message key (npub1…) under “My details”. The address lets the signing window name them."); }
+    property <string> address: root.start-address;
+    title: root.editing ? @tr("Change the contact") : @tr("New contact");
+    if !root.editing: Muted { text: @tr("The contact finds their message key (npub1…) under “My details”. The address lets the signing window name them."); }
+    if root.editing: Muted { text: @tr("The name and the wallet address can be changed. The message key cannot: with another key it is another contact — add that one and delete this."); }
     Field { label: @tr("Name"); hint: @tr("what you call them"); text <=> root.name; }
-    Field { label: @tr("Message key"); hint: "npub1…"; mono: true; text <=> root.npub; }
-    Field { label: @tr("Wallet address (optional)"); hint: "grin1…"; mono: true; text <=> root.address; }
+    if !root.editing: Field { label: @tr("Message key"); hint: "npub1…"; mono: true; with-paste: true; text <=> root.npub; }
+    Field { label: @tr("Wallet address (optional)"); hint: "grin1…"; mono: true; with-paste: true; text <=> root.address; }
+    if root.editing: Rectangle {
+        background: Theme.bg;
+        border-radius: 10px;
+        VerticalLayout {
+            padding: 12px;
+            spacing: 8px;
+            Text { text: root.checked ? @tr("✓ Checked: you compared the check code with this contact") : @tr("Is it really them?"); color: Theme.text; font-size: 13px; font-weight: 700; wrap: word-wrap; }
+            Muted { text: @tr("Both wallets show the same six words when each has the other's message key and address right. Compare them with the contact over another channel — a call, another messenger, in person. They are not the words of your wallet and are no secret. The same words mean nobody swapped a key or an address between you; they do not prove who the person is."); font-size: 12px; }
+            if root.code != "": Text { text: root.code; color: Theme.text; font-family: "DejaVu Sans Mono"; font-size: 15px; font-weight: 700; wrap: word-wrap; }
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+                if root.code == "": Btn { text: @tr("Show the check code"); font-size: 13px; min-height: 30px; clicked => { root.show-code(); } }
+                if root.code != "" && !root.checked: Btn { text: @tr("They are the same"); primary: true; font-size: 13px; min-height: 30px; clicked => { root.check(true); } }
+                if root.checked: Btn { text: @tr("Take the mark off"); font-size: 13px; min-height: 30px; clicked => { root.check(false); } }
+            }
+            Muted { text: @tr("Save a changed address first: the code is of the saved one, and the mark goes when the address changes."); font-size: 12px; }
+        }
+    }
     if root.error != "": Text { text: root.error; color: Theme.warn; font-size: 14px; wrap: word-wrap; }
     Btn { text: root.busy ? @tr("Saving…") : @tr("Save"); primary: true; height: 50px; clicked => { if (!root.busy) { root.add(root.name, root.npub, root.address); } } }
 }

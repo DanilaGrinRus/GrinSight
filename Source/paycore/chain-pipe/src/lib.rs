@@ -230,6 +230,15 @@ impl ChainFeed for PipeChain {
         self.old_answer(answer, piece, true)
     }
 
+    fn set_tor(&mut self, off: bool) -> bool {
+        match self.ask(wire::TOR, &[u8::from(off)]) {
+            Some((wire::DONE, body)) if body.is_empty() => true,
+            // the layer on the other side has no such switch
+            Some((wire::UNKNOWN, body)) if body.is_empty() => false,
+            Some(_) => self.confused(false),
+            None => false,
+        }
+    }
     fn point(&mut self) -> Result<Vec<u8>, String> {
         let silent = || NO_POINT_ANSWER.to_string();
         match self.ask(wire::POINT, &[]) {
@@ -324,6 +333,14 @@ where
                     return Err(bad());
                 }
                 write_frame(writer, wire::POSTED, &[wire::posted_code(feed.post_direct(&body))], MAX_FRAME)?;
+            }
+            wire::TOR => {
+                let off = match body.as_slice() {
+                    [0] => false,
+                    [1] => true,
+                    _ => return Err(bad()),
+                };
+                write_frame(writer, if feed.set_tor(off) { wire::DONE } else { wire::UNKNOWN }, &[], MAX_FRAME)?;
             }
             wire::PROBLEM if body.is_empty() => match feed.problem().map(|p| plain_problem(&p)) {
                 Some(text) if !text.is_empty() => write_frame(writer, wire::TEXT, text.as_bytes(), MAX_FRAME)?,

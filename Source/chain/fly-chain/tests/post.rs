@@ -801,6 +801,137 @@ fn the_agreement_to_the_direct_way_for_one() {
     assert!(outbox.tend(t0 + RETRY_AFTER, &peers).is_empty(), "not through Tor again");
 }
 
+/// K193: the owner's Tor switch, turned while transactions are kept track
+/// of. Off: what a try through Tor has failed for goes over the program's
+/// own connections at once, what a try is under way for goes when that
+/// try ends, and a new one goes that way too. Back on: the direct way is
+/// open only where it was agreed to; what went out directly stays so, and
+/// what has not gone out is tried through Tor again.
+#[test]
+fn the_tor_switch_turned_while_transactions_wait() {
+    let (_, live) = shared();
+    let (t0, peers) = (Instant::now(), peers());
+    let (first, second, third) = (Source::spend_paid(41, FEE), Source::spend_paid(42, FEE), Source::spend_paid(43, FEE));
+    let fail = || Err("Tor did not come up".to_string());
+
+    let mut outbox = Outbox::new(false);
+    let (_, todo) = outbox.post(&bytes(&first), t0, Some(live), true);
+    let Some(Do::Send { key: a, .. }) = todo else { panic!() };
+    let (_, todo) = outbox.post(&bytes(&second), t0, Some(live), true);
+    let Some(Do::Send { key: b, .. }) = todo else { panic!() };
+    // the first has failed, the second is under way
+    assert!(outbox.sent(&a, fail(), t0, &peers).is_none());
+    assert!(!outbox.direct());
+    let due = outbox.tor_switched(true, t0, &peers);
+    assert!(matches!(&due[..], [Do::Stem { tx, .. }] if tx.hash() == first.hash()), "{due:?}");
+    assert!(outbox.direct());
+    assert_eq!(outbox.trouble(), None, "nothing waits for a Tor that failed");
+    let todo = outbox.sent(&b, fail(), t0, &peers);
+    assert!(matches!(&todo, Some(Do::Stem { tx, .. }) if tx.hash() == second.hash()), "{todo:?}");
+    // turned again with nothing waiting: nothing to do
+    assert!(outbox.tor_switched(true, t0, &peers).is_empty());
+
+    // back on: a new one waits for Tor again, and is not sent directly when Tor fails
+    assert!(outbox.tor_switched(false, t0, &peers).is_empty());
+    assert!(!outbox.direct());
+    let (_, todo) = outbox.post(&bytes(&third), t0, Some(live), true);
+    let Some(Do::Send { key: c, .. }) = todo else { panic!() };
+    assert!(outbox.sent(&c, fail(), t0, &peers).is_none());
+    assert_eq!(outbox.trouble(), Some("Tor did not come up"));
+    let due = outbox.tend(t0 + RETRY_AFTER, &peers);
+    assert!(matches!(&due[..], [Do::Send { key, .. }] if *key == c), "only the one that has not gone out: {due:?}");
+
+    // Old direct routing describes what went out while Tor was off.
+    // An automatic follow-up needs current permission to go directly.
+    let expired = t0.checked_add(STEM_FOR).unwrap_or(t0);
+    assert!(outbox.tend(expired, &peers).is_empty(), "Tor is on and neither has direct permission");
+    assert!(outbox.announced().is_empty());
+    assert!(matches!(outbox.agree_direct(&bytes(&first), expired, &peers), (true, None)));
+    let due = outbox.tend(expired, &peers);
+    assert!(matches!(&due[..], [Do::Announce { tx, .. }] if tx.hash() == first.hash()));
+
+    // While Tor is off both can go out. Turning it on afterwards also
+    // withdraws the entries from which the node answers direct requests.
+    assert!(outbox.tor_switched(true, expired, &peers).is_empty());
+    let due = outbox.tend(expired, &peers);
+    assert!(matches!(&due[..], [Do::Announce { tx, .. }] if tx.hash() == second.hash()));
+    assert_eq!(outbox.announced().len(), 2);
+    assert!(outbox.tor_switched(false, expired, &peers).is_empty());
+    let visible: Vec<_> = outbox.announced().iter().map(|(_, tx)| tx.hash()).collect();
+    assert_eq!(visible, [first.hash()]);
+
+    // off from the start is the same as switched off; the agreement for
+    // everything outlives the switch
+    let mut outbox = Outbox::with_tor(true, true);
+    assert!(outbox.direct());
+    outbox.tor_switched(false, t0, &peers);
+    assert!(outbox.direct(), "the owner agreed to the direct way for everything");
+    let mut outbox = Outbox::with_tor(false, true);
+    let (_, todo) = outbox.post(&bytes(&first), t0, Some(live), true);
+    let Some(Do::Send { key, .. }) = todo else { panic!() };
+    assert!(matches!(outbox.sent(&key, fail(), t0, &peers), Some(Do::Stem { .. })));
+    // with nobody connected nothing can go; it goes at the next failed try
+    let mut outbox = Outbox::new(false);
+    let (_, todo) = outbox.post(&bytes(&first), t0, Some(live), true);
+    let Some(Do::Send { key, .. }) = todo else { panic!() };
+    assert!(outbox.sent(&key, fail(), t0, &peers).is_none());
+    assert!(outbox.tor_switched(true, t0, &[]).is_empty());
+    let due = outbox.tend(t0 + RETRY_AFTER, &peers);
+    assert!(matches!(&due[..], [Do::Send { .. }]), "{due:?}");
+    assert!(matches!(outbox.sent(&key, fail(), t0 + RETRY_AFTER, &peers), Some(Do::Stem { .. })));
+}
+
+/// K193 with the program as a whole: "Tor" does not come up and nothing
+/// goes out; the owner switches Tor off while the program runs, and the
+/// transaction goes over the program's own connections with no public
+/// node asked; switched back on, the next transaction waits for "Tor"
+/// again and the wallet is told why.
+#[test]
+fn tor_switched_off_and_on_while_the_program_runs() {
+    let source = chain_with_funds();
+    let (a, b) = (Node::with_state(&source), Node::with_state(&source));
+    let public = Public::start();
+    let (_t, mut chain) = program("tor-switch", &source, &[&a, &b], &[&public], Start { no_tor: true, ..Start::default() });
+    global::set_local_chain_type(ChainTypes::AutomatedTesting);
+    let first = Source::spend_paid(41, FEE);
+    let second = Source::spend_paid(42, FEE);
+    assert_eq!(chain.post(&bytes(&first)), Posted::Unknown);
+    wait_for("the reason", || chain.problem().is_some_and(|text| text.contains("a transaction is not sent: Tor did not come up")));
+    assert_eq!((a.stems() + b.stems(), public.count()), (0, 0));
+    assert!(chain.set_tor(true), "the program has the switch");
+    wait_for("the stem over the program's own connection", || a.stems() + b.stems() == 1);
+    wait_for("the announcement", || a.pooled() == 1 && b.pooled() == 1);
+    wait_for("the wallet to be told", || chain.post(&bytes(&first)) == Posted::Accepted);
+    assert!(!chain.problem().unwrap_or_default().contains("is not sent"));
+    // back on: the next one waits for "Tor", which does not come up here
+    assert!(chain.set_tor(false));
+    assert_eq!(chain.post(&bytes(&second)), Posted::Unknown);
+    wait_for("the reason again", || chain.problem().is_some_and(|text| text.contains("a transaction is not sent: Tor did not come up")));
+    std::thread::sleep(fly_chain::post::RETRY_AFTER * 2);
+    assert_eq!((a.stems() + b.stems(), public.count()), (1, 0), "the second went nowhere");
+}
+
+/// K193: "Tor" would come up here, but the owner switched it off while
+/// the program runs, before anything was sent: the thread that sends
+/// through "Tor" is told too, no public node is reached through it, and
+/// the transaction goes over the program's own connections.
+#[test]
+fn tor_switched_off_before_a_transaction() {
+    let source = chain_with_funds();
+    let (a, b) = (Node::with_state(&source), Node::with_state(&source));
+    let public = Public::start();
+    let (_t, mut chain) = program("tor-switch-early", &source, &[&a, &b], &[&public], Start::default());
+    global::set_local_chain_type(ChainTypes::AutomatedTesting);
+    assert!(chain.set_tor(true));
+    let tx = Source::spend_paid(41, FEE);
+    assert_eq!(chain.post(&bytes(&tx)), Posted::Unknown);
+    wait_for("the stem over the program's own connection", || a.stems() + b.stems() == 1);
+    assert_eq!(public.count(), 0, "a public node was reached through \"Tor\"");
+    wait_for("the announcement", || a.pooled() == 1 && b.pooled() == 1);
+    wait_for("the wallet to be told", || chain.post(&bytes(&tx)) == Posted::Accepted);
+    assert_eq!(public.count(), 0);
+}
+
 /// K192: when "Tor" does not come up and the direct way is not agreed to
 /// for everything, nothing goes out - until the owner agrees for this one
 /// transaction: then it goes over the program's own connections at once.
