@@ -215,3 +215,17 @@ fn the_wallet_is_told_only_what_is_known() {
         assert_eq!(failed.as_deref(), Some(why));
     }
 }
+
+
+/// A bounded diagnostic run also ends while the genesis worker is awaiting
+/// its first peer. Ordinary Automated fixtures without an explicit peer
+/// or starting file keep their original immediate configuration error.
+#[test]
+fn the_diagnostic_deadline_includes_bootstrapping_from_genesis() {
+    let t = Temp::new("genesis-deadline");
+    let unavailable: SocketAddr = "127.0.0.1:1".parse().unwrap();
+    let run = follow(&t, &[unavailable], 2);
+    assert_eq!(run.code, 1, "{}", run.out);
+    assert_eq!(run.field("timeout:", "height"), "0");
+    assert!(run.out.contains("tip freshness unknown"), "{}", run.out);
+}

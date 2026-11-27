@@ -48,6 +48,16 @@ fn open(sim: &Sim, seed: u8) -> (C, fly_paycore_wallet::OpenReport) {
     Core::open(sim.dir(), sim.guard(), &root(), id(), kc(seed), MATURITY).unwrap()
 }
 
+/// Inspect authenticated test frames only while no wallet instance is open.
+fn journal_event(sim: &Sim, kind: &str) -> Option<serde_json::Value> {
+    let opened = fly_paycore_store::Store::open(sim.dir(), sim.guard(), &root(), id()).unwrap();
+    assert!(!opened.guard.recovery_required());
+    opened.frames.iter().find_map(|frame| {
+        let event: serde_json::Value = serde_json::from_slice(&frame.body).unwrap();
+        event.get(kind).cloned()
+    })
+}
+
 /// A toy chain: only what the wallets need to be told.
 struct Chain {
     height: u64,
@@ -384,6 +394,112 @@ fn second_s2_is_refused_and_replay_does_not_sign() {
 }
 
 #[test]
+fn concurrent_duplicate_finalizations_share_one_signer_and_one_result() {
+    let Setup { mut core, chain, .. } = funded(1, &[5 * GRIN]);
+    let p = core.send_prepare(GRIN, 0, None, false).unwrap();
+    let reply = lw_s2(&mut lw(2, chain.height), &p.s1);
+    let core = std::sync::Mutex::new(core);
+    let ready = std::sync::Barrier::new(2);
+    let finalize = || {
+        net();
+        ready.wait();
+        core.lock().unwrap().send_finalize(&p.op, &reply).unwrap()
+    };
+    let (first, second) = std::thread::scope(|threads| {
+        let a = threads.spawn(&finalize);
+        let b = threads.spawn(&finalize);
+        (a.join().unwrap(), b.join().unwrap())
+    });
+    assert_eq!(first, second);
+    assert_eq!(core.into_inner().unwrap().signatures_made(), 1);
+}
+
+#[test]
+fn matching_restored_files_cannot_resume_send_or_invoice_signing() {
+    for late in [false, true] {
+        let Setup { sim, mut core, .. } = funded(1, &[5 * GRIN]);
+        let mut other = funded(2, &[5 * GRIN]).core;
+        let payment = if late {
+            core.send_prepare_late(GRIN, 0, None).unwrap()
+        } else {
+            core.send_prepare(GRIN, 0, None, false).unwrap()
+        };
+        let s2 = other.receive_draft(&payment.s1, None).unwrap();
+        let (slate_id, i1) = core.invoice_issue(GRIN, None).unwrap();
+        let (_, i2) = other.invoice_pay(&i1, GRIN).unwrap();
+        core.checkpoint(None).unwrap();
+        let image = sim.disk_image();
+        let guard = sim.guard_value();
+        let reserve = core.balance().reserved;
+
+        // A store checkpoint in the live session does not discard either capability.
+        let tx = core.send_finalize(&payment.op, &s2).unwrap();
+        let invoice_tx = core.invoice_finalize(&slate_id, &i2).unwrap();
+        assert_eq!(core.signatures_made(), 2);
+        drop(core);
+        let (mut reopened, _) = open(&sim, 1);
+        assert_eq!(reopened.send_finalize(&payment.op, &s2).unwrap(), tx);
+        assert_eq!(reopened.invoice_finalize(&slate_id, &i2).unwrap(), invoice_tx);
+        assert_eq!(reopened.signatures_made(), 0);
+        drop(reopened);
+
+        sim.restore_disk(&image);
+        sim.set_guard_value(guard);
+        let (mut restored, report) = open(&sim, 1);
+        assert_eq!(report.guard, GuardCheck::Match);
+        assert!(restored.send_session_expired(&payment.op));
+        assert!(restored.invoice_session_expired(&slate_id));
+        let tail = restored.journal_tail();
+        assert!(matches!(restored.send_finalize(&payment.op, &s2), Err(CoreError::Refused(_))));
+        assert!(matches!(restored.invoice_finalize(&slate_id, &i2), Err(CoreError::Refused(_))));
+        assert!(restored.send_cancel(&payment.op).is_err());
+        assert_eq!(restored.signatures_made(), 0);
+        assert_eq!(restored.journal_tail(), tail);
+        assert_eq!(restored.balance().reserved, reserve);
+    }
+}
+
+#[test]
+fn active_send_and_invoice_serialize_no_signer_and_legacy_context_is_ignored() {
+    use fly_paycore_store::Store;
+    let Setup { sim, mut core, .. } = funded(1, &[5 * GRIN]);
+    let p = core.send_prepare(GRIN, 0, None, false).unwrap();
+    let (slate_id, i1) = core.invoice_issue(GRIN, None).unwrap();
+    let mut other = funded(2, &[5 * GRIN]).core;
+    let s2 = other.receive_draft(&p.s1, None).unwrap();
+    let (_, i2) = other.invoice_pay(&i1, GRIN).unwrap();
+    let events = Sim::new();
+    events.restore_disk(&sim.disk_image());
+    events.set_guard_value(sim.guard_value());
+    core.checkpoint(None).unwrap();
+    drop(core);
+    for kind in ["Prepared", "Draft"] {
+        let record = journal_event(&events, kind).unwrap();
+        assert!(record.get("ctx").is_none(), "{kind} published a signing context");
+    }
+    let mut disk = Store::open(sim.dir(), sim.guard(), &root(), id()).unwrap();
+    let mut snapshot: serde_json::Value = serde_json::from_slice(disk.snapshot.as_ref().unwrap()).unwrap();
+    for collection in ["sends", "drafts"] {
+        let entries = snapshot[collection].as_object_mut().unwrap();
+        assert_eq!(entries.len(), 1);
+        let record = entries.values_mut().next().unwrap().as_object_mut().unwrap();
+        assert!(!record.contains_key("ctx"), "{collection} snapshot retained signing context");
+        // A sentinel in the retired field proves that legacy values are ignored.
+        record.remove("session_expired");
+        record.insert("ctx".into(), serde_json::json!([1, 2, 3]));
+    }
+    disk.store.checkpoint(&serde_json::to_vec(&snapshot).unwrap()).unwrap();
+    drop(disk);
+    let (mut old, report) = open(&sim, 1);
+    assert_eq!(report.guard, GuardCheck::Match);
+    assert!(old.send_session_expired(&p.op));
+    assert!(old.invoice_session_expired(&slate_id));
+    assert!(matches!(old.send_finalize(&p.op, &s2), Err(CoreError::Refused(_))));
+    assert!(matches!(old.invoice_finalize(&slate_id, &i2), Err(CoreError::Refused(_))));
+    assert_eq!(old.signatures_made(), 0);
+}
+
+#[test]
 fn cancel_releases_inputs_and_blocks_signing() {
     let Setup {
         sim: _s,
@@ -560,9 +676,12 @@ fn crash_at_every_operation_of_finalize() {
                 );
                 match status {
                     SendStatus::Prepared => {
-                        // the choice of S2 never became durable, so nothing was signed
+                        // No arming frame survived. Reopening has still lost this session's nonce.
                         assert_eq!(signs_before, 0);
-                        second.unwrap();
+                        assert!(core.send_session_expired(&p.op));
+                        assert!(matches!(second, Err(CoreError::Refused(_))));
+                        assert_eq!(core.signatures_made(), 0);
+                        assert!(core.balance().reserved > 0);
                     }
                     SendStatus::Unknown => {
                         assert_eq!(second.unwrap_err(), CoreError::UnknownOutcome);
@@ -628,7 +747,7 @@ fn rollback_locks_prepared_operations() {
     let (mut core, report) = open(&sim, 1);
     assert_eq!(report.guard, GuardCheck::RolledBack);
     assert!(report.recovered);
-    // the context is still in the journal, but must never sign again
+    // The operation is still in the journal, but must never sign again.
     assert_eq!(core.send_status(&p.op), Some(SendStatus::Prepared));
     for s2 in [&a, &b] {
         assert!(matches!(
@@ -2050,7 +2169,9 @@ fn crash_at_every_operation_of_late_finalize() {
                     SendStatus::Prepared => {
                         assert_eq!(signs_before, 0);
                         assert_eq!(bal.reserved, 0, "no reserve without the arming frame");
-                        second.unwrap();
+                        assert!(core.send_session_expired(&p.op));
+                        assert!(matches!(second, Err(CoreError::Refused(_))));
+                        assert_eq!(core.signatures_made(), 0);
                     }
                     SendStatus::Unknown => {
                         assert_eq!(second.unwrap_err(), CoreError::UnknownOutcome);
@@ -2605,6 +2726,7 @@ fn envelope_operation_and_reserve_share_one_frame() {
                     data,
                     keep_dir_changes: true,
                 });
+                let prepared = journal_event(&sim, "Prepared");
                 let (core, report) = open(&sim, 1);
                 assert!(!report.recovered, "probe {probe}: {:?}", report.guard);
                 let sends = core.sends();
@@ -2612,6 +2734,7 @@ fn envelope_operation_and_reserve_share_one_frame() {
                 match sends.as_slice() {
                     [] => {
                         assert_eq!(reserved, 0, "a reserve without an operation");
+                        assert!(prepared.is_none());
                         assert!(published.is_none(), "a published envelope was lost");
                         assert!(core.delivery_pending().is_empty());
                         *seen.entry("nothing").or_insert(0u32) += 1;
@@ -2619,17 +2742,19 @@ fn envelope_operation_and_reserve_share_one_frame() {
                     [(op, status, _, _)] => {
                         assert_eq!(*status, SendStatus::Prepared);
                         assert!(reserved > 0, "an operation without its reserve");
-                        let env = core
-                            .delivery_envelope(op)
-                            .expect("an operation without its envelope");
-                        assert_eq!(env.event_id, [1; 32]);
-                        assert!(env.bytes.starts_with(b"sealed:"));
+                        let rec = prepared.expect("missing prepared frame");
+                        let env = &rec["delivery"];
+                        let event_id: [u8; 32] = serde_json::from_value(env["event_id"].clone()).unwrap();
+                        let bytes: Vec<u8> = serde_json::from_value(env["envelope"].clone()).unwrap();
+                        assert_eq!(event_id, [1; 32]);
+                        assert!(bytes.starts_with(b"sealed:"));
                         if let Some((pop, penv)) = &published {
                             assert_eq!(pop, op);
-                            assert_eq!(penv, &env, "a retry would differ from the first send");
+                            assert_eq!((penv.event_id, &penv.bytes), (event_id, &bytes));
                         }
-                        assert_eq!(core.delivery_status(op), Some(DeliveryStatus::Queued));
-                        assert_eq!(core.delivery_pending(), vec![*op]);
+                        assert!(core.send_session_expired(op));
+                        assert!(core.delivery_envelope(op).is_none());
+                        assert!(core.delivery_pending().is_empty());
                         *seen.entry("all").or_insert(0u32) += 1;
                     }
                     more => panic!("unexpected operations {more:?}"),
@@ -2732,13 +2857,7 @@ fn delivery_notes_touch_neither_money_nor_signing() {
     assert_eq!(core.balance(), before);
     assert_eq!(core.signatures_made(), 0);
 
-    // the notes survive a restart
-    drop(core);
-    let (mut core, _) = open(&sim, 1);
-    assert_eq!(
-        core.delivery_status(&p.op),
-        Some(DeliveryStatus::RelayAccepted)
-    );
+    // A live signing session can still finish after the delivery window closes.
     assert_eq!(core.delivery_envelope(&p.op).unwrap(), env);
 
     // a closed delivery window stops publishing, not the operation
@@ -2952,7 +3071,7 @@ fn spent_input_blocks_arming() {
 }
 
 /// A reply that arrived by itself is verified and kept; keeping it signs
-/// nothing, reserves nothing, survives a restart and can still be cancelled.
+/// nothing, reserves nothing and can still be cancelled while the session is open.
 #[test]
 fn held_reply_waits_for_the_decision() {
     let Setup {
@@ -3001,11 +3120,6 @@ fn held_reply_waits_for_the_decision() {
     core.send_hold_reply(&a.op, &s2a).unwrap();
     assert_eq!(core.send_hold_reply(&a.op, &s2a_other), Err(CoreError::Conflict));
     assert_eq!(sim.ops(), ops);
-
-    // survives a restart
-    drop(core);
-    let (mut core, _) = open(&sim, 1);
-    assert_eq!(core.send_held(&a.op), Some(s2a.clone()));
 
     // unattended signing needs the selected tip
     let good = tip(&chain);
@@ -3102,15 +3216,20 @@ fn crash_while_holding_a_reply() {
                     data,
                     keep_dir_changes: true,
                 });
+                // The reply's frame may have survived. A fresh process must not
+                // retry delivery or use a retained reply for signing.
+                let kept = journal_event(&sim, "ReplyHeld")
+                    .map(|r| serde_json::from_value::<Vec<u8>>(r["s2"].clone()).unwrap());
                 let (mut core, report) = open(&sim, 1);
                 assert!(!report.recovered, "probe {probe}: {:?}", report.guard);
                 assert_eq!(core.send_status(&p.op), Some(SendStatus::Prepared));
                 assert!(core.balance().reserved > 0);
-                match core.send_held(&p.op) {
+                assert!(core.send_session_expired(&p.op));
+                assert!(core.send_held(&p.op).is_none());
+                assert!(core.delivery_envelope(&p.op).is_none());
+                match kept {
                     None => {
                         assert!(first.is_err(), "a kept reply was lost");
-                        assert!(core.delivery_envelope(&p.op).is_some());
-                        core.send_hold_reply(&p.op, &s2).unwrap();
                         *seen.entry("not kept").or_insert(0u32) += 1;
                     }
                     Some(kept) => {
@@ -3118,8 +3237,9 @@ fn crash_while_holding_a_reply() {
                         *seen.entry("kept").or_insert(0u32) += 1;
                     }
                 }
-                core.send_finalize_held(&p.op).unwrap();
-                assert_eq!(core.signatures_made(), 1);
+                assert!(core.send_finalize_held(&p.op).is_err());
+                assert!(core.send_finalize(&p.op, &s2).is_err());
+                assert_eq!(core.signatures_made(), 0);
             }
         }
     }

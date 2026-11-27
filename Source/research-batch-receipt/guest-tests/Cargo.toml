@@ -1,0 +1,11 @@
+[package]
+name = "grin-batch-relation-tests"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+blake2 = { version = "=0.10.6", default-features = false }
+
+[workspace]
+

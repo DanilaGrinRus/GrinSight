@@ -82,7 +82,15 @@ export global Help {
 }
 
 export global Settings {
-    in-out property <bool> russian: false;
+    in-out property <string> language: "en";
+    in-out property <string> font-license;
+    out property <string> font-family: language == "ja" || language == "ko" || language == "zh" ? "Wallet CJK" : "Inter";
+    in-out property <bool> choose-language: false;
+    public function select-language(code: string) {
+        root.language = code;
+        root.choose-language = false;
+        root.save();
+    }
     // payments are passed on by hand even when delivery over Tor works
     in-out property <bool> by-hand: false;
     callback save();

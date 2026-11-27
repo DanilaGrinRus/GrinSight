@@ -15,6 +15,11 @@
 AppId={{5C098D7D-3200-4C3C-8D58-419A276DC6CF}
 AppName=GrinSight Light
 AppVersion={#AppVersion}
+#ifdef NumericVersion
+VersionInfoVersion={#NumericVersion}
+#endif
+VersionInfoTextVersion={#AppVersion}
+VersionInfoProductTextVersion={#AppVersion}
 AppVerName=GrinSight Light {#AppVersion}
 AppPublisher=GrinSight
 DefaultDirName={localappdata}\Programs\GrinSightLight
@@ -52,6 +57,7 @@ Source: "{#SourceDir}\bin\fly-onion.exe"; DestDir: "{app}\bin"; Flags: ignorever
 Source: "{#SourceDir}\bin\lyrebird.exe"; DestDir: "{app}\bin"; Flags: ignoreversion
 Source: "{#SourceDir}\LICENSE-lyrebird.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\LICENSE-GPL-3.0.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SourceDir}\FONT-LICENSES.txt"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "{#ExtraDir}\README.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#ExtraDir}\SHA256SUMS.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#ExtraDir}\installed.txt"; DestDir: "{app}"; Flags: ignoreversion

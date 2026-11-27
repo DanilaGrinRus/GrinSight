@@ -518,15 +518,19 @@ fn locking_the_profile_ends_everything() {
     std::thread::sleep(TICK * 4);
     assert_eq!(relay.publishes.load(Ordering::SeqCst), after, "published after the lock");
 
-    // unlocking again: the operation is there and delivery resumes
+    // Reopening preserves the record and reserve. The lost signing session
+    // cannot finish this exchange, even when its relay comes back.
     let again = start(&t.0, 1, &relay).unwrap();
     let st = rpc(&again.runner, "paycore.send.status", json!({"op": p["op"]})).unwrap();
     assert_eq!((&st["state"], &st["delivery"]), (&json!("prepared"), &json!("waiting_relay")));
+    assert_eq!(st["session_expired"], true);
+    assert_eq!(st["reserve"], true);
     relay.down.store(false, Ordering::SeqCst);
-    wait_for("the envelope to be accepted", || {
-        rpc(&again.runner, "paycore.send.status", json!({"op": p["op"]})).unwrap()["delivery"] == "relay_accepted"
-    });
-    assert_eq!(relay.stored.lock().unwrap().len(), 1);
+    let pump = rpc(&again.runner, "paycore.delivery.pump", json!({})).unwrap();
+    assert_eq!(pump["published"], json!([]));
+    std::thread::sleep(TICK * 4);
+    assert_eq!(relay.publishes.load(Ordering::SeqCst), after);
+    assert!(relay.stored.lock().unwrap().is_empty());
     // dropping the handle locks as well
     let gone = again.gone.clone();
     drop(again);

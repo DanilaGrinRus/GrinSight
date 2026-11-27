@@ -254,6 +254,96 @@ fn since_of(w: &C) -> Option<u64> {
     w.old_search().and_then(|s| s.since).map(|(height, _)| height)
 }
 
+/// Real proofs from the two wallet codecs. The archived piece contains no
+/// creation heights, even when the anchor is many years past the fork.
+#[test]
+fn legacy_and_modern_proofs_reach_the_same_balance_via_blocks_and_a_late_archive() {
+    use grin_core::consensus::{HARD_FORK_INTERVAL, TESTNET_FIRST_HARD_FORK, WEEK_HEIGHT};
+    use grin_core::libtx::proof::LegacyProofBuilder;
+    global::set_local_chain_type(ChainTypes::Mainnet);
+    let mut mixed = Vec::new();
+    for (i, (seed, legacy, value)) in [(1, true, 5), (1, false, 7), (2, true, 13), (2, false, 19)]
+        .into_iter()
+        .enumerate()
+    {
+        let k = kc(seed);
+        let path = KeyPath::Legacy {
+            account: 0,
+            index: i as u32,
+        }
+        .to_identifier();
+        let amount = value * GRIN;
+        let kind = SwitchCommitmentType::Regular;
+        let c = k.commit(amount, &path, kind).unwrap();
+        let rp = if legacy {
+            proof::create(
+                &k,
+                &LegacyProofBuilder::new(&k),
+                amount,
+                &path,
+                kind,
+                c,
+                None,
+            )
+            .unwrap()
+        } else {
+            proof::create(&k, &ProofBuilder::new(&k), amount, &path, kind, c, None).unwrap()
+        };
+        mixed.push((c, rp, i as u64, false));
+    }
+    for (network, fork) in [(1, HARD_FORK_INTERVAL), (2, TESTNET_FIRST_HARD_FORK)] {
+        let cutoff = fork + 2 * WEEK_HEIGHT;
+        for (height, value) in [(fork - 1, 12), (cutoff - 1, 12), (cutoff, 7)] {
+            let sim = Sim::new();
+            let ident = Identity { network, ..id() };
+            let mut w = Core::create(
+                sim.dir(),
+                sim.guard(),
+                &RootKey::new([0x42; 32]),
+                ident,
+                kc(1),
+                0,
+                MATURITY,
+            )
+            .unwrap();
+            w.chain_reanchor(height - 1, [1; 32]).unwrap();
+            w.chain_advance(&Advance {
+                height,
+                hash: [2; 32],
+                outputs: mixed.clone(),
+                ..Advance::default()
+            })
+            .unwrap();
+            assert_eq!(
+                w.balance().spendable,
+                value * GRIN,
+                "network {network}, birth height {height}"
+            );
+        }
+    }
+    let sim = Sim::new();
+    let mut w = create(&sim, 1);
+    let anchor = (4_000_000, [3; 32]);
+    w.chain_reanchor(anchor.0, anchor.1).unwrap();
+    let piece = OldPiece {
+        piece: 0,
+        last: true,
+        pieces: 1,
+        before: anchor.0,
+        at: anchor,
+        outputs: mixed,
+        bare: None,
+    };
+    for _ in 0..2 {
+        w.old_search_start().unwrap();
+        assert_eq!(w.old_apply(&piece).unwrap(), 2);
+        assert_eq!(w.balance().spendable, 12 * GRIN);
+        assert_eq!(w.unspent().len(), 2);
+    }
+    drop(w);
+    assert_eq!(open(&sim, 1).balance().spendable, 12 * GRIN);
+}
+
 /// A history in which seed 1 was paid before the wallet's blocks begin:
 /// two outputs it still has, one it spent early, one it spends later, and
 /// outputs of somebody else all around. Blocks 1..=10.
@@ -983,6 +1073,75 @@ fn sent() -> (World, Sim, C, fly_paycore_wallet::OpId, Vec<u8>) {
 /// The fee of an operation, from the history.
 fn fin_fee(w: &C, op: &fly_paycore_wallet::OpId) -> u64 {
     w.sends().into_iter().find(|(o, ..)| o == op).map(|(_, _, _, fee)| fee).unwrap()
+}
+
+#[test]
+fn rollback_revokes_an_archive_conflict_and_keeps_the_signed_payment_reserved() {
+    let (mut chain, sim, mut wallet, op, bytes) = sent();
+    let reserved = wallet.balance().reserved;
+    let tx: grin_core::core::Transaction = grin_core::ser::deserialize(
+        &mut &bytes[..], grin_core::ser::ProtocolVersion::local(), grin_core::ser::DeserializationMode::default(),
+    ).unwrap();
+    let inputs: Vec<grin_core::core::transaction::CommitWrapper> = tx.inputs().into();
+    chain.empty(5);
+    let common = chain.height;
+    let mut other = chain.clone();
+    // The input is unknown to the wallet until its archive scan completes.
+    wallet.chain_reanchor(common, chain.hash(common)).unwrap();
+    chain.block(&[], &[inputs[0].commitment()]);
+    chain.feed(&mut wallet);
+    chain.search(&mut wallet, common);
+    assert_eq!(wallet.send_status(&op), Some(SendStatus::Contested));
+
+    wallet.checkpoint(None).unwrap();
+    drop(wallet);
+    let mut wallet = open(&sim, 1);
+    wallet.chain_rollback(common).unwrap();
+    assert_eq!(wallet.send_status(&op), Some(SendStatus::Finalized));
+    assert_eq!(wallet.old_search().unwrap().next, Some(0));
+    drop(wallet);
+    let mut wallet = open(&sim, 1);
+    other.branch = 1;
+    other.empty(1);
+    other.feed(&mut wallet);
+    other.search(&mut wallet, common);
+    assert_eq!(wallet.balance().reserved, reserved);
+    other.empty(fly_paycore_wallet::R_UNDO);
+    other.feed(&mut wallet);
+    assert_eq!(wallet.send_status(&op), Some(SendStatus::Finalized));
+    assert_eq!(wallet.balance().reserved, reserved);
+}
+
+#[test]
+fn older_folded_archive_conflicts_are_rechecked_before_releasing_live_inputs() {
+    use fly_paycore_store::Store;
+    let (chain, sim, mut wallet, op, _) = sent();
+    let reserved = wallet.balance().reserved;
+    wallet.old_search_start().unwrap();
+    chain.search(&mut wallet, chain.height);
+    wallet.checkpoint(None).unwrap();
+    drop(wallet);
+    let mut old = Store::open(sim.dir(), sim.guard(), &RootKey::new([0x42; 32]), id()).unwrap();
+    let mut snapshot: serde_json::Value = serde_json::from_slice(old.snapshot.as_ref().unwrap()).unwrap();
+    snapshot.as_object_mut().unwrap().remove("archive_conflict_undo").unwrap();
+    // Shape of a previously folded state with a conflict from an abandoned archive.
+    let send = snapshot["sends"].as_object_mut().unwrap().values_mut().next().unwrap();
+    send["conflict_height"] = 4.into();
+    send["dead"] = true.into();
+    old.store.checkpoint(&serde_json::to_vec(&snapshot).unwrap()).unwrap();
+    drop(old);
+
+    let mut wallet = open(&sim, 1);
+    assert_eq!(wallet.send_status(&op), Some(SendStatus::Finalized));
+    assert_eq!(wallet.balance().reserved, reserved);
+    assert_eq!(wallet.old_search().unwrap().next, Some(0));
+    chain.search(&mut wallet, chain.height);
+    let tail = wallet.journal_tail();
+    drop(wallet);
+    let wallet = open(&sim, 1);
+    assert_eq!(wallet.journal_tail(), tail);
+    assert_eq!(wallet.balance().reserved, reserved);
+    assert_eq!(wallet.old_search().unwrap().next, None);
 }
 
 #[test]

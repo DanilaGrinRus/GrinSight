@@ -2,8 +2,9 @@
 # pins its checksum there and wraps it into the one-file portable EXE (run-onefile.ps1).
 $ErrorActionPreference = 'Stop'
 $core = $PSScriptRoot
-$version = [regex]::Match((Get-Content -LiteralPath (Join-Path $core 'ui\app\src\lib.rs') -Raw), '(?m)^pub const APP_VERSION: &str = "(\d+\.\d+\.\d+)";').Groups[1].Value
+$version = [regex]::Match((Get-Content -LiteralPath (Join-Path $core 'ui\app\src\lib.rs') -Raw), '(?m)^pub const APP_VERSION: &str = "(\d+\.\d+\.\d+A?)";').Groups[1].Value
 if (-not $version) { 'no APP_VERSION in ui\app\src\lib.rs'; exit 2 }
+if ($version.EndsWith("A")) { throw "Use run-autonomous-portable.ps1 with the pinned base and explicit binary paths for this candidate." }
 $zip = Get-ChildItem 'C:\DHW\dist' -File -Filter 'GrinSight-20??????-????.zip' | Sort-Object Name | Select-Object -Last 1
 if (-not $zip) { 'no portable ZIP in C:\DHW\dist'; exit 2 }
 $folder = "releases-$version"

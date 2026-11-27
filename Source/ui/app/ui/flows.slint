@@ -132,6 +132,7 @@ export component QrView inherits Rectangle {
 // A large block of text: Slatepack to copy, or a place to paste one.
 export component TextBox inherits VerticalLayout {
     in property <string> label;
+    in property <string> help-text;
     in property <string> hint;
     in property <bool> read-only: false;
     in-out property <string> text;
@@ -148,6 +149,7 @@ export component TextBox inherits VerticalLayout {
     HorizontalLayout {
         spacing: 8px;
         Muted { text: root.label; font-size: 12px; font-weight: 600; horizontal-stretch: 1; vertical-alignment: center; }
+        if root.help-text != "": Ask { title: root.label; text: root.help-text; }
         if root.read-only && root.with-qr: Btn {
             text: root.as-qr ? @tr("Show the text") : @tr("QR code");
             font-size: 12px;
@@ -560,7 +562,13 @@ export component RestorePage inherits Rectangle {
                 text: (root.testnet ? @tr("Testnet. ") : @tr("Mainnet. ")) + @tr("After unlocking, the wallet finds its money in the chain by itself — this can take a while.");
                 horizontal-alignment: center;
             }
-            TextBox { label: @tr("24 words, separated by spaces"); hint: "word word word …"; text <=> root.words; box-height: 110px; }
+            TextBox {
+                label: @tr("24 words, separated by spaces");
+                hint: "apple river stone …";
+                help-text: @tr("Enter your 24 recovery words in their original order, with one space between words. For example: apple river stone …");
+                text <=> root.words;
+                box-height: 110px;
+            }
             r1 := Field { label: @tr("New password"); hint: @tr("Password for ") + Device.of-this; secret: true; text <=> root.pw1; accepted => { r2.focus-it(); } }
             r2 := Field { label: @tr("Once more"); hint: @tr("Repeat the password"); secret: true; text <=> root.pw2; }
             Explained { small: true; title: @tr("Which characters a password may have"); words: @tr("Any characters will do: letters of any language, digits, signs and spaces. Capital and small letters differ."); }
@@ -624,6 +632,7 @@ export component SendSheet inherits Sheet {
     if root.to == -2: Muted { text: @tr("The payment goes over Tor straight to the wallet at this address. You sign it when that wallet replies."); }
     if root.to == -1: Muted { text: @tr("You pass the text on yourself and paste the reply. An invoice is paid from “Receive”: paste its text there."); font-size: 12px; }
     if root.to >= 0: Muted { text: @tr("The payment goes to the contact over Tor. You sign it when the contact replies."); }
+    Muted { text: @tr("Keep the wallet unlocked until this payment is signed. Closing or locking it ends the signing session."); font-size: 12px; }
     HorizontalLayout {
         spacing: 8px;
         alignment: start;
@@ -732,6 +741,7 @@ export component SlateSheet inherits Sheet {
     in property <string> note;
     in property <string> out;
     in property <bool> wants-reply;
+    in property <bool> needs-session;
     in property <bool> can-tor;
     // the payment went over Tor and the answer is waited for
     in property <bool> waiting;
@@ -768,6 +778,7 @@ export component SlateSheet inherits Sheet {
         }
     }
     Muted { text: root.note; font-size: 14px; }
+    if root.needs-session: Muted { text: @tr("Keep the wallet unlocked until this payment is signed. Closing or locking it ends the signing session."); font-size: 12px; }
     TextBox { label: @tr("Pass on this text"); read-only: true; with-files: true; with-qr: true; text: root.out; }
     if root.can-tor: Btn { text: root.busy ? @tr("Sending…") : @tr("Send over Tor to the address"); height: 44px; clicked => { if (!root.busy) { root.tor(); } } }
     if root.can-resend: Btn { text: root.can-direct ? @tr("Wait for Tor: send through Tor again") : @tr("Send to the network again"); height: 44px; clicked => { root.direct-asked = false; root.resend(false); } }
@@ -834,7 +845,7 @@ export component ReceiveSheet inherits Sheet {
     if root.error != "": Text { text: root.error; color: Theme.warn; font-size: 14px; wrap: word-wrap; }
     Btn { text: root.busy ? @tr("Reading…") : @tr("Accept the Slatepack"); primary: true; height: 50px; clicked => { if (!root.busy) { root.read(root.text); } } }
     Rectangle { height: 1px; background: Theme.line; }
-    Muted { text: @tr("Or ask for GRIN: the wallet makes an invoice for the amount, you pass its text to whoever pays, and paste their answer back here."); font-size: 12px; }
+    Muted { text: @tr("To request GRIN, send the invoice to the payer. Keep the wallet unlocked until you paste their reply and finish the invoice."); font-size: 12px; }
     HorizontalLayout {
         spacing: 8px;
         Field { hint: @tr("amount to ask for, GRIN"); mono: true; text <=> root.asked; horizontal-stretch: 1; }
@@ -922,10 +933,10 @@ export component ReleaseSheet inherits Sheet {
     in property <bool> busy;
     in property <string> error;
     callback release();
-    title: @tr("A payment from before the restore");
+    title: @tr("Review the payment reserve");
     Text { text: root.note; color: Theme.text; font-size: 14px; wrap: word-wrap; }
     Text { text: @tr("If you release the reserve and the payment was signed, whoever has it can still send it to the network, and the money leaves anyway. Release it only if you know the payment was never signed, or after asking the recipient."); color: Theme.warn; font-size: 13px; wrap: word-wrap; }
-    Muted { text: @tr("Released, it is shown as “reserve released after the restore”, not as cancelled."); font-size: 13px; }
+    Muted { text: @tr("The payment history records a manual release of the reserve."); font-size: 13px; }
     if root.error != "": Text { text: root.error; color: Theme.warn; font-size: 14px; wrap: word-wrap; }
     if root.width >= 520px: HorizontalLayout {
         spacing: 10px;

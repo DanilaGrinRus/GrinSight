@@ -267,6 +267,184 @@ fn create(p: &mut Proc, password: &str, funds: &[u64]) -> String {
     made["mnemonic"].as_str().unwrap().to_string()
 }
 
+#[test]
+fn process_exit_expires_pending_signature_but_preserves_final_transaction() {
+    check_pending_and_final_after_process_exit(HOST_TEST);
+}
+
+#[test]
+#[ignore = "needs the previous offline test host to create an old-format fixture"]
+fn upgrade_expires_old_prepared_context_and_replays_only_the_saved_result() {
+    let program = std::env::var("FLY_PREVIOUS_TEST_HOST").expect("path to the previous offline test host");
+    check_pending_and_final_after_process_exit(&program);
+}
+
+fn check_pending_and_final_after_process_exit(first_program: &str) {
+    let t = Temp::new("nonce-session");
+    let mut a = Proc::start(first_program, &t.0, "a", None);
+    let mut b = Proc::start(HOST_TEST, &t.0, "b", None);
+    create(&mut a, "payer", &[5 * GRIN, 3 * GRIN]);
+    create(&mut b, "receiver", &[]);
+    a.ok("host.unlock", json!({"password":"payer"}));
+    b.ok("host.unlock", json!({"password":"receiver"}));
+    let mut exchange = |payer: &mut Proc| {
+        let first = payer.ok("paycore.send.prepare", json!({"amount":GRIN.to_string()}));
+        let second = b.ok("paycore.receive.draft", json!({"slate":first["slate"]}));
+        json!({"op":first["op"], "slate":second["slate"]})
+    };
+    let completed = exchange(&mut a);
+    let original = a.ok("paycore.send.finalize", completed.clone());
+    let pending = exchange(&mut a);
+    let reserved = a.ok("paycore.balance", json!({}))["reserved"].clone();
+    a.child.kill().unwrap();
+    a.child.wait().unwrap();
+    drop(a);
+
+    let mut reopened = Proc::start(HOST_TEST, &t.0, "a", None);
+    reopened.ok("host.unlock", json!({"password":"payer"}));
+    let status = reopened.ok("paycore.send.status", json!({"op":pending["op"]}));
+    assert_eq!(status["session_expired"], true);
+    assert!(reopened.call("paycore.send.finalize", pending).is_err());
+    assert_eq!(reopened.ok("paycore.balance", json!({}))["reserved"], reserved);
+    assert_eq!(reopened.ok("paycore.send.finalize", completed)["tx"], original["tx"]);
+    assert_eq!(reopened.end().0, 0);
+    assert_eq!(b.end().0, 0);
+}
+
+#[test]
+fn genesis_choice_is_written_for_the_unlocked_profile_and_survives_lock() {
+    use fly_paycore_bridge::chain_port::bootstrap;
+    let t = Temp::new("genesis-choice");
+    let mut h = Proc::with_chain(HOST_TEST, &t.0, "wallet", None, "empty");
+    create(&mut h, "test password", &[]);
+    assert_eq!(h.kind("paycore.chain.bootstrap_genesis", json!({})), "locked");
+    h.ok("host.unlock", json!({"password": "test password"}));
+    let profile = t.0.join("wallet");
+    let folder = std::fs::read_dir(&profile).unwrap().flatten()
+        .find(|e| e.file_name().to_string_lossy().starts_with("chain-")).unwrap().path();
+    assert!(!bootstrap::selected(&folder, 3).unwrap());
+    for _ in 0..2 {
+        assert_eq!(h.ok("paycore.chain.bootstrap_genesis", json!({})), json!({"scheduled": true}));
+    }
+    h.ok("host.lock", json!({}));
+    assert!(bootstrap::selected(&folder, 3).unwrap());
+    assert!(bootstrap::selected(&folder, 1).is_err());
+    assert!(!bootstrap::selected(&profile, 3).unwrap());
+    // The RPC must refuse a damaged choice and preserve the original file.
+    let marker = folder.join("genesis-automated-v1.intent");
+    std::fs::write(&marker, b"damaged").unwrap();
+    h.ok("host.unlock", json!({"password": "test password"}));
+    assert_eq!(h.kind("paycore.chain.bootstrap_genesis", json!({})), "bootstrap_refused");
+    assert_eq!(std::fs::read(marker).unwrap(), b"damaged");
+}
+
+#[test]
+fn checkpoint_transfer_requires_the_open_profile_and_an_unambiguous_selection() {
+    let t = Temp::new("import-checkpoint-files");
+    let mut host = Proc::with_chain(HOST_TEST, &t.0, "wallet", None, "empty");
+    create(&mut host, "test password", &[]);
+    assert_eq!(host.kind("host.import_checkpoint", json!({})), "locked");
+    assert_eq!(host.kind("host.export_checkpoint", json!({})), "locked");
+    host.ok("host.unlock", json!({"password": "test password"}));
+    let file = t.0.join("chosen file");
+    std::fs::write(&file, b"unused").unwrap();
+    for params in [
+        json!({}),
+        json!({"checkpoint_path": file, "proof_path": "relative"}),
+        json!({"checkpoint_path": file, "proof_path": t.0}),
+        json!({"checkpoint_path": file, "proof_path": file}),
+        json!({"file_path": "relative"}),
+        json!({"file_path": t.0}),
+        json!({"checkpoint_path": file, "file_path": file}),
+        json!({"proof_path": file, "file_path": file}),
+        json!({"checkpoint_path": file, "proof_path": file, "file_path": file}),
+    ] {
+        assert_eq!(host.kind("host.import_checkpoint", params), "invalid_params");
+        assert_eq!(host.status()["profile"], "unlocked");
+    }
+    assert_eq!(host.kind("host.export_checkpoint", json!({"file_path":"relative"})), "invalid_params");
+    assert_eq!(host.status()["profile"], "unlocked");
+}
+
+#[test]
+#[ignore = "needs the release fly-chain binary, supplied by FLY_TEST_IMPORT_CHAIN"]
+fn host_imports_a_real_gshp1_pair_into_the_wallets_chain_directory() {
+    let engine = std::env::var_os("FLY_TEST_IMPORT_CHAIN").expect("release chain binary");
+    let t = Temp::new("import-checkpoint-pair");
+    let new_host = |name: &str| {
+        let mut command = Command::new(HOST);
+        command.arg("--profile").arg(t.0.join(name)).arg("--guard-dir").arg(t.0.join(format!("{name}-guard")))
+            .arg("--chain").arg(&engine).arg("--chain-peer").arg("127.0.0.1:1");
+        Proc::spawn(command)
+    };
+    let mut h = new_host("sender");
+    let pass = json!({"password": "test password"});
+    h.ok("host.profile.create", json!({"password": "test password", "network": "main"}));
+    h.ok("host.unlock", pass.clone());
+    let file = t.0.join("публичная точка");
+    let selection = json!({"file_path": file});
+    assert_eq!(h.kind("host.export_checkpoint", selection.clone()), "checkpoint_export_unavailable");
+    assert!(!file.exists());
+    assert_eq!(h.status()["profile"], "unlocked");
+    let builtin = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../chain/headers/points");
+    let point = t.0.join("моя точка.json");
+    let proof = t.0.join("образцы GSHP1.bin");
+    std::fs::copy(builtin.join("main.json"), &point).unwrap();
+    std::fs::write(&proof, b"incomplete").unwrap();
+    let selected = json!({"checkpoint_path": point, "proof_path": proof});
+    assert_eq!(h.kind("host.import_checkpoint", selected.clone()), "checkpoint_import_refused_locked");
+    assert_eq!(h.status()["profile"], "locked");
+    h.ok("host.unlock", pass.clone());
+    std::fs::copy(builtin.join("main.history"), &proof).unwrap();
+    let done = h.ok("host.import_checkpoint", selected);
+    assert_eq!(done, json!({"imported":true,"locked":true,"height":4115520,
+        "hash":"000622ed34fb7c40c407c79d70b27bcf5841d1c2893da88c191779b7b4761482","samples":420}));
+    assert_eq!(h.status()["profile"], "locked");
+    std::fs::remove_file(point).unwrap();
+    std::fs::remove_file(proof).unwrap();
+    h.ok("host.unlock", pass.clone());
+    wait_for("verified imported origin after removing the selected files", || {
+        h.status()["chain"]["problem"].as_str().is_some_and(|text| {
+            text.contains("4115520") && text.contains("imported starting point") && text.contains("GSHP1")
+        })
+    });
+    let export = h.ok("host.export_checkpoint", selection.clone());
+    let expected_export = json!({"exported":true,"height":done["height"],"hash":done["hash"],"samples":done["samples"]});
+    assert_eq!(export, expected_export);
+    assert_eq!(h.status()["profile"], "unlocked");
+    let saved = std::fs::read(&file).unwrap();
+    assert_eq!(h.kind("host.export_checkpoint", selection.clone()), "checkpoint_export_refused");
+    assert_eq!(std::fs::read(&file).unwrap(), saved);
+    let active_chain = std::fs::read_dir(t.0.join("sender")).unwrap().flatten()
+        .find(|entry| entry.file_name().to_string_lossy().starts_with("chain-")).unwrap().path();
+    let internal = active_chain.join("not-wallet-state.bin");
+    assert_eq!(h.kind("host.export_checkpoint", json!({"file_path":internal})), "checkpoint_export_refused");
+    assert!(!internal.exists());
+    assert_eq!(h.status()["profile"], "unlocked");
+    assert_eq!(h.end().0, 0);
+
+    let mut recipient = new_host("clean-recipient");
+    recipient.ok("host.profile.create", json!({"password": "test password", "network": "main"}));
+    recipient.ok("host.unlock", pass.clone());
+    let truncated = t.0.join("неполный файл");
+    std::fs::write(&truncated, &saved[..saved.len() / 2]).unwrap();
+    assert_eq!(recipient.kind("host.import_checkpoint", json!({"file_path":truncated})), "checkpoint_import_refused_locked");
+    assert_eq!(recipient.status()["profile"], "locked");
+    recipient.ok("host.unlock", pass.clone());
+    assert_eq!(recipient.ok("host.import_checkpoint", selection), done);
+    assert_eq!(recipient.status()["profile"], "locked");
+    std::fs::remove_file(&file).unwrap();
+    recipient.ok("host.unlock", pass);
+    wait_for("verified origin on the second wallet", || {
+        recipient.status()["chain"]["problem"].as_str().is_some_and(|text| {
+            text.contains("4115520") && text.contains("imported starting point") && text.contains("GSHP1")
+        })
+    });
+    assert_eq!(recipient.ok("host.export_checkpoint", json!({"file_path": file})), expected_export);
+    assert_eq!(std::fs::read(file).unwrap(), saved);
+    assert_eq!(recipient.end().0, 0);
+}
+
 /// A profile exists only after it was created, opens only with its
 /// password, and while it is locked the core answers nothing.
 #[test]
@@ -1141,6 +1319,112 @@ fn block_of(tx: &[u8]) -> BlockFacts {
         kernels: tx.kernels().iter().map(|k| k.excess().0).collect(),
         ..BlockFacts::default()
     }
+}
+
+#[test]
+fn used_wallet_reserves_under_quorum_and_time_loss_reopen_and_reorg() {
+    // The chain process supplies the *results* of tip and time checks. The
+    // core, transaction signing, journal, host RPC and IPC are real.
+    global::set_local_chain_type(ChainTypes::AutomatedTesting);
+    let t = Temp::new("used-wallet-quorum-time");
+    let mut chain = Chain::new(&t.0);
+    chain.old(0, 1, vec![]);
+    let peer = chain.peer();
+    let mut a = Proc::with_chain(HOST_TEST, &t.0, "payer", None, &peer);
+    let mut b = Proc::with_chain(HOST_TEST, &t.0, "receiver", None, &peer);
+    let phrase = create(&mut a, "local payer", &[]);
+    create(&mut b, "local receiver", &[]);
+    let password = json!({"password": "local payer"});
+    a.ok("host.unlock", password.clone());
+    b.ok("host.unlock", json!({"password":"local receiver"}));
+    wait_for("both anchors", || a.tip() == Chain::ANCHOR && b.tip() == Chain::ANCHOR);
+    let funding = 5 * GRIN;
+    chain.mine(11, BlockFacts { outputs: vec![coin(&phrase, funding, 0), coin(&phrase, funding, 1)],
+                                 ..BlockFacts::default() });
+    chain.empty(12);
+    wait_for("two available outputs and complete archive search", || {
+        a.spendable() == (2 * funding).to_string() && a.tip() == 102 &&
+            a.ok("paycore.search.status", json!({}))["state"] == "done"
+    });
+    let basis = |wallet: &mut Proc| wallet.ok("paycore.wallet.chain_status", json!({}));
+    let reserved = |wallet: &mut Proc| wallet.ok("paycore.balance", json!({}))["reserved"].clone();
+    let before = basis(&mut a);
+    assert_eq!((&before["state"], &before["tip_height"], &before["selected_height"],
+                &before["confirmed_time"], &before["k_conf"]),
+               (&json!("at_tip"), &json!(102), &json!(102), &json!(1000), &json!(3)));
+    assert_eq!(reserved(&mut a), "0");
+    let prepare = json!({"amount": GRIN.to_string()});
+    let pending = a.ok("paycore.send.prepare", prepare.clone());
+    let op = json!({"op":pending["op"]});
+    assert_eq!(reserved(&mut a), funding.to_string());
+
+    // Time alone disappears, even though the test chain still names the same hash.
+    chain.set("time", None);
+    let stale = basis(&mut a);
+    assert_eq!((&stale["state"], &stale["confirmed_time"], &stale["selected_height"], &stale["balance"]["reserved"]),
+               (&json!("behind"), &Value::Null, &Value::Null, &json!(funding.to_string())));
+    chain.set("time", Some("1000"));
+    assert_eq!(basis(&mut a)["state"], "at_tip");
+    chain.set("selected", None);
+    let st = basis(&mut a);
+    assert_eq!((&st["state"], &st["selected_height"], &st["confirmed_time"]), (&json!("behind"), &Value::Null, &json!(1000)));
+    chain.set("time", None);
+    let st = basis(&mut a);
+    assert_eq!((&st["state"], &st["selected_height"], &st["confirmed_time"]), (&json!("behind"), &Value::Null, &Value::Null));
+    assert_eq!(reserved(&mut a), funding.to_string());
+
+    // A second manual selection is possible using the already verified
+    // outputs. Cancelling this *unsigned* operation releases just its input.
+    let other = a.ok("paycore.send.prepare", prepare);
+    assert_eq!(reserved(&mut a), (2 * funding).to_string());
+    a.ok("paycore.send.cancel", json!({"op":other["op"]}));
+    assert_eq!(reserved(&mut a), funding.to_string());
+    let answer = b.ok("paycore.receive.draft", json!({"slate":pending["slate"]}));
+    chain.set("post-mode", Some("lost"));
+    let result = a.ok("paycore.send.finalize", json!({"slate":answer["slate"], "op":pending["op"]}));
+    assert!(!result["tx"].as_str().unwrap().is_empty());
+    assert_eq!(a.ok("paycore.send.status", op.clone())["state"], "finalized");
+    assert_eq!(a.ok("paycore.send.broadcast", op.clone())["outcome"], "unknown");
+    assert!(chain.posted().is_empty());
+    assert_eq!(a.end().0, 0);
+
+    let mut a = Proc::with_chain(HOST_TEST, &t.0, "payer", None, &peer);
+    a.ok("host.unlock", password);
+    wait_for("reopened payer with no selected tip", || a.chain_phase() == "ready");
+    assert_eq!(basis(&mut a)["state"], "behind");
+    assert_eq!(a.ok("paycore.send.result", op.clone())["tx"], result["tx"]);
+    assert_eq!(reserved(&mut a), funding.to_string());
+    chain.set("time", Some("1100"));
+    assert_eq!(basis(&mut a)["state"], "behind", "time alone never selects a tip");
+    chain.set("selected", Some(""));
+    assert_eq!(basis(&mut a)["state"], "at_tip");
+    chain.set("post-mode", None);
+    assert_eq!(a.ok("paycore.send.broadcast", op.clone())["outcome"], "accepted");
+    assert_eq!(a.ok("paycore.send.status", op.clone())["state"], "finalized");
+    let included = chain.mine(13, block_of(&chain.posted()[0]));
+    wait_for("the transfer in the selected branch", || a.ok("paycore.send.status", op.clone())["state"] == "confirmed");
+    assert_eq!(reserved(&mut a), "0");
+
+    // The branch keeping the funding block but omitting this transaction
+    // becomes visible before the next independent selection.
+    chain.set("selected", None);
+    chain.set("time", None);
+    chain.cut(included);
+    chain.empty(23);
+    chain.empty(24);
+    wait_for("alternate branch without the transaction", || {
+        a.tip() == 104 && a.ok("paycore.send.status", op.clone())["state"] == "finalized"
+    });
+    let on_fork = basis(&mut a);
+    assert_eq!(on_fork["state"], "behind");
+    assert_eq!(on_fork["balance"]["reserved"], funding.to_string());
+    assert_eq!(on_fork["balance"]["spendable"], funding.to_string());
+    chain.set("time", Some("1200"));
+    chain.set("selected", Some(""));
+    assert_eq!(basis(&mut a)["state"], "at_tip");
+    assert_eq!(reserved(&mut a), funding.to_string());
+    assert_eq!(a.end().0, 0);
+    assert_eq!(b.end().0, 0);
 }
 
 /// The whole road with a chain: two hosts, each with its own chain process
@@ -2073,8 +2357,6 @@ fn live_a_payment_reaches_a_block() {
     let had = spendable(&mut a);
     println!("BALANCE payer before: spendable={had} (nanogrin)");
     assert!(had > amount, "the payer has less than the payment");
-    let prepared = a.ok("paycore.send.prepare", json!({"amount": amount.to_string()}));
-    say("the payment is prepared");
     assert_eq!(a.end().0, 0, "the payer's host ended in order");
     std::thread::sleep(Duration::from_secs(3));
     if let Some(keep) = &keep_dir {
@@ -2104,15 +2386,18 @@ fn live_a_payment_reaches_a_block() {
     let mut b = start(&tb);
     b.ok("host.unlock", json!({"password": pass_b}));
     until(&mut b, "the payee to be at the tip", 60, &mut |h| at_tip(h));
+    // Keep the payer unlocked from the first Slatepack through finalization.
+    let mut a = start(&ta);
+    a.ok("host.unlock", json!({"password": pass_a}));
+    until(&mut a, "the payer to be at the tip again", 60, &mut |h| at_tip(h));
+    let prepared = a.ok("paycore.send.prepare", json!({"amount": amount.to_string()}));
+    say("the payment is prepared");
     let answered = b.ok("paycore.receive.draft", json!({"slate": prepared["slate"]}));
     say("the payee has answered");
     assert_eq!(b.end().0, 0, "the payee's host ended in order");
     std::thread::sleep(Duration::from_secs(3));
 
     // the payer signs; the rest is its handler's and the chain program's
-    let mut a = start(&ta);
-    a.ok("host.unlock", json!({"password": pass_a}));
-    until(&mut a, "the payer to be at the tip again", 60, &mut |h| at_tip(h));
     a.ok("paycore.send.finalize", json!({"op": prepared["op"], "slate": answered["slate"]}));
     let signed = Instant::now();
     say("the payment is signed; from here on nobody asks the wallet to send it");

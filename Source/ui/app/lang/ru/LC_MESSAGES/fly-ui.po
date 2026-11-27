@@ -15,6 +15,12 @@ msgstr ". Кто знает эти слова, распоряжается ден
 msgid "24 words, separated by spaces"
 msgstr "24 слова через пробел"
 
+msgid "Enter your 24 recovery words in their original order, with one space between words. For example: apple river stone …"
+msgstr "Введите 24 слова в исходном порядке, разделяя их пробелами. Пример ввода: apple river stone …"
+
+msgid "CHECKING"
+msgstr "ПРОВЕРЯЕТСЯ"
+
 msgid "grin1… — for a payment proof"
 msgstr "grin1… — для доказательства оплаты"
 
@@ -453,14 +459,14 @@ msgstr "Не платить"
 msgid "An invoice is paid from “Receive”: paste its text there."
 msgstr "Счёт оплачивается из окна «Получить»: вставьте туда его текст."
 
-msgid "A payment from before the restore"
-msgstr "Платёж до восстановления"
+msgid "Review the payment reserve"
+msgstr "Проверка резерва платежа"
 
 msgid "If you release the reserve and the payment was signed, whoever has it can still send it to the network, and the money leaves anyway. Release it only if you know the payment was never signed, or after asking the recipient."
 msgstr "Если снять резерв, а платёж был подписан, тот, у кого он есть, всё ещё может отправить его в сеть — и деньги уйдут. Снимайте резерв, только если знаете, что платёж не подписывался, или спросив получателя."
 
-msgid "Released, it is shown as “reserve released after the restore”, not as cancelled."
-msgstr "После снятия он показывается как «резерв снят после восстановления», а не как отменённый."
+msgid "The payment history records a manual release of the reserve."
+msgstr "В истории платежа будет указано, что резерв снят вручную."
 
 msgid "Keep it reserved"
 msgstr "Оставить в резерве"
@@ -1002,8 +1008,11 @@ msgstr "Все контакты"
 msgid "Or a Slatepack you were sent: a payment, an invoice, or the answer to your invoice"
 msgstr "Или присланный вам Slatepack: платёж, счёт или ответ на ваш счёт"
 
-msgid "Or ask for GRIN: the wallet makes an invoice for the amount, you pass its text to whoever pays, and paste their answer back here."
-msgstr "Или запросите GRIN: кошелёк выставит счёт на сумму, его текст вы передаёте плательщику, а ответ вставляете сюда же."
+msgid "To request GRIN, send the invoice to the payer. Keep the wallet unlocked until you paste their reply and finish the invoice."
+msgstr "Чтобы запросить GRIN, передайте счёт плательщику. Держите кошелёк открытым, пока не вставите ответ и не завершите счёт."
+
+msgid "Keep the wallet unlocked until this payment is signed. Closing or locking it ends the signing session."
+msgstr "Держите кошелёк открытым до подписания платежа. Закрытие или блокировка завершат сеанс подписи."
 
 msgid "amount to ask for, GRIN"
 msgstr "сколько запросить, GRIN"
@@ -1169,3 +1178,87 @@ msgstr "Стартовую точку, которую ваш кошелёк сд
 
 msgid "Point from another device"
 msgstr "Точка с другого устройства"
+
+msgid "Recheck headers from genesis"
+msgstr "Перепроверить заголовки от первого блока"
+
+msgid "This locks the wallet. Unlock to recheck the saved headers and continue from the network."
+msgstr "Кошелёк закроется. Войдите снова, чтобы перепроверить сохранённые заголовки и продолжить синхронизацию."
+
+msgid "Verify from the first block myself"
+msgstr "Проверить самостоятельно от первого блока"
+
+msgid "Import a checkpoint"
+msgstr "Импортировать контрольную точку"
+
+msgid "Verification and recovery"
+msgstr "Проверка и восстановление"
+
+msgid "Save checkpoint to one file…"
+msgstr "Сохранить точку в один файл…"
+
+msgid "Choose a .gshp file from another wallet, or checkpoint.json with history.proof in the same folder. GSHP1 is checked locally. The next sync downloads blocks after the point. Import locks the wallet and ends unfinished signing sessions."
+msgstr "Выберите файл .gshp с другого кошелька или checkpoint.json, рядом с которым лежит history.proof. Кошелёк проверит GSHP1 локально и продолжит синхронизацию от этой точки. При импорте кошелёк блокируется, а незавершённые сеансы подписи заканчиваются."
+
+msgid "Save this wallet’s verified checkpoint and GSHP1 proof together. You can send the file to another device. This is a local copy without wallet keys or funds."
+msgstr "Сохраните проверенную точку этого кошелька и доказательство GSHP1 в одном файле для другого устройства. Экспорт выполняется локально. Ключей и средств кошелька в файле нет."
+
+msgid "Check all headers from genesis and build your own checkpoint. On Mainnet the first pass can download about 1.7 GB and take tens of minutes. It locks the wallet; unlock it to begin. Progress is in Details."
+msgstr "Проверить все заголовки от первого блока и создать собственную точку. На Mainnet первый проход может скачать около 1,7 ГБ и занять десятки минут. Кошелёк заблокируется. Войдите снова, чтобы начать. Ход проверки виден в разделе «Подробнее»."
+
+msgid "Search the archive for outputs belonging to this wallet, including older proof formats. It keeps the current chain checkpoint. The scan can download hundreds of MB or more. Keep the wallet unlocked and follow progress in Details."
+msgstr "Найти в архиве выходы этого кошелька, в том числе со старыми форматами доказательств. Стартовая точка цепи сохраняется. Объём загрузки может составить сотни МБ и больше. Оставьте кошелёк разблокированным. Ход поиска виден в разделе «Подробнее»."
+
+msgid "Import locks the wallet. Any pending Slatepack that still needs your signature will need a new exchange. Unlock after import to sync from the saved point."
+msgstr "При импорте кошелёк заблокируется. Если Slatepack ещё ждёт вашей подписи, обмен придётся начать заново. После импорта войдите для синхронизации от сохранённой точки."
+
+msgid "Start a new check from genesis? The wallet will lock, ending pending signing sessions. Unlock to begin the download."
+msgstr "Начать новую проверку от первого блока? Кошелёк заблокируется, и незавершённые сеансы подписи закончатся. Войдите снова, чтобы начать загрузку."
+
+msgid "Search the whole archive for this wallet’s outputs? This can download hundreds of MB or more. The wallet stays open."
+msgstr "Найти выходы этого кошелька во всём архиве? Может потребоваться загрузить сотни МБ и больше. Кошелёк останется открытым."
+
+msgid "Choose checkpoint file…"
+msgstr "Выбрать файл точки…"
+
+msgid "Saving checkpoint…"
+msgstr "Сохранение контрольной точки…"
+
+msgid "Importing checkpoint…"
+msgstr "Импорт контрольной точки…"
+
+msgid "Check this network’s headers from its first block? A first Mainnet check can download about 1.7 GB. The wallet will lock. Unlock it to start or resume the check."
+msgstr "Проверить заголовки этой сети от первого блока? При первой проверке Mainnet может потребоваться около 1,7 ГБ трафика. Кошелёк заблокируется. Войдите снова, чтобы начать или продолжить проверку."
+
+msgid "Later starts use the compact point saved by this wallet. Your keys and payments stay in this profile."
+msgstr "При следующих запусках кошелёк использует свою сохранённую компактную точку. Ключи и платежи останутся в этом профиле."
+
+msgid "When a transferable point is ready, look in this network’s chain folder under history-exports/<network>-<height>-<hash>/ for checkpoint.json and history.proof."
+msgstr "Когда переносимая точка будет готова, файлы checkpoint.json и history.proof можно найти в каталоге цепи этой сети, в папке history-exports/<сеть>-<высота>-<хеш>/."
+
+msgid "Verify and lock"
+msgstr "Начать проверку и заблокировать"
+
+msgid "Saving your startup choice…"
+msgstr "Сохраняем выбранный режим…"
+
+msgid "Add a node you run to the sources this wallet asks."
+msgstr "Добавьте свою ноду в список источников кошелька."
+
+msgid "Rescan old wallet outputs"
+msgstr "Заново найти старые выходы кошелька"
+
+msgid "Search the whole archive for this wallet’s outputs, including older proof formats? This can download hundreds of MB or more. Keep the wallet open to follow progress above."
+msgstr "Просканировать весь архив в поисках выходов этого кошелька, включая старые форматы доказательств? Загрузка может занять сотни МБ и больше. Оставьте кошелёк открытым, чтобы видеть ход поиска выше."
+
+msgid "Start full output scan"
+msgstr "Начать полный поиск выходов"
+
+msgid "Requesting the full output scan…"
+msgstr "Запрашиваем полный поиск выходов…"
+
+msgid "Ready to use"
+msgstr "Готово к работе"
+
+msgid "Font license"
+msgstr "Лицензия шрифта"

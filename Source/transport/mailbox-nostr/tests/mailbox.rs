@@ -622,14 +622,25 @@ fn the_reply_store_is_create_only_bounded_and_authenticated() {
     let mut id = [0u8; 32];
     while n < MAX_REPLIES {
         id[..8].copy_from_slice(&(n as u64 + 100).to_le_bytes());
-        store.put(&id, &reply).unwrap();
+        if n + 1 == MAX_REPLIES {
+            store.put(&id, &StoredReply { contact: [6; 32], ..reply.clone() }).unwrap();
+        } else {
+            store.put(&id, &reply).unwrap();
+        }
         n += 1;
     }
     assert!(matches!(store.put(&[0xEE; 32], &reply), Err(StoreError::Full)));
     assert_eq!(store.get(&[7; 32]).unwrap(), Some(reply.clone()), "a full store lost a reply");
-    assert_eq!(store.purge(|r| r.contact == [5; 32]).unwrap(), MAX_REPLIES);
-    assert_eq!(store.get(&[7; 32]).unwrap(), None);
-    store.put(&[0xEE; 32], &reply).unwrap();
+    // Leave one slot filled with an expired reply. Writing the already
+    // sealed envelope recovers that slot without a new mailbox or clock delay.
+    assert_eq!(store.purge(|r| r.contact == [6; 32]).unwrap(), 1);
+    let expired = StoredReply { deadline: 0, ..reply.clone() };
+    store.put(&id, &expired).unwrap();
+    let next = StoredReply { envelope: "original sealed reply".into(), ..reply.clone() };
+    store.put(&[0xEE; 32], &next).unwrap();
+    assert_eq!(store.get(&id).unwrap(), None);
+    assert_eq!(store.get(&[7; 32]).unwrap(), Some(reply));
+    assert_eq!(store.get(&[0xEE; 32]).unwrap(), Some(next));
 }
 
 /// The session constructor used by these tests cannot leave the machine.

@@ -196,6 +196,44 @@ fn no_quorum() -> Verdict {
     }
 }
 
+/// Public P2P headers remain available. Exercise the two independent HTTPS
+/// inputs on first open and after a process restart with an existing time floor.
+#[test]
+fn public_source_loss_on_new_and_previously_selected_profile() {
+    for previously_selected in [false, true] {
+        for (quorum, time) in [(false, true), (true, false), (false, false)] {
+            let dir = Dir::new();
+            let mut world = if previously_selected {
+                let (world, previous) = confirmed_world(&dir);
+                drop(previous);
+                world
+            } else {
+                World::new(200)
+            };
+            let mut accept = Accept::open(setup(), &dir.0);
+            let ask = accept.tend(&world.facts()).unwrap();
+            assert_eq!(ask.generation.id(), if previously_selected { 2 } else { 1 });
+            let mut news = world.news(&ask, if quorum { CONFIRMED } else { no_quorum() }, true);
+            if !time {
+                news.stamps.clear();
+            }
+            accept.took(&news, &world.facts());
+            accept.tend(&world.facts());
+            assert_eq!(accept.selected(), None);
+            let facts = world.facts();
+            assert_eq!(accept.confirmed_time(facts.now, facts.clock_ms).is_some(), time);
+            let reason = accept.note().unwrap();
+            assert!(if time { reason.contains("did not confirm the tip") } else { reason.contains("time is not confirmed") },
+                    "quorum={quorum}, time={time}, previously_selected={previously_selected}: {reason}");
+            world.pass(ASK_GAP_MAX.as_secs());
+            let ask = accept.tend(&world.facts()).unwrap();
+            accept.took(&world.news(&ask, CONFIRMED, true), &world.facts());
+            accept.tend(&world.facts());
+            assert_eq!(accept.selected(), Some(world.tip()));
+        }
+    }
+}
+
 /// Goes through the first asking of a fresh program: asked, confirmed.
 fn confirmed_world(dir: &Dir) -> (World, Accept) {
     let world = World::new(200);
@@ -559,7 +597,7 @@ fn no_time_no_tip() {
     assert_eq!(accept.selected(), None);
     assert_eq!(accept.note().as_deref(), Some("the time is not confirmed: too few public nodes answered"));
 
-    // The next asking brings a time: the quorum of the first one counts.
+    // The next asking brings both fresh time and a quorum.
     world.pass(ASK_GAP.as_secs());
     let ask = accept.tend(&world.facts()).unwrap();
     accept.took(&world.news(&ask, CONFIRMED, true), &world.facts());
@@ -604,6 +642,28 @@ fn no_time_no_tip() {
     assert_eq!(accept.selected(), None);
     assert_eq!(accept.note().as_deref(), Some("the time is not confirmed: public nodes disagree about it"));
     let _ = tip;
+}
+
+#[test]
+fn renewing_time_without_quorum_cannot_restore_a_previous_selection() {
+    let dir = Dir::new();
+    let (mut world, mut accept) = confirmed_world(&dir);
+    world.pass(fly_chain_tips::time::KEPT_FOR.as_secs() + 1);
+    let ask = accept.tend(&world.facts()).unwrap();
+    assert_eq!(accept.selected(), None);
+    for over in [false, true] {
+        let news = world.news(&ask, Verdict::NoQuorum { answered: 2, needed: 3, confirming: 0 }, over);
+        accept.took(&news, &world.facts());
+        accept.tend(&world.facts());
+        let facts = world.facts();
+        assert!(accept.confirmed_time(facts.now, facts.clock_ms).is_some());
+        assert_eq!(accept.selected(), None);
+    }
+    world.pass(ASK_GAP_MAX.as_secs());
+    let new = accept.tend(&world.facts()).unwrap();
+    accept.took(&world.news(&new, CONFIRMED, true), &world.facts());
+    accept.tend(&world.facts());
+    assert_eq!(accept.selected(), Some(world.tip()));
 }
 
 #[test]

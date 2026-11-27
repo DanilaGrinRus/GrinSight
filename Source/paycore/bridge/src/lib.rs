@@ -786,6 +786,7 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
                             "reply_held": self.core.send_held(&op).is_some(),
                             "invoice": self.core.send_is_invoice(&op),
                             "locked": self.core.send_locked(&op),
+                            "session_expired": self.core.send_session_expired(&op),
                             "deliver_to": self.core.delivery_contact(&op).map(|key| hex(&key)),
                             "kernel_height": self.core.send_kernel_height(&op),
                             // the payment's own number: an incoming payment
@@ -812,6 +813,8 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
                             "slate_id": hex(&id),
                             "amount": value.to_string(),
                             "abandoned": abandoned,
+                            "session_expired": self.core.invoice_session_expired(&id),
+                            "signature_unknown": self.core.invoice_signature_unknown(&id),
                             "kernel_height": self.core.incoming_kernel_height(&id),
                             "made_height": self.core.incoming_made_height(&id),
                             "reply_kept": self.core.incoming_reply(&id).is_some(),
@@ -966,6 +969,7 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
                 let obs = self.core.observe_send(&op).ok_or(CoreError::NotFound)?;
                 Ok(json!({
                     "state": status_name(st),
+                    "session_expired": self.core.send_session_expired(&op),
                     "reserve": obs.reserve,
                     "conflict": obs.conflict,
                     "broadcasts": { "accepted": accepted, "rejected": rejected, "unknown": unknown },
@@ -1114,14 +1118,20 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
             "paycore.wallet.chain_status" => {
                 let basis = self.wallet_basis();
                 let balance = self.balance_json();
+                // The display takes selection, time and confirmation policy from
+                // the same chain reply. A selected tip without valid time cannot
+                // certify the wallet, even if the provider reports it at the tip.
                 Ok(json!({
                     "balance": balance,
                     "state": match basis.state {
+                        fly_paycore_wallet::ChainState::AtTip if basis.confirmed_time.is_none() => "behind",
                         fly_paycore_wallet::ChainState::AtTip => "at_tip",
                         fly_paycore_wallet::ChainState::Behind => "behind",
                         fly_paycore_wallet::ChainState::Unknown => "unknown",
                     },
-                    "selected_height": basis.selected.map(|(height, _)| height),
+                    "selected_height": basis.confirmed_time.and(basis.selected).map(|(height, _)| height),
+                    "confirmed_time": basis.confirmed_time,
+                    "k_conf": basis.k_conf,
                     "tip_height": self.core.tip_height(),
                 }))
             }
@@ -1146,6 +1156,11 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
                     Ok(_) => Err(fail(-32033, "no_point", "the starting point made is not text")),
                     Err(why) => Err(fail(-32033, "no_point", &why)),
                 }
+            }
+            "paycore.chain.bootstrap_genesis" => {
+                let feed = self.feed.as_mut().ok_or_else(no_chain)?;
+                feed.schedule_genesis().map_err(|why| fail(-32033, "bootstrap_refused", &why))?;
+                Ok(json!({ "scheduled": true }))
             }
             // the search for outputs older than the wallet's blocks
             "paycore.search.start" => {

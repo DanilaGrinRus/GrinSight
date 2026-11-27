@@ -13,7 +13,7 @@ use grin_core::libtx::{aggsig, build};
 use grin_core::ser;
 use grin_keychain::{Identifier, Keychain, SwitchCommitmentType};
 use grin_wallet_libwallet::{address, Context, Slate, SlateState, SlateVersion, VersionedSlate};
-use zeroize::Zeroizing;
+use zeroize::Zeroize;
 
 fn bad(_: grin_wallet_libwallet::Error) -> CoreError {
     CoreError::Build
@@ -104,11 +104,23 @@ fn key_id(bytes: &[u8]) -> Identifier {
     Identifier::from_bytes(bytes)
 }
 
+/// The live signer is deliberately neither serializable nor cloneable. Both
+/// signing entry points consume it and only this module can access its nonce.
+pub(crate) struct SigningContext(Context);
+
+impl Drop for SigningContext {
+    fn drop(&mut self) {
+        self.0.sec_nonce.0.zeroize();
+        self.0.initial_sec_nonce.0.zeroize();
+        self.0.sec_key.0.zeroize();
+        self.0.initial_sec_key.0.zeroize();
+    }
+}
+
 pub(crate) struct BuiltS1 {
     pub slate_id: SlateId,
     pub s1: Vec<u8>,
-    /// Serialized signing context (secret).
-    pub context: Zeroizing<Vec<u8>>,
+    pub context: SigningContext,
     pub change: Option<(Vec<u8>, u64, Vec<u8>)>,
 }
 
@@ -181,11 +193,10 @@ pub(crate) fn build_s1<K: Keychain>(
         context.payment_proof_derivation_index = Some(0);
     }
 
-    let ctx = Zeroizing::new(serde_json::to_vec(&context).map_err(|_| CoreError::Build)?);
     Ok(BuiltS1 {
         slate_id: *slate.id.as_bytes(),
         s1: to_json(&slate)?,
-        context: ctx,
+        context: SigningContext(context),
         change,
     })
 }
@@ -443,14 +454,13 @@ pub(crate) fn check_s2<K: Keychain>(
 /// Sender, round 2: the one signature. Called only from `Core::sign`.
 pub(crate) fn finalize<K: Keychain>(
     keychain: &K,
-    context_json: &Zeroizing<Vec<u8>>,
+    mut signer: SigningContext,
     inputs: &[OutputRec],
     change: Option<&(Vec<u8>, u64, Vec<u8>)>,
     s2: &[u8],
     late: bool,
 ) -> Result<Finalized, CoreError> {
-    let mut context: Context =
-        serde_json::from_slice(context_json).map_err(|_| CoreError::Corrupt)?;
+    let context = &mut signer.0;
     if late {
         // late lock: the context was made before inputs were chosen
         if !context.input_ids.is_empty() || !context.output_ids.is_empty() {
@@ -621,7 +631,7 @@ pub(crate) fn build_s2<K: Keychain>(
 pub(crate) struct BuiltI1 {
     pub slate_id: SlateId,
     pub i1: Vec<u8>,
-    pub context: Zeroizing<Vec<u8>>,
+    pub context: SigningContext,
     pub commit: [u8; 33],
 }
 
@@ -656,7 +666,7 @@ pub(crate) fn build_i1<K: Keychain>(
     Ok(BuiltI1 {
         slate_id: *slate.id.as_bytes(),
         i1: to_json(&slate)?,
-        context: Zeroizing::new(serde_json::to_vec(&context).map_err(|_| CoreError::Build)?),
+        context: SigningContext(context),
         commit: commit.0,
     })
 }
@@ -821,11 +831,11 @@ pub(crate) fn check_i2<K: Keychain>(
 /// `Core::sign_invoice`.
 pub(crate) fn finalize_i2<K: Keychain>(
     keychain: &K,
-    context_json: &Zeroizing<Vec<u8>>,
+    signer: SigningContext,
     output: (&[u8], u64),
     i2: &[u8],
 ) -> Result<Finalized, CoreError> {
-    let context: Context = serde_json::from_slice(context_json).map_err(|_| CoreError::Corrupt)?;
+    let context = &signer.0;
     let mut slate = from_json(i2)?;
     slate.adjust_offset(keychain, &context).map_err(bad)?;
     slate.amount = context.amount;

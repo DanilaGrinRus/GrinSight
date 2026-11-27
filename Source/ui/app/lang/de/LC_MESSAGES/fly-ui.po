@@ -1,0 +1,3325 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: de\n"
+
+msgid " · nodes will see the IP of "
+msgstr " · Knoten sehen die IP von "
+
+#. runtime
+msgid " · the search for your money is still running"
+msgstr " · die Suche nach Ihrem Geld läuft noch"
+
+msgid ". If you forget it, only the 24 words shown next will bring the wallet back."
+msgstr ". Wenn Sie es vergessen, können Sie das Wallet nur mit den 24 Wörtern wiederherstellen, die gleich angezeigt werden."
+
+msgid ". Whoever knows these words controls the money. We show them once and never keep them in plain form."
+msgstr ". Wer diese Wörter kennt, kann über das Guthaben verfügen. Sie werden einmal angezeigt und niemals im Klartext gespeichert."
+
+#. runtime
+msgid "1 h ago"
+msgstr "vor 1 Std."
+
+#. runtime
+msgid "2 h ago"
+msgstr "vor 2 Std."
+
+#. runtime
+msgid "24 words (or 12) separated by spaces are needed"
+msgstr "Geben Sie 24 oder 12 Wörter ein, durch Leerzeichen getrennt."
+
+msgid "24 words, separated by spaces"
+msgstr "24 Wörter, durch Leerzeichen getrennt"
+
+#. runtime
+msgid "A"
+msgstr "A"
+
+msgid "A faint ring: not begun. A ring: under way. A filled mark: done. The warning colour: needs your attention."
+msgstr "Ein schwacher Ring: nicht begonnen. Ein Ring: im Gange. Eine gefüllte Markierung: fertig. Die Warnfarbe: braucht Ihre Aufmerksamkeit."
+
+#. runtime
+msgid "A message is at most 2000 bytes"
+msgstr "Eine Nachricht ist höchstens 2000 Bytes groß"
+
+#. runtime
+msgid "A message key starts with npub1"
+msgstr "Ein Nachrichtenschlüssel beginnt mit npub1"
+
+#. runtime
+msgid "A new point would be too close to the one the wallet started from. Try again in about half a day. Nothing was changed."
+msgstr "Ein neuer Punkt wäre zu nah an dem, von dem die Wallet ausgeht. Versuchen Sie es in etwa einem halben Tag erneut. Nichts hat sich geändert."
+
+#. runtime
+msgid "A part of the program is missing, so the balance cannot be checked. Start the program from its own folder or install it again."
+msgstr "Ein Teil des Programms fehlt, sodass das Guthaben nicht überprüft werden kann.Starten Sie das Programm aus einem eigenen Ordner oder installieren Sie es neu."
+
+#. runtime
+msgid "A part of the program is missing. Install it again."
+msgstr "Ein Teil des Programms fehlt. Installieren Sie es erneut."
+
+#. runtime
+msgid "A payment did not reach the address over Tor"
+msgstr "Eine Zahlung erreichte die Adresse über Tor nicht"
+
+msgid "A payment gets its first confirmation with the block it is in, and one more with every block after it. Here you choose how many make an incoming payment “received”: one at least. It is a word about the status only — it does not change what can be spent."
+msgstr "Eine Zahlung erhält ihre erste Bestätigung mit dem Block, in dem sie sich befindet, und eine weitere mit jedem Block danach. Hier wählen Sie, wie viele eine eingehende Zahlung „erhalten“: mindestens eine. Es ist nur ein Wort über den Status - es ändert nicht, was ausgegeben werden kann."
+
+#. runtime
+msgid "A payment of 0.50 GRIN was prepared before this wallet was restored from an older copy. The wallet no longer knows whether it was signed after that copy was taken, so it will not sign it and keeps the money in reserve."
+msgstr "Eine Zahlung von 0,50 GRIN wurde vorbereitet, bevor diese Brieftasche von einer älteren Kopie wiederhergestellt wurde.Die Brieftaschen wissen nicht mehr, ob sie nach der Kopie signiert wurden, also werden sie nicht signiert und halten das Geld in Reserve."
+
+#. runtime
+msgid "A payment of {} GRIN was prepared before this wallet was restored from an older copy. The wallet no longer knows whether it was signed after that copy was taken, so it will not sign it and keeps the money in reserve."
+msgstr "Eine Zahlung von {} GRIN wurde vorbereitet, bevor diese Brieftasche von einer älteren Kopie wiederhergestellt wurde.Die Brieftaschen wissen nicht mehr, ob sie nach der Kopie signiert wurden, also werden sie nicht signiert und halten das Geld in Reserve."
+
+msgid "A payment that has change now also spends up to eight of the smallest outputs, and they come back inside the change. The amount paid is the same; the fee is a little higher; the outputs spent together are seen to have one owner. Marked outputs are not touched."
+msgstr "Eine Zahlung, die Wechselgeld enthält, gibt nun auch bis zu acht der kleinsten Ausgaben aus, und sie kommen im Wechselgeld wieder zurück. Der gezahlte Betrag ist derselbe, die Gebühr ist etwas höher, die zusammen ausgegebenen Ausgaben werden als ein Eigentümer betrachtet. Markierte Ausgaben werden nicht berührt."
+
+#. runtime
+msgid "A point can be made once the wallet stands at the confirmed tip. Wait until synchronisation is over. Nothing was changed."
+msgstr "Ein Punkt kann gemacht werden, sobald die Wallet auf der bestätigten Spitze steht. Warten Sie, bis die Synchronisierung abgeschlossen ist, nichts wurde geändert."
+
+#. runtime
+msgid "A recipient without an address"
+msgstr "Ein Empfänger ohne Adresse"
+
+msgid "A short password. Whoever gets the wallet file can try short passwords one after another; twelve characters or more are advised."
+msgstr "Das Passwort ist kurz. Wer die Wallet-Datei hat, kann kurze Passwörter durchprobieren. Empfohlen sind mindestens zwölf Zeichen."
+
+msgid "A starting point your wallet made on another device of yours (Details → Make my own starting point) can be pasted here whole, so that this wallet starts shorter. It keeps the proof of the built-in point. Leave empty for the built-in point."
+msgstr "Ein Startpunkt, den du auf einem anderen Gerät erstellt hast (Details → Eigenen Startpunkt erstellen), kann hier ganz eingefügt werden, sodass diese Wallet kürzer beginnt. Es bleibt der Beweis des eingebauten Punktes erhalten. Lasse für den eingebauten Point leer."
+
+#. runtime
+msgid "A transaction is not sent yet"
+msgstr "Eine Transaktion wird noch nicht gesendet"
+
+#. runtime
+msgid "Accept"
+msgstr "Annehmen"
+
+msgid "Accept the Slatepack"
+msgstr "Akzeptieren Sie das Slatepack"
+
+msgid "Accepting…"
+msgstr "Wird angenommen…"
+
+msgid "Actions on the contact"
+msgstr "Aktionen auf dem Kontakt"
+
+msgid "Add"
+msgstr "Hinzufügen"
+
+msgid "Add a contact"
+msgstr "Einen Kontakt hinzufügen"
+
+msgid "Add a contact by their message key (npub1…): you can write to them and pay them by name. Messages travel over Tor."
+msgstr "Fügen Sie einen Kontakt anhand seines Nachrichtenschlüssels (npub1…) hinzu: Sie können an ihn schreiben und ihn namentlich bezahlen.Nachrichten werden über Tor übertragen."
+
+msgid "Add a contact to write to them and to pay them by name."
+msgstr "Fügen Sie einen Kontakt hinzu, um ihm zu schreiben und ihn namentlich zu bezahlen."
+
+msgid "Add a list"
+msgstr "Eine Liste hinzufügen"
+
+msgid "Add a node you run to the sources this wallet asks."
+msgstr "Fügen Sie einen Knoten hinzu, den Sie zu den Quellen hinzufügen, die diese Wallet anfordert."
+
+msgid "Add these contacts"
+msgstr "Diese Kontakte hinzufügen"
+
+#. runtime
+msgid "Added: {}"
+msgstr "Hinzugefügt: {}"
+
+msgid "Address copied"
+msgstr "Adresse kopiert"
+
+#. runtime
+msgid "Address declared in the payment"
+msgstr "Adresse, die in der Zahlung angegeben wurde"
+
+#. runtime
+msgid "Address unavailable until network is known"
+msgstr "Adresse nicht verfügbar, bis Netzwerk bekannt ist"
+
+msgid "After unlocking, the wallet finds its money in the chain by itself — this can take a while."
+msgstr "Nach dem Entsperren findet die Wallet ihr Geld in der Kette von selbst – das kann eine Weile dauern."
+
+msgid "All"
+msgstr "Alle"
+
+msgid "All contacts"
+msgstr "Alle Kontakte"
+
+msgid "All payments"
+msgstr "Alle Zahlungen"
+
+msgid "Amount, GRIN"
+msgstr "Betrag in GRIN"
+
+#. runtime
+msgid "An address of the other network"
+msgstr "Eine Adresse des anderen Netzwerks"
+
+#. runtime
+msgid "An address that is not in your contacts"
+msgstr "Eine Adresse, die nicht in Ihren Kontakten enthalten ist"
+
+#. runtime
+msgid "An earlier payment could not be sent through Tor and is still waiting"
+msgstr "Eine frühere Zahlung konnte nicht über Tor gesendet werden und wartet noch"
+
+#. runtime
+msgid "An earlier payment is contested: decide about it under “Waiting for you” first."
+msgstr "Eine frühere Zahlung wird angefochten: Beschließen Sie dies zuerst unter „Warten auf Sie“."
+
+msgid "An invoice does not say who issued it. Pay only an invoice you were expecting."
+msgstr "Auf einer Rechnung steht nicht, wer sie ausgestellt hat. Bezahlen Sie nur eine Rechnung, die Sie erwartet haben."
+
+msgid "An invoice is paid from “Receive”: paste its text there."
+msgstr "Eine Rechnung wird von „Empfangen“ aus bezahlt: Fügen Sie ihren Text dort ein."
+
+#. runtime
+msgid "Anna"
+msgstr "Anna"
+
+#. runtime
+msgid "Another GrinSight process holds the files of the network check"
+msgstr "Ein anderer GrinSight-Prozess hält die Dateien der Netzwerkprüfung"
+
+#. runtime
+msgid "Another reply was already chosen for this payment"
+msgstr "Für diese Zahlung wurde bereits eine andere Antwort gewählt"
+
+msgid "Any characters will do: letters of any language, digits, signs and spaces. Capital and small letters differ."
+msgstr "Es können alle Zeichen verwendet werden: Buchstaben jeder Sprache, Ziffern, Zeichen und Leerzeichen, Groß- und Kleinbuchstaben unterscheiden sich."
+
+msgid "Any password is accepted. Twelve characters or more are advised: the password is all that protects the wallet file on this device."
+msgstr "Jedes beliebige Passwort wird akzeptiert, zwölf oder mehr Zeichen werden empfohlen: Das Passwort ist alles, was die Wallet-Datei auf diesem Gerät schützt."
+
+msgid "Any program on this computer can read the clipboard. In a minute the wallet empties it if the words are still there; the clipboard history of Windows (Win+V) it cannot empty."
+msgstr "Jedes Programm auf diesem Computer kann die Zwischenablage lesen. Wenn die Wörter nach einer Minute noch dort stehen, leert das Wallet die Zwischenablage. Den Windows-Zwischenablageverlauf (Win+V) kann es nicht löschen."
+
+msgid "Ask for GRIN"
+msgstr "Fragen Sie nach GRIN"
+
+#. runtime
+msgid "At most 200 contacts at once"
+msgstr "Höchstens 200 Kontakte gleichzeitig"
+
+#. runtime
+msgid "At most 4 nodes"
+msgstr "Höchstens 4 Knoten"
+
+msgid "Auto-receive"
+msgstr "Automatischer Empfang"
+
+#. runtime
+msgid "Auto-receive is off"
+msgstr "Auto-Empfang ist ausgeschaltet"
+
+msgid "Available"
+msgstr "Verfügbar"
+
+msgid "Available "
+msgstr "Verfügbar "
+
+msgid "B/W"
+msgstr "S/W"
+
+msgid "Back"
+msgstr "Zurück"
+
+#. runtime
+msgid "Balance unavailable"
+msgstr "Kontostand nicht verfügbar"
+
+msgid "Bear crafts"
+msgstr "Bärenwerkstatt"
+
+msgid "Block"
+msgstr "Block"
+
+#. runtime
+msgid "Block headers"
+msgstr "Blockheader"
+
+#. runtime
+msgid "Blocks"
+msgstr "Blöcke"
+
+msgid "Both wallets show the same six words when each has the other's message key and address right. Compare them with the contact over another channel — a call, another messenger, in person. They are not the words of your wallet and are no secret. The same words mean nobody swapped a key or an address between you; they do not prove who the person is."
+msgstr "Beide Wallets zeigen die gleichen sechs Wörter, wenn beide den Nachrichtenschlüssel und die Adresse des anderen haben. Vergleichen Sie sie mit dem Kontakt über einen anderen Kanal - einen Anruf, einen anderen Boten, persönlich. Sie sind nicht die Wörter Ihres Wallets und sind kein Geheimnis. Die gleichen Wörter bedeuten, dass niemand einen Schlüssel oder eine Adresse zwischen Ihnen ausgetauscht hat; sie beweisen nicht, wer die Person ist."
+
+msgid "Bridges"
+msgstr "Brücken"
+
+msgid "Bridges, for where Tor is blocked"
+msgstr "Bridges, wo Tor blockiert ist"
+
+#. runtime
+msgid "Broken address"
+msgstr "Ungültige Adresse"
+
+#. runtime
+msgid "Broken address: check all of it"
+msgstr "Gebrochene Adresse: Überprüfen Sie alles"
+
+#. runtime
+msgid "Broken message key"
+msgstr "Gebrochener Nachrichtenschlüssel"
+
+msgid "By contact"
+msgstr "Nach Kontakt"
+
+msgid "By hand"
+msgstr "Manuell"
+
+msgid "By hand — I pass the Slatepack text on myself"
+msgstr "Von Hand — Ich übergebe mir den Slatepack-Text"
+
+msgid "By hand — Slatepack text"
+msgstr "Von Hand — Slatepack text"
+
+msgid "By hand: every payment is a text you pass on yourself."
+msgstr "Von Hand: Jede Zahlung ist ein Text, den Sie selbst weitergeben."
+
+msgid "By hand: the wallet makes a Slatepack text, you pass it on to the recipient."
+msgstr "Von Hand: Die Wallet erstellt einen Slatepack-Text, den Sie an den Empfänger weitergeben."
+
+#. runtime
+msgid "C"
+msgstr "C"
+
+#. runtime
+msgid "C:\\Users\\you\\AppData\\Local\\GrinSightLight\\data"
+msgstr "C:\\Users\\you\\AppData\\Local\\GrinSightLight\\data"
+
+#. runtime
+msgid "C:\\Users\\you\\AppData\\Local\\GrinSightLight\\guard"
+msgstr "C:\\Users\\you\\AppData\\Local\\GrinSightLight\\guard"
+
+#. runtime
+msgid "CATCHING UP"
+msgstr "SYNCHRONISIERUNG"
+
+#. runtime
+msgid "CHECKING"
+msgstr "WIRD GEPRÜFT"
+
+#. runtime
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgid "Cancel payment"
+msgstr "Zahlung abbrechen"
+
+#. runtime
+msgid "Cancel the payment"
+msgstr "Die Zahlung stornieren"
+
+#. runtime
+msgid "Cannot verify signing details"
+msgstr "Signaturdetails können nicht überprüft werden"
+
+#. runtime
+msgid "Cannot verify the invoice's details"
+msgstr "Die Details der Rechnung können nicht überprüft werden"
+
+#. runtime
+msgid "Careful: the payment names another address than the one you checked with this contact"
+msgstr "Achtung: Die Zahlung nennt eine andere Adresse als die, die Sie mit diesem Kontakt überprüft haben"
+
+#. runtime
+msgid "Chain options could not be applied"
+msgstr "Kettenoptionen konnten nicht angewendet werden"
+
+msgid "Chain starting point"
+msgstr "Ketten-Ausgangspunkt"
+
+msgid "Change the contact"
+msgstr "Ändern Sie den Kontakt"
+
+msgid "Change the contact's details"
+msgstr "Ändern Sie die Details des Kontakts"
+
+msgid "Change the password"
+msgstr "Das Passwort ändern"
+
+msgid "Change the password, see the 24 words again, delete the wallet from this computer"
+msgstr "Ändern Sie das Passwort, sehen Sie die 24 Wörter erneut, löschen Sie die Wallet von diesem Computer"
+
+msgid "Check"
+msgstr "Prüfen"
+
+msgid "Check all headers from genesis and build your own checkpoint. On Mainnet the first pass can download about 1.7 GB and take tens of minutes. It locks the wallet; unlock it to begin. Progress is in Details."
+msgstr "Überprüfen Sie alle Header von genesis und bauen Sie Ihren eigenen Checkpoint. Im Mainnet kann der erste Durchgang etwa 1,7 GB herunterladen und dauert zehn Minuten. Er sperrt die Wallet; entsperren Sie sie, um zu beginnen. Der Fortschritt ist in Details."
+
+#. runtime
+msgid "Check the address with the recipient another way."
+msgstr "Überprüfen Sie die Adresse mit dem Empfänger auf andere Weise."
+
+#. runtime
+msgid "Check the address with the sender some other way."
+msgstr "Überprüfen Sie die Adresse beim Absender auf andere Weise."
+
+#. runtime
+msgid "Check the operation before paying again. A signature may already exist."
+msgstr "Prüfen Sie den Vorgang, bevor Sie erneut zahlen. Möglicherweise wurde die Zahlung bereits signiert."
+
+#. runtime
+msgid "Check this invoice. Its signing result is unknown."
+msgstr "Überprüfen Sie diese Rechnung. Ihr Unterschriftsergebnis ist unbekannt."
+
+msgid "Check this network’s headers from its first block? A first Mainnet check can download about 1.7 GB. The wallet will lock. Unlock it to start or resume the check."
+msgstr "Die Header dieses Netzes ab dem ersten Block prüfen? Die erste Prüfung im Mainnet kann etwa 1,7 GB herunterladen. Die Wallet wird gesperrt. Zum Starten oder Fortsetzen entsperren Sie sie."
+
+#. runtime
+msgid "Check this payment. Signing may have completed."
+msgstr "Überprüfen Sie diese Zahlung. Die Unterzeichnung ist möglicherweise abgeschlossen."
+
+msgid "Checking…"
+msgstr "Prüfung läuft…"
+
+#. runtime
+msgid "Checkpoint for block {} saved."
+msgstr "Checkpoint für Block {} gespeichert."
+
+#. runtime
+msgid "Checkpoint saved at block {}. GSHP1 samples verified: {}. Unlock to continue."
+msgstr "Checkpoint am Block gespeichert {}- Ja, das ist es. GSHP1 Proben überprüft: {}. Entsperren, um fortzufahren."
+
+msgid "Choose a .gshp file from another wallet, or checkpoint.json with history.proof in the same folder. GSHP1 is checked locally. The next sync downloads blocks after the point. Import locks the wallet and ends unfinished signing sessions."
+msgstr "Wählen Sie eine .gshp-Datei aus einem anderen Wallet oder checkpoint.json mit history.proof im selben Ordner aus. GSHP1 wird lokal überprüft. Die nächste Synchronisation lädt Blöcke nach dem Punkt herunter. Import sperrt das Wallet und beendet unvollendete Signatursitzungen."
+
+msgid "Choose a contact"
+msgstr "Einen Kontakt auswählen"
+
+msgid "Choose a contact on the left to see the conversation."
+msgstr "Wählen Sie einen Kontakt auf der linken Seite aus, um die Unterhaltung anzuzeigen."
+
+msgid "Choose a contact on the right to see the conversation."
+msgstr "Wählen Sie einen Kontakt auf der rechten Seite aus, um die Unterhaltung anzuzeigen."
+
+msgid "Choose a password"
+msgstr "Wählen Sie ein Passwort"
+
+msgid "Choose checkpoint file…"
+msgstr "Checkpoint-Datei auswählen…"
+
+msgid "Choose the outputs to pay with"
+msgstr "Wählen Sie die Ausgänge, mit denen Sie bezahlen möchten"
+
+#. runtime
+msgid "Chosen tip"
+msgstr "Gewählte Kettenspitze"
+
+msgid "Chosen: "
+msgstr "Ausgewählt: "
+
+msgid "Close"
+msgstr "Schließen"
+
+msgid "Close the list"
+msgstr "Schließen Sie die Liste"
+
+msgid "Close the list to add"
+msgstr "Schließen Sie die Liste zum Hinzufügen"
+
+msgid "Collect"
+msgstr "Zusammenführen"
+
+msgid "Collect into one"
+msgstr "Sammeln Sie in einem"
+
+#. runtime
+msgid "Collect {} outputs into one of {} GRIN? The fee is {} GRIN. It is one transaction: whoever looks at the chain sees that these outputs had one owner, and that cannot be taken back. Marked outputs are left alone."
+msgstr "Collect {} Ausgänge in einen der {} GRIN? Die Gebühr ist {} GRIN. Es ist eine Transaktion: Wer sich die Kette anschaut, sieht, dass diese Ausgaben einen Besitzer hatten, und das kann nicht rückgängig gemacht werden. Markierte Ausgaben bleiben in Ruhe."
+
+#. runtime
+msgid "Coming in: {} GRIN · waiting for a block"
+msgstr "Kommt ein: {} GRIN · wartet auf einen Block"
+
+msgid "Compare the check code"
+msgstr "Vergleichen Sie den Prüfcode"
+
+#. runtime
+msgid "Confirmation"
+msgstr "Bestätigung"
+
+msgid "Connection"
+msgstr "Verbindung"
+
+msgid "Connection and synchronisation"
+msgstr "Verbindung und Synchronisation"
+
+#. runtime
+msgid "Contact {}"
+msgstr "Kontakt {}"
+
+#. runtime
+msgid "Contact {} of the list: {} Added before it: {}"
+msgstr "Kontakt {} Die Liste der Liste: {} Hinzugefügt vor ihm: {}"
+
+msgid "Contacts"
+msgstr "Kontakte"
+
+msgid "Conversation"
+msgstr "Unterhaltung"
+
+msgid "Copied"
+msgstr "Kopiert"
+
+msgid "Copy"
+msgstr "Kopieren"
+
+msgid "Copy the address"
+msgstr "Kopieren Sie die Adresse"
+
+msgid "Copy the key"
+msgstr "Kopieren Sie den Schlüssel"
+
+msgid "Copy the words"
+msgstr "Kopiere die Wörter"
+
+#. runtime
+msgid "Could not be sent now. The wallet keeps trying."
+msgstr "Konnte jetzt nicht gesendet werden. Die Wallet versucht es immer wieder."
+
+#. runtime
+msgid "Could not confirm the export. Check the chosen folder."
+msgstr "Der Export konnte nicht bestätigt werden. Überprüfen Sie den ausgewählten Ordner."
+
+#. runtime
+msgid "Could not confirm the startup choice. Try again after the wallet service is ready."
+msgstr "Die Startauswahl konnte nicht bestätigt werden. Versuchen Sie es erneut, nachdem der Wallet-Dienst bereit ist."
+
+#. runtime
+msgid "Could not create the file. Choose a new filename in a writable folder."
+msgstr "Die Datei konnte nicht erstellt werden. Wählen Sie einen neuen Dateinamen in einem beschreibbaren Ordner."
+
+msgid "Create a message key"
+msgstr "Nachrichtenschlüssel erstellen"
+
+msgid "Create a wallet"
+msgstr "Ein Portemonnaie erstellen"
+
+msgid "Creating…"
+msgstr "Wird erstellt…"
+
+msgid "Current password"
+msgstr "Aktuelles Passwort"
+
+#. runtime
+msgid "Decline"
+msgstr "Ablehnen"
+
+#. runtime
+msgid "Default: the release starting point. Choose verification from the first block in Details after unlocking."
+msgstr "Wählen Sie in Details nach dem Entsperren die Verifizierung aus dem ersten Block aus."
+
+msgid "Delete"
+msgstr "Löschen"
+
+msgid "Delete all"
+msgstr "Alle löschen"
+
+msgid "Delete every contact and conversation"
+msgstr "Jeden Kontakt und jede Konversation löschen"
+
+msgid "Delete the contact"
+msgstr "Den Kontakt löschen"
+
+msgid "Delete the contact “{}”?"
+msgstr "Den Kontakt „{}“ löschen?"
+
+msgid "Delete the contact…"
+msgstr "Löschen Sie den Kontakt…"
+
+msgid "Delete the wallet"
+msgstr "Die Wallet löschen"
+
+msgid "Delete the wallet for good"
+msgstr "Die Wallet endgültig löschen"
+
+msgid "Delete this contact and its conversation?"
+msgstr "Diesen Kontakt und seine Konversation löschen?"
+
+msgid "Delete with the conversation"
+msgstr "Mit der Konversation löschen"
+
+msgid "Delivery is set to “By hand” on the main screen: contacts and Tor are not offered here."
+msgstr "Die Zustellung ist im Hauptbildschirm auf „Von Hand“ eingestellt: Kontakte und Tor werden hier nicht angeboten."
+
+msgid "Delivery is set to “By hand” on the main screen: contacts are not offered here."
+msgstr "Die Zustellung ist im Hauptbildschirm auf „Per Hand“ eingestellt: Kontakte werden hier nicht angeboten."
+
+#. runtime
+msgid "Delivery over Tor is not set up — send by hand"
+msgstr "Die Zustellung über Tor ist nicht eingerichtet – manuell senden"
+
+msgid "Details"
+msgstr "Details"
+
+#. runtime
+msgid "Directly · bridges are for where Tor is blocked"
+msgstr "Direkt · Brücken sind dort, wo Tor blockiert ist"
+
+msgid "Directly — the ordinary way"
+msgstr "Direkt — auf die gewöhnliche Art"
+
+msgid "Do not pay"
+msgstr "Zahlen Sie nicht"
+
+msgid "Do not spend"
+msgstr "Geben Sie nicht aus"
+
+msgid "Do not work without Tor"
+msgstr "Funktioniert nicht ohne Tor"
+
+msgid "Done"
+msgstr "Fertig"
+
+#. runtime
+msgid "Each line is one address starting with https://"
+msgstr "Jede Zeile ist eine Adresse, die mit https:// beginnt"
+
+msgid "Each of the two can be switched off, in case you need to. Off means its program does not run. Tor is switched at once and the wallet stays open; for Nostr the wallet locks and asks for the password again."
+msgstr "Beide können bei Bedarf ausgeschaltet werden, Off bedeutet, dass das Programm nicht läuft. Tor wird sofort eingeschaltet und das Wallet bleibt geöffnet, bei Nostr wird das Wallet gesperrt und nach dem Passwort gefragt."
+
+msgid "Each of the two can be switched off, in case you need to. Off means its program is not started at all. Switching takes effect at once: the wallet locks and asks for the password again."
+msgstr "Beide können bei Bedarf ausgeschaltet werden. Aus bedeutet, dass das Programm überhaupt nicht gestartet wird. Die Umschaltung hat sofort Wirkung: Die Wallet wird gesperrt und fragt erneut nach dem Passwort."
+
+msgid "Emerald"
+msgstr "Smaragd"
+
+#. runtime
+msgid "Enter a password"
+msgstr "Passwort eingeben"
+
+msgid "Enter your 24 recovery words in their original order, with one space between words. For example: apple river stone …"
+msgstr "Geben Sie die 24 Wiederherstellungswörter in der ursprünglichen Reihenfolge ein, jeweils mit einem Leerzeichen dazwischen. Beispiel: apple river stone …"
+
+msgid "Every output a payment spends adds to its fee, and a wallet restored from the words shows each as a line of its own in other programs. You can make one output of many: the wallet pays itself, for a fee. It is one transaction in the chain, and whoever looks at the chain sees from it that these outputs had one owner."
+msgstr "Jede Ausgabe, die eine Zahlung ausgibt, fügt sich zu ihrer Gebühr hinzu, und eine aus den Wörtern wiederhergestellte Wallet zeigt jede als eigene Zeile in anderen Programmen an. Sie können eine Ausgabe von vielen machen: Die Wallet zahlt sich selbst, gegen eine Gebühr. Es ist eine Transaktion in der Kette, und jeder, der die Kette betrachtet, sieht daraus, dass diese Ausgaben einen Besitzer hatten."
+
+msgid "Everything is hidden"
+msgstr "Alles ist verborgen"
+
+msgid "Everything this wallet keeps on this computer is in the first folder. The 24 words are not there as text: without the password the files are of no use. The second folder holds a small file that guards against a wallet rolled back to an old copy."
+msgstr "Im ersten Ordner befindet sich alles, was diese Wallet auf diesem Computer aufbewahrt. Die 24 Wörter sind nicht als Text vorhanden: Ohne das Passwort sind die Dateien nutzlos. Im zweiten Ordner ist eine kleine Datei vorhanden, die verhindert, dass eine Wallet auf eine alte Kopie zurückgesetzt wird."
+
+msgid "Find a contact"
+msgstr "Einen Kontakt finden"
+
+msgid "Find by name"
+msgstr "Nach Name suchen"
+
+msgid "Font license"
+msgstr "Schriftlizenz"
+
+msgid "For a new wallet"
+msgstr "Für eine neue Geldbörse"
+
+msgid "From"
+msgstr "Von"
+
+msgid "From a file"
+msgstr "Aus einer Datei"
+
+#. runtime
+msgid "Full output scan requested."
+msgstr "Vollständiger Ausgabescan angefordert."
+
+msgid "GlauxMail: soon"
+msgstr "GlauxMail: demnächst"
+
+msgid "Got it"
+msgstr "Verstanden"
+
+#. runtime
+msgid "Got it, thanks 🙂"
+msgstr "Danke für den Hinweis."
+
+#. runtime
+msgid "Great"
+msgstr "Gut"
+
+#. runtime
+msgid "GrinSight {} · a wallet for people"
+msgstr "GrinSight {} · eine Geldbörse für Menschen"
+
+#. runtime
+msgid "Hand it to the recipient"
+msgstr "Überreichen Sie es dem Empfänger"
+
+#. runtime
+msgid "Handed over with your agreement to send it directly. If Tor does not send it, it goes straight to the network."
+msgstr "Übergeben mit Ihrer Zustimmung, es direkt zu senden. Wenn Tor Der Server sendet es nicht, es geht direkt ins Netzwerk."
+
+#. runtime
+msgid "Handed over; the answer is not known yet. The wallet keeps trying."
+msgstr "Übergeben; die Antwort ist noch nicht bekannt. Die Wallet versucht es immer wieder."
+
+#. runtime
+msgid "Headers checked from genesis. Historical transactions were not replayed."
+msgstr "Header wurden von Genesis geprüft. Historische Transaktionen wurden nicht wiedergegeben."
+
+#. runtime
+msgid "Hi! Can you send 0.5 for lunch?\nhttps://example.com — a link is shown as text only"
+msgstr "Kannst du mir 0,5 für das Mittagessen schicken?\nhttps://example.com — ein Link wird nur als Text angezeigt"
+
+msgid "Hidden in this window:"
+msgstr "In diesem Fenster versteckt:"
+
+msgid "Hide"
+msgstr "Ausblenden"
+
+msgid "Hide details"
+msgstr "Details ausblenden"
+
+msgid "Hide every payment that has ended by now from the lists of this window? Nothing is deleted: the records stay in the wallet's encrypted file, which needs them — for payments under way and so that no payment is answered twice. Payments still under way and new ones stay visible. You can show the hidden ones again."
+msgstr "Alle bereits abgeschlossenen Zahlungen aus den Listen dieses Fensters ausblenden? Nichts wird gelöscht: Die Einträge bleiben in der verschlüsselten Datei der Wallet, die sie benötigt – für laufende Zahlungen und damit keine Zahlung zweimal beantwortet wird. Noch laufende Zahlung und neue Zahlungen bleiben sichtbar. Sie können die ausgeblendeten Zahlungen wieder einblenden."
+
+msgid "Hide options"
+msgstr "Optionen ausblenden"
+
+msgid "Hide the QR code"
+msgstr "QR Code ausblenden"
+
+msgid "Hide the history"
+msgstr "Verlauf ausblenden"
+
+msgid "Hide the numbers"
+msgstr "Verstecke die Zahlen"
+
+msgid "Hide what the program reports"
+msgstr "Ausblenden, was das Programm meldet"
+
+#. runtime
+msgid "History before the starting point"
+msgstr "Geschichte vor dem Ausgangspunkt"
+
+msgid "Honey"
+msgstr "Honig"
+
+msgid "How Tor is reached"
+msgstr "Wie Tor erreicht wird"
+
+msgid "How far the wallet has checked the network, and what its programs say"
+msgstr "Wie weit die Wallet das Netzwerk überprüft hat und was ihre Programme sagen"
+
+msgid "How it gets there"
+msgstr "Wie es dorthin kommt"
+
+msgid "I wrote down all 24 words"
+msgstr "Ich schrieb alle 24 Wörter auf"
+
+msgid "I wrote the words down"
+msgstr "Ich schrieb die Worte nieder"
+
+msgid "Ice"
+msgstr "Eis"
+
+msgid "If you release the reserve and the payment was signed, whoever has it can still send it to the network, and the money leaves anyway. Release it only if you know the payment was never signed, or after asking the recipient."
+msgstr "Wenn die Zahlung schon signiert wurde, kann jeder, der sie besitzt, sie auch nach Freigabe der Reserve an das Netzwerk senden. Das Geld wird dann ausgegeben. Geben Sie die Reserve nur frei, wenn Sie sicher sind, dass nie signiert wurde, oder nach Rücksprache mit dem Empfänger."
+
+msgid "Import a checkpoint"
+msgstr "Importieren eines Checkpoints"
+
+msgid "Import locks the wallet. Any pending Slatepack that still needs your signature will need a new exchange. Unlock after import to sync from the saved point."
+msgstr "Beim Import wird das Wallet gesperrt. Für ausstehende Slatepacks, die Ihre Signatur noch benötigen, ist ein neuer Austausch erforderlich. Entsperren Sie das Wallet nach dem Import, um ab dem gespeicherten Kontrollpunkt zu synchronisieren."
+
+#. runtime
+msgid "Import outcome unknown. Unlock and check the starting point in Details."
+msgstr "Importergebnis unbekannt. Entsperren und den Startpunkt in Details überprüfen."
+
+#. runtime
+msgid "Import refused. Check the checkpoint file and the open profile."
+msgstr "Import verweigert. Überprüfen Sie die Checkpoint-Datei und das geöffnete Profil."
+
+#. runtime
+msgid "Import refused. Check the checkpoint file, wallet network and current starting point, then unlock to try again."
+msgstr "Überprüfen Sie die Checkpoint-Datei, das Wallet-Netzwerk und den aktuellen Startpunkt, entsperren Sie dann die Sperre und versuchen Sie es erneut."
+
+#. runtime
+msgid "Imported checkpoint at block {}. Its GSHP1 history sample was verified on this device."
+msgstr "Importierter Checkpoint am Block {}. Seine GSHP1-Geschichtsprobe wurde auf diesem Gerät verifiziert."
+
+msgid "Importing checkpoint…"
+msgstr "Prüfpunkt wird importiert…"
+
+#. runtime
+msgid "Incoming"
+msgstr "Eingang"
+
+msgid "Incoming only"
+msgstr "Nur Eingänge"
+
+msgid "Incoming payment"
+msgstr "Eingehende Zahlung"
+
+#. runtime
+msgid "Invoice payment"
+msgstr "Rechnungszahlung"
+
+#. runtime
+msgid "Reply ready — send it to the invoice issuer"
+msgstr "Antwort bereit – an den Rechnungssteller senden"
+
+#. runtime
+msgid "Invoice session ended. Check the payment before issuing a new invoice."
+msgstr "Rechnungssitzung beendet. Überprüfen Sie die Zahlung, bevor Sie eine neue Rechnung ausstellen."
+
+#. runtime
+msgid "Invoice to pass on"
+msgstr "Rechnung zum Weiterleiten"
+
+msgid "Is it really them?"
+msgstr "Sind es wirklich sie?"
+
+#. runtime
+msgid "It cannot be paid to."
+msgstr "Es kann nicht bezahlt werden."
+
+#. runtime
+msgid "It is sent again by itself. Check the connection. Open the payment in Recent payments: there you can send it to the network again now. If Tor is closed on this network: try Tor bridges, allow direct sending in the options of the first screen, or switch Tor off — the node then sees your address."
+msgstr "Die Zahlung wird von selbst erneut gesendet. Überprüfen Sie die Verbindung. Öffnen Sie die Zahlung in Kürzlich getätigte Zahlungen: dort können Sie sie jetzt erneut an das Netzwerk senden. Wenn Tor in diesem Netzwerk geschlossen ist: versuchen Sie Tor-Brücken, erlauben Sie das direkte Senden in den Optionen des ersten Bildschirms oder schalten Sie Tor aus - der Knoten sieht dann Ihre Adresse."
+
+msgid "Keep it reserved"
+msgstr "Reserviert lassen"
+
+msgid "Keep the wallet unlocked until this payment is signed. Closing or locking it ends the signing session."
+msgstr "Lassen Sie die Wallet entsperrt, bis diese Zahlung signiert ist, und schließen oder sperren Sie sie, um die Signatursitzung zu beenden."
+
+msgid "Key copied"
+msgstr "Schlüssel kopiert"
+
+msgid "Language"
+msgstr "Sprache"
+
+msgid "Later starts use the compact point saved by this wallet. Your keys and payments stay in this profile."
+msgstr "Spätere Starts verwenden den kompakten Punkt, der von dieser Wallet gespeichert wird, Ihre Schlüssel und Zahlungen bleiben in diesem Profil."
+
+msgid "Let the wallet choose the outputs"
+msgstr "Lassen Sie die Wallet die Ausgänge wählen"
+
+msgid "Let's check the words are written down"
+msgstr "Lassen Sie uns überprüfen, ob die Wörter aufgeschrieben sind"
+
+#. runtime
+msgid "Line {} is not a bridge line: it should read like obfs4 203.0.113.7:443 <40 hex digits> cert=…"
+msgstr "Zeile {} ist keine Bridge-Zeile: Sie sollte wie folgt lauten: obfs4 203.0.113.7:443 <40 hexadezimale Ziffern> cert=…"
+
+#. runtime
+msgid "Line {} is too long for a bridge line"
+msgstr "Linie {} ist zu lang für eine Brückenlinie"
+
+#. runtime
+msgid "Line {}: a message key starts with npub1"
+msgstr "Zeile {}: Ein Nachrichtenschlüssel beginnt mit npub1"
+
+#. runtime
+msgid "Line {}: the address is broken or of the other network"
+msgstr "Zeile {}: die Adresse ist defekt oder des anderen Netzwerks"
+
+#. runtime
+msgid "Local checkpoint"
+msgstr "Lokaler Prüfpunkt"
+
+msgid "Lock"
+msgstr "Sperren"
+
+#. runtime
+msgid "Look"
+msgstr "Darstellung"
+
+#. runtime
+msgid "Look-alike letters"
+msgstr "Ähnlich aussehende Zeichen"
+
+msgid "Mainnet is real GRIN. Testnet is practice coins that are worth nothing."
+msgstr "Mainnet ist echtes GRIN, Testnet sind Übungsmünzen, die nichts wert sind."
+
+msgid "Mainnet. "
+msgstr "Mainnet. "
+
+#. runtime
+msgid "Make a new point"
+msgstr "Einen neuen Punkt erstellen"
+
+msgid "Make an invoice"
+msgstr "Eine Rechnung erstellen"
+
+#. runtime
+msgid "Make my own starting point"
+msgstr "Mache meinen eigenen Ausgangspunkt"
+
+msgid "Make sure nobody sees the screen. Whoever knows the words controls the money."
+msgstr "Sorge dafür, dass niemand den Bildschirm sieht. Wer die Worte kennt, kontrolliert das Geld."
+
+msgid "Make the Slatepack text"
+msgstr "Machen Sie den Slatepack-Text"
+
+msgid "Making the point…"
+msgstr "Machen Sie den Punkt…"
+
+msgid "Many small outputs"
+msgstr "Viele kleine Ausgänge"
+
+msgid "Message"
+msgstr "Nachricht"
+
+#. runtime
+msgid "Message delivery"
+msgstr "Nachrichtenzustellung"
+
+#. runtime
+msgid "Message delivery does not work — see the log"
+msgstr "Die Nachrichtenzustellung funktioniert nicht — siehe Protokoll"
+
+#. runtime
+msgid "Message delivery is hindered"
+msgstr "Nachrichtenzustellung wird behindert"
+
+#. runtime
+msgid "Message delivery is not set up — payments go by hand (Slatepack)"
+msgstr "Nachrichtenzustellung ist nicht eingerichtet – Zahlungen erfolgen manuell (Slatepack)"
+
+#. runtime
+msgid "Message delivery is starting"
+msgstr "Nachrichtenzustellung beginnt"
+
+#. runtime
+msgid "Message delivery stopped"
+msgstr "Nachrichtenzustellung gestoppt"
+
+#. runtime
+msgid "Message key"
+msgstr "Nachrichtenschlüssel"
+
+msgid "Message keys (npub1…)"
+msgstr "Nachrichtenschlüssel (npub1…)"
+
+msgid "Message keys one a line; wallet addresses one a line, each on the line of its key (a line may be left empty). The contacts get the names “Contact 1”, “Contact 2”…"
+msgstr "Geben Sie die Nachrichtenschlüssel zeilenweise ein. Geben Sie die Wallet-Adresse jeweils in der entsprechenden Zeile des Adressfelds ein. Diese Zeile darf leer bleiben. Die Kontakte heißen zunächst „Kontakt 1“, „Kontakt 2“ usw."
+
+msgid "Messages (Nostr)"
+msgstr "Nachrichten (Nostr)"
+
+#. runtime
+msgid "Messages (Nostr): do not work without Tor — payments go by hand"
+msgstr "Nachrichten (Nostr): arbeiten nicht ohne Tor — Zahlungen gehen von Hand"
+
+#. runtime
+msgid "Messages (Nostr): switched off — payments to contacts go by hand"
+msgstr "Nachrichten (Nostr): ausgeschaltet — Zahlungen an Kontakte erfolgen manuell"
+
+msgid "Messages and payments to saved contacts travel through Nostr servers, over Tor. Off: the program for them is not started; payments go by hand or to an address."
+msgstr "Nachrichten und Zahlungen an gespeicherte Kontakte gehen über Nostr-Server, über Tor. Aus: das Programm für sie wird nicht gestartet; Zahlungen gehen von Hand oder an eine Adresse."
+
+#. runtime
+msgid "Messages go over Tor"
+msgstr "Nachrichten gehen über Tor"
+
+msgid "More"
+msgstr "Mehr"
+
+msgid "My bridges"
+msgstr "Meine Brücken"
+
+msgid "My details"
+msgstr "Meine Daten"
+
+#. runtime
+msgid "NETWORK UNKNOWN"
+msgstr "NETZWERK UNBEKANNT"
+
+#. runtime
+msgid "NO CHAIN"
+msgstr "KEINE KETTE"
+
+#. runtime
+msgid "NO DATA"
+msgstr "KEINE DATEN"
+
+msgid "Name"
+msgstr "Name"
+
+msgid "Network"
+msgstr "Netzwerk"
+
+#. runtime
+msgid "Network check"
+msgstr "Netzwerkprüfung"
+
+msgid "Network fee"
+msgstr "Netzwerkgebühr"
+
+#. runtime
+msgid "Network state"
+msgstr "Netzwerkzustand"
+
+msgid "New contact"
+msgstr "Neuer Kontakt"
+
+msgid "New password"
+msgstr "Neues Passwort"
+
+msgid "New wallet"
+msgstr "Neue Wallet"
+
+msgid "Next"
+msgstr "Weiter"
+
+msgid "No"
+msgstr "Nein"
+
+#. runtime
+msgid "No bridge lines: paste at least one"
+msgstr "Keine Brückenlinien: mindestens eine einfügen"
+
+#. runtime
+msgid "No connection to the chain"
+msgstr "Keine Verbindung zur Kette"
+
+msgid "No contacts yet"
+msgstr "Noch keine Kontakte"
+
+msgid "No contacts yet."
+msgstr "Noch keine Kontakte."
+
+msgid "No files yet. Put a .txt or .slatepack file into this folder: "
+msgstr "Noch keine Dateien. Legen Sie eine .txt- oder .slatepack-Datei in diesen Ordner: "
+
+msgid "No messages yet. Messages travel over Tor and wait on a delivery server until the contact comes online."
+msgstr "Nachrichten werden über Tor übertragen und warten auf einem Zustellserver, bis der Kontakt online ist."
+
+#. runtime
+msgid "No more than nine digits after the point"
+msgstr "Nicht mehr als neun Ziffern nach dem Punkt"
+
+#. runtime
+msgid "No payment this replies to"
+msgstr "Keine Zahlung, diese antwortet auf"
+
+#. runtime
+msgid "No payment to send"
+msgstr "Keine Zahlung zu senden"
+
+msgid "No payments yet"
+msgstr "Noch keine Zahlungen"
+
+#. runtime
+msgid "No point can be made now: the tip is confirmed only with a caveat. Try later. Nothing was changed."
+msgstr "Jetzt kann kein Punkt gemacht werden: Der Tipp wird nur mit einem Hinweis bestätigt. Versuchen Sie es später noch einmal. Nichts wurde geändert."
+
+#. runtime
+msgid "No profile folder"
+msgstr "Kein Profilordner"
+
+#. runtime
+msgid "No such contact"
+msgstr "Kein solcher Kontakt"
+
+#. runtime
+msgid "No such payment"
+msgstr "Keine solche Zahlung"
+
+#. runtime
+msgid "Nodes"
+msgstr "Knoten"
+
+#. runtime
+msgid "None · up to 4, they get transactions first"
+msgstr "Keine · bis zu 4, sie erhalten Transaktionen zuerst"
+
+#. runtime
+msgid "Not an address of your contacts"
+msgstr "Keine Adresse Ihrer Kontakte"
+
+#. runtime
+msgid "Not enough money with the fee"
+msgstr "Nicht genug Geld mit der Gebühr"
+
+#. runtime
+msgid "Not one of your contacts"
+msgstr "Nicht einer Ihrer Kontakte"
+
+#. runtime
+msgid "Nothing was changed."
+msgstr "Nichts wurde geändert."
+
+msgid "Nothing went wrong since the wallet was opened."
+msgstr "Nichts ist schief gegangen, seit die Brieftasche geöffnet wurde."
+
+msgid "Off"
+msgstr "Aus"
+
+msgid "Off · nodes will see the IP of "
+msgstr "Aus · Knoten sehen die IP von "
+
+msgid "Off · payments to contacts go by hand"
+msgstr "Aus · Zahlungen an Kontakte gehen per Hand"
+
+msgid "On"
+msgstr "Ein"
+
+msgid "On: if Tor does not work, a payment goes out without it and the node sees your address. Off: the wallet waits for Tor."
+msgstr "On: if Tor Aus: Die Wallet wartet auf die Übermittlung einer Zahlung, die ohne diese Adresse erfolgt, und der Knoten sieht Ihre Adresse. Tor- Ja, das ist es."
+
+msgid "Once more"
+msgstr "Noch einmal"
+
+msgid "Once signed, the payment cannot be cancelled. You pass the reply to whoever issued the invoice; they complete the payment and send it to the network."
+msgstr "Nach der Unterzeichnung kann die Zahlung nicht rückgängig gemacht werden. Sie geben die Antwort an den Rechnungssteller weiter. Dieser schließt die Zahlung ab und sendet sie an das Netzwerk."
+
+msgid "One bridge a line, as Tor gives them. Fresh ones: bridges.torproject.org, or the Telegram bot @GetBridgesBot."
+msgstr "Eine Brücke pro Zeile, wie Tor es ihnen gibt, frische: bridges.torproject.org, oder der Telegram-Bot @GetBridgesBot."
+
+#. runtime
+msgid "One of the chosen outputs cannot be spent now: it is held by another payment or is not mature yet"
+msgstr "Einer der gewählten Outputs kann jetzt nicht ausgegeben werden: er wird von einer anderen Zahlung gehalten oder ist noch nicht fällig"
+
+#. runtime
+msgid "One of the chosen outputs is marked “not to be spent”"
+msgstr "Einer der gewählten Ausgänge ist als „nicht auszugeben“ markiert"
+
+#. runtime
+msgid "One of the chosen outputs is marked “not to be spent”: confirm below that it is spent in this payment, or take it out of the choice"
+msgstr "Eine der gewählten Ausgaben ist als „nicht auszugeben“ markiert: Bestätigen Sie unten, dass sie in dieser Zahlung ausgegeben wird, oder entfernen Sie sie aus der Auswahl"
+
+#. runtime
+msgid "One of the chosen outputs is no longer in the wallet: open the list again"
+msgstr "Einer der gewählten Outputs befindet sich nicht mehr in der Wallet: Öffnen Sie die Liste erneut"
+
+#. runtime
+msgid "Only digits and one point or comma in an amount"
+msgstr "Nur Ziffern und ein Punkt oder Komma in einem Betrag"
+
+msgid "Open the conversation in a window of its own"
+msgstr "Öffnen der Konversation in einem eigenen Fenster"
+
+msgid "Open the conversation on a page of its own"
+msgstr "Die Konversation auf einer eigenen Seite öffnen"
+
+msgid "Options"
+msgstr "Optionen"
+
+msgid "Or a Slatepack you were sent: a payment or an invoice"
+msgstr "Oder ein Slatepack, das Sie erhalten haben: eine Zahlung oder eine Rechnung"
+
+msgid "Or a Slatepack you were sent: a payment, an invoice, or the answer to your invoice"
+msgstr "Oder ein Slatepack, das Sie erhalten haben: eine Zahlung, eine Rechnung oder die Antwort auf Ihre Rechnung"
+
+msgid "Outgoing only"
+msgstr "Nur Ausgänge"
+
+msgid "Outputs"
+msgstr "Ausgänge"
+
+msgid "Over Tor — to a grin1 address"
+msgstr "Über Tor an eine grin1-Adresse"
+
+#. runtime
+msgid "Over Tor, sender unverified"
+msgstr "Über Tor, Absender unverifiziert"
+
+msgid "Own nodes"
+msgstr "Eigene Knoten"
+
+msgid "Own nodes and a point from another device"
+msgstr "Eigene Knoten und ein Punkt von einem anderen Gerät"
+
+msgid "Own nodes and own point"
+msgstr "Eigene Knoten und eigener Punkt"
+
+msgid "Own point"
+msgstr "Eigener Prüfpunkt"
+
+msgid "Own starting point: an open wallet makes it under Connection → Details. A point made on another computer of yours can be pasted here whole. Leave empty for the built-in point."
+msgstr "Eigener Ausgangspunkt: Ein geöffneter Wallet macht ihn unter Verbindung → Details. Ein auf einem anderen Rechner erstellter Punkt kann hier ganz eingefügt werden, für den eingebauten Punkt lässt man das Feld leer."
+
+#. runtime
+msgid "P"
+msgstr "P"
+
+msgid "Pass on this text"
+msgstr "Diesen Text weitergeben"
+
+#. runtime
+msgid "Pass on to the recipient"
+msgstr "An den Empfänger weitergeben"
+
+#. runtime
+msgid "Pass this text to the sender. The money arrives when they sign the payment and the transaction is in a block."
+msgstr "Übergeben Sie diese Textnachricht an den Absender, der das Geld erhält, wenn er die Zahlung unterzeichnet und die Transaktion in einem Block ist."
+
+#. runtime
+msgid "Pass this text to whoever pays you. Paste their answer below: the wallet checks it against this invoice and signs its part. The money is yours when the payment is in a block."
+msgstr "Übergeben Sie diesen Text an Ihren Zahlungsempfänger und fügen Sie seine Antwort unten ein: Die Wallet überprüft die Rechnung und unterzeichnet ihren Teil. Das Geld gehört Ihnen, wenn die Zahlung in einem Block erfolgt ist."
+
+msgid "Password"
+msgstr "Passwort"
+
+msgid "Password and words"
+msgstr "Passwort und Wörter"
+
+msgid "Password for "
+msgstr "Passwort für "
+
+msgid "Paste"
+msgstr "Einfügen"
+
+#. runtime
+msgid "Paste the payer's answer"
+msgstr "Fügen Sie die Antwort des Zahlers ein"
+
+#. runtime
+msgid "Paste the recipient's reply"
+msgstr "Die Antwort des Empfängers einfügen"
+
+#. runtime
+msgid "Paste the reply"
+msgstr "Fügen Sie die Antwort ein"
+
+#. runtime
+msgid "Paste the sender's text"
+msgstr "Text des Absenders einfügen"
+
+#. runtime
+msgid "Paul"
+msgstr "Paul"
+
+msgid "Pay the invoice"
+msgstr "Die Rechnung bezahlen"
+
+#. runtime
+msgid "Payment"
+msgstr "Zahlung"
+
+msgid "Payment delivery"
+msgstr "Zahlungsübermittlung"
+
+msgid "Payment or invoice as text"
+msgstr "Zahlung oder Rechnung als Text"
+
+#. runtime
+msgid "Payment prepared"
+msgstr "Zahlung vorbereitet"
+
+#. runtime
+msgid "Payment prepared — Tor did not take it"
+msgstr "Zahlung vorbereitet — Tor hat sie nicht angenommen"
+
+#. runtime
+msgid "Payment sent over Tor"
+msgstr "Zahlung über Tor gesendet"
+
+#. runtime
+msgid "Payments still go by hand (Slatepack). It is started again by itself; Tor may be blocked on this network."
+msgstr "Zahlungen gehen noch von Hand (Slatepack), es startet wieder von selbst; Tor kann in diesem Netzwerk blockiert sein."
+
+msgid "Phrase to find you in Nostr"
+msgstr "Phrase, um Sie in Nostr zu finden"
+
+msgid "Point from another device"
+msgstr "Zeigen Sie von einem anderen Gerät aus"
+
+msgid "Preparing…"
+msgstr "Vorbereitung…"
+
+msgid "Problems"
+msgstr "Probleme"
+
+msgid "QR code"
+msgstr "QR-Code"
+
+msgid "QR code to a file"
+msgstr "QR-Code zu einer Datei"
+
+msgid "Read the text"
+msgstr "Lesen Sie den Text"
+
+msgid "Reading…"
+msgstr "Wird gelesen…"
+
+#. runtime
+msgid "Ready to use"
+msgstr "Einsatzbereit"
+
+msgid "Receive"
+msgstr "Empfangen"
+
+msgid "Receive and copy the address"
+msgstr "Adresse empfangen und kopieren"
+
+msgid "Received after"
+msgstr "Empfangen nach"
+
+msgid "Recent payments"
+msgstr "Letzte Zahlungen"
+
+msgid "Recheck headers from genesis"
+msgstr "Header aus Genesis neu überprüfen"
+
+#. runtime
+msgid "Recipient"
+msgstr "Empfänger"
+
+msgid "Recipient's address"
+msgstr "Empfängeradresse"
+
+msgid "Recipient's address (optional)"
+msgstr "Adresse des Empfängers (optional)"
+
+#. runtime
+msgid "Release starting point. History up to it was checked by sampling its work."
+msgstr "Die Geschichte bis zu diesem Zeitpunkt wurde durch Sampling seiner Arbeit überprüft."
+
+msgid "Release the reserve"
+msgstr "Reserve freigeben"
+
+msgid "Releasing…"
+msgstr "Freigabe läuft…"
+
+msgid "Repeat the password"
+msgstr "Wiederholen Sie das Passwort"
+
+#. runtime
+msgid "Reply to the sender"
+msgstr "An den Absender antworten"
+
+msgid "Requesting the full output scan…"
+msgstr "Der vollständige Ausgabescan wird angefordert…"
+
+msgid "Rescan old wallet outputs"
+msgstr "Alte Wallet-Ausgaben neu scannen"
+
+msgid "Restart the wallet"
+msgstr "Das Wallet neu starten"
+
+msgid "Restore"
+msgstr "Wiederherstellen"
+
+msgid "Restore a wallet from words"
+msgstr "Wiederherstellen einer Wallet aus Wörtern"
+
+msgid "Restore from words"
+msgstr "Mit Wörtern wiederherstellen"
+
+msgid "Restoring…"
+msgstr "Wiederherstellung…"
+
+#. runtime
+msgid "Review payment"
+msgstr "Zahlung prüfen"
+
+msgid "Review the payment reserve"
+msgstr "Überprüfen der Zahlungsreserve"
+
+#. runtime
+msgid "SEARCHING"
+msgstr "SUCHE LÄUFT"
+
+msgid "Safety"
+msgstr "Sicherheit"
+
+msgid "Save"
+msgstr "Speichern"
+
+msgid "Save a changed address first: the code is of the saved one, and the mark goes when the address changes."
+msgstr "Speichern Sie zuerst eine geänderte Adresse: Der Code ist der der gespeicherten Adresse und das Zeichen verschwindet, wenn sich die Adresse ändert."
+
+#. runtime
+msgid "Save checkpoint to a new .gshp file"
+msgstr "Speichern Sie den Checkpoint in einer neuen .gshp Datei"
+
+msgid "Save checkpoint to one file…"
+msgstr "Checkpoint in einer Datei speichern…"
+
+msgid "Save this wallet’s verified checkpoint and GSHP1 proof together. You can send the file to another device. This is a local copy without wallet keys or funds."
+msgstr "Speichern Sie den verifizierten Checkpoint dieser Wallet und den GSHP1-Beweis zusammen. Sie können die Datei an ein anderes Gerät senden. Dies ist eine lokale Kopie ohne Wallet-Schlüssel oder Gelder."
+
+#. runtime
+msgid "Saved. It is used from the next unlock."
+msgstr "Gespeichert. Es wird ab dem nächsten Entsperren verwendet."
+
+#. runtime
+msgid "Saved. It takes effect at the next unlock."
+msgstr "Gespeichert. Es wird beim nächsten Entsperren wirksam."
+
+#. runtime
+msgid "Saved: {}"
+msgstr "Gespeichert: {}"
+
+msgid "Saving checkpoint…"
+msgstr "Prüfpunkt wird gespeichert…"
+
+msgid "Saving your startup choice…"
+msgstr "Ihre Startauswahl wird gespeichert…"
+
+msgid "Saving…"
+msgstr "Wird gespeichert…"
+
+#. runtime
+msgid "Search for old money"
+msgstr "Suche nach altem Geld"
+
+msgid "Search the archive for outputs belonging to this wallet, including older proof formats. It keeps the current chain checkpoint. The scan can download hundreds of MB or more. Keep the wallet unlocked and follow progress in Details."
+msgstr "Durchsuchen Sie das Archiv nach Ausgaben, die zu dieser Wallet gehören, einschließlich älterer Proof-Formate. Es behält den aktuellen Chain-Checkpoint bei. Der Scan kann Hunderte von MB oder mehr herunterladen. Behalten Sie die Wallet entsperrt und verfolgen Sie den Fortschritt in Details."
+
+msgid "Search the whole archive for this wallet’s outputs, including older proof formats? This can download hundreds of MB or more. Keep the wallet open to follow progress above."
+msgstr "Das gesamte Archiv nach Ausgaben dieser Wallet durchsuchen, einschließlich älterer Proof-Formate? Dies kann Hunderte von MB oder mehr herunterladen. Halten Sie die Wallet offen, um den Fortschritt oben zu verfolgen."
+
+msgid "Search the whole archive for this wallet’s outputs? This can download hundreds of MB or more. The wallet stays open."
+msgstr "Das gesamte Archiv nach Ausgaben dieser Wallet durchsuchen? Dies kann Hunderte von MB oder mehr herunterladen. Die Wallet bleibt offen."
+
+#. runtime
+msgid "Select a .gshp file or checkpoint.json"
+msgstr "Wählen Sie eine .gshp-Datei oder checkpoint.json"
+
+msgid "Send"
+msgstr "Senden"
+
+msgid "Send GRIN"
+msgstr "GRIN senden"
+
+msgid "Send GRIN to the contact"
+msgstr "Senden Sie GRIN an den Kontakt"
+
+msgid "Send directly"
+msgstr "Direkt senden"
+
+msgid "Send directly if Tor fails"
+msgstr "Direkt senden, wenn Tor ausfällt"
+
+msgid "Send it directly"
+msgstr "Senden Sie es direkt"
+
+msgid "Send over Tor"
+msgstr "Senden über Tor"
+
+msgid "Send over Tor to the address"
+msgstr "Senden Sie Tor an die Adresse"
+
+msgid "Send this one payment without Tor? The node that takes it sees the address of your device. Other payments still go through Tor."
+msgstr "Diese Zahlung ohne Tor senden? Der Knoten, der sie annimmt, sieht die Adresse Ihres Geräts. Andere Zahlungen gehen immer noch über Tor."
+
+msgid "Send this payment directly"
+msgstr "Senden Sie diese Zahlung direkt"
+
+#. runtime
+msgid "Send this text to the recipient any way you like. They paste it into their wallet and send a reply back — paste the reply below."
+msgstr "Senden Sie diesen Text an den Empfänger auf die von Ihnen gewünschte Art und Weise. Er fügt ihn in seine Wallet ein und sendet eine Antwort zurück. Fügen Sie die Antwort unten ein."
+
+#. runtime
+msgid "Send this text to the recipient any way you like. They paste it into their wallet and send a reply — paste the reply below. The money is reserved until the payment is signed or cancelled."
+msgstr "Senden Sie diesen Text an den Empfänger auf die von Ihnen gewünschte Art und Weise. Er fügt ihn in seine Wallet ein und sendet eine Antwort – fügen Sie die Antwort unten ein. Das Geld wird reserviert, bis die Zahlung unterzeichnet oder storniert wird."
+
+#. runtime
+msgid "Send this text to whoever issued the invoice. They complete the payment and send it to the network; until then the money stays reserved. If the text is lost, read the same invoice again: the wallet gives this reply again and pays nothing twice."
+msgstr "Senden Sie diese SMS an den Rechnungssteller, der die Zahlung abschließt und an das Netzwerk sendet; bis dahin bleibt das Geld reserviert. Wenn die SMS verloren geht, lesen Sie die gleiche Rechnung noch einmal: Das Wallet gibt diese Antwort noch einmal und zahlt nichts zweimal."
+
+msgid "Send to the contact"
+msgstr "An den Kontakt senden"
+
+msgid "Send to the network again"
+msgstr "Erneut an das Netzwerk senden"
+
+#. runtime
+msgid "Sender unverified"
+msgstr "Absender ungeprüft"
+
+#. runtime
+msgid "Sending…"
+msgstr "Wird gesendet…"
+
+msgid "Set"
+msgstr "Festlegen"
+
+msgid "Settings"
+msgstr "Einstellungen"
+
+msgid "Show the 24 words"
+msgstr "Zeige die 24 Wörter"
+
+msgid "Show the Slatepack text"
+msgstr "Zeige den Slatepack-Text"
+
+msgid "Show the check code"
+msgstr "Zeigen Sie den Prüfcode"
+
+msgid "Show the payment as it came"
+msgstr "Zeigen Sie die Zahlung, wie sie kam"
+
+msgid "Show the text"
+msgstr "Zeige den Text"
+
+msgid "Show the words"
+msgstr "Zeige die Wörter"
+
+msgid "Show the words again"
+msgstr "Zeige die Wörter noch einmal"
+
+msgid "Show them again"
+msgstr "Zeige sie wieder"
+
+#. runtime
+msgid "Sign"
+msgstr "Signieren"
+
+msgid "Sign and send"
+msgstr "Unterschreiben und senden"
+
+msgid "Sign and wait for Tor"
+msgstr "Unterschreiben und auf Tor warten"
+
+msgid "Sign the payment"
+msgstr "Unterzeichnen Sie die Zahlung"
+
+msgid "Sign, and send this one directly"
+msgstr "Unterschreiben Sie und senden Sie diese direkt"
+
+#. runtime
+msgid "Signed payment"
+msgstr "Signierte Zahlung"
+
+#. runtime
+msgid "Signed, not in a block yet. The wallet keeps sending it through Tor by itself. If Tor does not come up, choose below: wait for Tor and try again; send this one payment directly — the node then sees the address of your device; or switch Tor off for everything, so that you are not asked again. This text can be passed to the recipient as proof that you signed. A signed payment cannot be cancelled; while it is in no block you can try to take it back - below."
+msgstr "Signiert, aber noch in keinem Block. Die Wallet versucht automatisch weiter, die Zahlung über Tor zu senden. Falls Tor keine Verbindung herstellt, können Sie unten wählen: auf Tor warten und es erneut versuchen, nur diese Zahlung direkt senden (der Knoten sieht dann die Netzwerkadresse Ihres Geräts) oder Tor für alle Verbindungen ausschalten. Diesen Text können Sie dem Empfänger als Nachweis Ihrer Signatur geben. Eine signierte Zahlung lässt sich nicht stornieren. Solange sie in keinem Block steht, können Sie unten eine Rückholung versuchen."
+
+#. runtime
+msgid "Signed. The outputs are held until the payment is in a block; it has its line in the payments."
+msgstr "Signiert. Die Ausgaben werden gehalten, bis die Zahlung in einem Block ist; es hat seine Zeile in den Zahlungen."
+
+#. runtime
+msgid "Signing session ended. Check this payment before starting a new Slatepack."
+msgstr "Bitte überprüfen Sie diese Zahlung, bevor Sie ein neues Slatepack starten."
+
+#. runtime
+msgid "Signing…"
+msgstr "Signatur wird erstellt…"
+
+msgid "Spend it in this payment"
+msgstr "Verbringen Sie es in dieser Zahlung"
+
+msgid "Start a new check from genesis? The wallet will lock, ending pending signing sessions. Unlock to begin the download."
+msgstr "Starten Sie eine neue Überprüfung von genesis? Die Wallet wird gesperrt, wodurch ausstehende Signatursitzungen beendet werden. Entsperren Sie die Wallet, um den Download zu starten."
+
+msgid "Start full output scan"
+msgstr "Starten Sie den vollständigen Ausgabescan"
+
+#. runtime
+msgid "Started from this wallet’s compact point after its own header check from genesis."
+msgstr "Ausgehend vom kompakten Punkt dieser Wallet nach ihrer eigenen Header-Prüfung von Genesis."
+
+#. runtime
+msgid "Starting point"
+msgstr "Startpunkt"
+
+msgid "State"
+msgstr "Zustand"
+
+msgid "Stop trying the bridges"
+msgstr "Hör auf, die Brücken zu versuchen"
+
+#. runtime
+msgid "Sure, sending now"
+msgstr "Sicher, jetzt versenden"
+
+msgid "Switch Nostr off? Without it there are no messages and no payments to saved contacts; everything else works. The wallet locks and asks for the password again."
+msgstr "Switch Nostr Ohne diese Funktion gibt es keine Nachrichten und keine Zahlungen an gespeicherte Kontakte, alles andere funktioniert. Die Wallet sperrt und fragt nach dem Passwort."
+
+msgid "Switch Nostr on? The wallet locks and asks for the password again."
+msgstr "Schalten Sie Nostr ein? Das Wallet wird gesperrt und fragt erneut nach dem Passwort."
+
+msgid "Switch Tor off for all payments"
+msgstr "Tor für alle Zahlungen deaktivieren"
+
+msgid "Switch Tor off? Without it there are no payments to an address and no messages, and a transaction goes to the network directly: the node sees the address of your device. It takes effect at once; the wallet stays open."
+msgstr "Schalten Sie Tor aus? Ohne es gibt es keine Zahlungen an eine Adresse und keine Nachrichten, und eine Transaktion geht direkt an das Netzwerk: Der Knoten sieht die Adresse Ihres Geräts. Es wird sofort wirksam; die Wallet bleibt offen."
+
+msgid "Switch Tor off? Without it there are no payments to an address and no messages, and a transaction goes to the network directly: the node sees the address of your device. The wallet locks and asks for the password again."
+msgstr "Tor ausschalten? Dann sind Zahlungen an Adressen und Nachrichten nicht verfügbar. Transaktionen gehen direkt an das Netzwerk. Der Knoten sieht die IP-Adresse Ihres Geräts. Das Wallet wird gesperrt und fragt erneut nach Ihrem Passwort."
+
+msgid "Switch Tor on? It takes effect at once; Tor needs a little time to come up."
+msgstr "Tor einschalten? Es wird sofort wirksam; Tor braucht etwas Zeit, um aufzutauchen."
+
+msgid "Switch Tor on? The wallet locks and asks for the password again."
+msgstr "Switch Tor Die Wallet wird gesperrt und fragt erneut nach dem Passwort."
+
+msgid "Switch off"
+msgstr "Ausschalten"
+
+msgid "Switch on"
+msgstr "Einschalten"
+
+msgid "Switching Tor off locks the wallet and asks for the password again; after that payments go directly until you switch Tor back on."
+msgstr "Das Ausschalten von Tor sperrt die Wallet und fragt erneut nach dem Passwort; danach gehen Zahlungen direkt, bis Sie Tor wieder einschalten."
+
+msgid "Synchronisation"
+msgstr "Synchronisierung"
+
+msgid "Synchronisation numbers"
+msgstr "Synchronisierungsdaten"
+
+msgid "Take it back"
+msgstr "Nehmen Sie es zurück"
+
+msgid "Take small ones along with payments"
+msgstr "Nehmen Sie kleine zusammen mit Zahlungen"
+
+msgid "Take the mark off"
+msgstr "Nehmen Sie die Markierung ab"
+
+msgid "Take this payment back"
+msgstr "Nehmen Sie diese Zahlung zurück"
+
+#. runtime
+msgid "Take this payment back? The wallet signs a second payment of the same money - to itself: {} GRIN return to you, the fee is {} GRIN more. Only one of the two can be in a block, and it is not sure to be this one: if the first payment has reached the network, or the recipient sends it there, it may get into a block all the same - then the payment stands and only this try is lost. Without a connection it waits like any payment. Until one of them is in a block the payment is shown as “being taken back”, and the wallet stops sending the first one."
+msgstr "Rückholung versuchen? Die Wallet signiert eine zweite Zahlung mit denselben Mitteln an sich selbst: Sie erhalten {} GRIN zurück, die Gebühr steigt um {} GRIN. Nur eine der beiden Zahlungen kann in einen Block gelangen. Hat die erste das Netzwerk bereits erreicht oder sendet der Empfänger sie später, kann sie zuerst aufgenommen werden. Dann bleibt die Zahlung bestehen und der Rückholversuch scheitert. Ohne Verbindung wartet die neue Zahlung wie jede andere. Bis eine der beiden Zahlungen in einem Block steht, zeigt die Wallet die laufende Rückholung an und sendet die erste Zahlung nicht mehr."
+
+msgid "Taken from the file "
+msgstr "Aus dem Archiv entnommen "
+
+msgid "Testnet. "
+msgstr "Testnet. "
+
+#. runtime
+msgid "Text adjusted"
+msgstr "Text angepasst"
+
+#. runtime
+msgid "Text adjusted · look-alike letters"
+msgstr "Text angepasst · ähnliche Buchstaben"
+
+#. runtime
+msgid "Thanks, it arrived"
+msgstr "Danke, es ist angekommen"
+
+#. runtime
+msgid "The Windows file dialog could not open. Try again."
+msgstr "Der Windows-Dateidialog konnte nicht geöffnet werden. Versuchen Sie es erneut."
+
+#. runtime
+msgid "The address of the payment is the one you checked with this contact"
+msgstr "Die Adresse der Zahlung ist die, die Sie mit diesem Kontakt überprüft haben"
+
+#. runtime
+msgid "The amount must be more than zero"
+msgstr "Der Betrag muss größer als Null sein"
+
+#. runtime
+msgid "The answer does not name its invoice"
+msgstr "Die Antwort nennt ihre Rechnung nicht"
+
+#. runtime
+msgid "The choice of bridges could not be written down."
+msgstr "Die Wahl der Brücken konnte nicht aufgeschrieben werden."
+
+#. runtime
+msgid "The chosen outputs do not cover the amount and its fee: choose more, or let the wallet choose"
+msgstr "Die gewählten Ausgaben decken nicht den Betrag und seine Gebühr ab: Wählen Sie mehr oder lassen Sie die Wallet wählen"
+
+#. runtime
+msgid "The connection to the wallet at this address was lost"
+msgstr "Die Verbindung zur Wallet unter dieser Adresse wurde unterbrochen"
+
+msgid "The contact finds their message key (npub1…) under “My details”. The address lets the signing window name them."
+msgstr "Der Kontakt findet seinen Nachrichtenschlüssel (npub1…) unter „Meine Daten“ und lässt sich mit der Adresse im Signierfenster benennen."
+
+msgid "The conversation will be here"
+msgstr "Das Gespräch wird hier sein"
+
+msgid "The conversation with them is deleted too. Payments stay in the list of payments."
+msgstr "Zahlungen bleiben in der Liste der Zahlungen, die Sie in Ihrem Konto gespeichert haben."
+
+#. runtime
+msgid "The delivery server or Tor does not answer. Sending is retried; a payment can go by hand meanwhile."
+msgstr "Der Zustellserver oder Tor antwortet nicht, der Versand wird erneut versucht; eine Zahlung kann in der Zwischenzeit manuell erfolgen."
+
+#. runtime
+msgid "The file could not be read"
+msgstr "Die Datei konnte nicht gelesen werden"
+
+#. runtime
+msgid "The file could not be written"
+msgstr "Die Datei konnte nicht geschrieben werden"
+
+#. runtime
+msgid "The file is not text"
+msgstr "Die Datei ist nicht Text"
+
+#. runtime
+msgid "The file is too large to be a Slatepack text"
+msgstr "Die Datei ist zu groß, um ein Slatepack-Text zu sein"
+
+#. runtime
+msgid "The final text of this payment, with your signature."
+msgstr "Der endgültige Text dieser Zahlung, mit Ihrer Unterschrift."
+
+#. runtime
+msgid "The folder for Slatepack files cannot be used"
+msgstr "Der Ordner für Slatepack-Dateien kann nicht verwendet werden"
+
+msgid "The invoice asks for"
+msgstr "Die Rechnung fragt nach"
+
+#. runtime
+msgid "The invoice can be paid before block 4117000."
+msgstr "Die Rechnung kann vor Block 4117000 bezahlt werden."
+
+#. runtime
+msgid "The invoice can be paid before block {}."
+msgstr "Die Rechnung kann vor Block {} bezahlt werden."
+
+#. runtime
+msgid "The invoice failed the check: it is damaged, of a kind this wallet does not pay, or its time has run out"
+msgstr "Die Rechnung hat die Prüfung nicht bestanden: Sie ist beschädigt, von einer Art, die diese Brieftasche nicht zahlt, oder ihre Zeit ist abgelaufen"
+
+#. runtime
+msgid "Transaction signed. Track its submission and confirmations in Payments."
+msgstr "Transaktion signiert. Versand und Bestätigungen sind unter Zahlungen zu sehen."
+
+#. runtime
+msgid "The message could not be sealed for this contact: the message service is not running. Check “Problems”; if Nostr is switched off, switch it on and open the wallet again"
+msgstr "Die Nachricht konnte für diesen Kontakt nicht versiegelt werden: Der Nachrichtendienst läuft nicht. Überprüfen Sie „Probleme“. Wenn Nostr ausgeschaltet ist, schalten Sie es ein und öffnen Sie die Wallet erneut."
+
+#. runtime
+msgid "The message is empty or too long"
+msgstr "Die Nachricht ist leer oder zu lang"
+
+#. runtime
+msgid "The money stays reserved. Open “All payments”, show the payment's text and send it over Tor again or pass it by hand; or cancel the payment under “Waiting for you”."
+msgstr "Das Geld bleibt reserviert. Öffnen Sie „Alle Zahlungen“, zeigen Sie den Zahlungstext an und senden Sie ihn über Tor noch einmal oder übergeben Sie ihn manuell. Oder stornieren Sie die Zahlung unter „Warten auf Sie“."
+
+msgid "The name and the wallet address can be changed. The message key cannot: with another key it is another contact — add that one and delete this."
+msgstr "Der Name und die Wallet-Adresse können geändert werden, der Nachrichten-Schlüssel nicht: mit einem anderen Schlüssel ist es ein anderer Kontakt – fügen Sie diesen hinzu und löschen Sie diesen."
+
+#. runtime
+msgid "The network check is busy. Try again in a minute. Nothing was changed."
+msgstr "Die Netzwerkprüfung ist ausgelastet. Versuchen Sie es in einer Minute erneut. Es wurde nichts geändert."
+
+#. runtime
+msgid "The network check is missing"
+msgstr "Die Netzwerkprüfung fehlt"
+
+msgid "The network check reports"
+msgstr "Die Netzwerk-Prüfberichte"
+
+#. runtime
+msgid "The network check stopped"
+msgstr "Die Netzwerkprüfung wurde gestoppt"
+
+#. runtime
+msgid "The network refused it. Look at the payment's state in the payments."
+msgstr "Das Netzwerk lehnte es ab. Schauen Sie sich den Status der Zahlung in den Zahlungen an."
+
+#. runtime
+msgid "The network took it. It will show as in a block once it is."
+msgstr "Das Netzwerk hat es genommen. Es wird als Block angezeigt, sobald es es ist."
+
+msgid "The network was chosen when the wallet was made"
+msgstr "Das Netzwerk wurde ausgewählt, als die Wallet erstellt wurde"
+
+#. runtime
+msgid "The password is changed."
+msgstr "Das Passwort wird geändert."
+
+#. runtime
+msgid "The password is too long"
+msgstr "Das Passwort ist zu lang"
+
+msgid "The password is twelve characters or longer."
+msgstr "Das Passwort ist zwölf Zeichen oder länger."
+
+msgid "The password opens the wallet "
+msgstr "Das Passwort öffnet die Wallet "
+
+#. runtime
+msgid "The passwords differ"
+msgstr "Die Passwörter stimmen nicht überein."
+
+#. runtime
+msgid "The payment as it came"
+msgstr "Die Zahlung, wie es kam"
+
+#. runtime
+msgid "The payment did not get through Tor"
+msgstr "Die Zahlung ist nicht durch Tor gegangen"
+
+msgid "The payment goes over Tor straight to the wallet at this address. You sign it when that wallet replies."
+msgstr "Die Zahlung geht über Tor direkt an die Wallet unter dieser Adresse und Sie unterschreiben sie, wenn die Wallet antwortet."
+
+msgid "The payment goes to the contact over Tor. You sign it when the contact replies."
+msgstr "Die Zahlung geht über Tor an den Kontakt und Sie unterschreiben sie, wenn der Kontakt antwortet."
+
+#. runtime
+msgid "The payment goes to “{}” over Tor. When they reply it appears under “Waiting for you”, where you sign it. If Tor fails, this same text can be passed on by hand."
+msgstr "Die Zahlung geht über Tor an „{}“, wenn sie antworten, erscheint sie unter „Warten auf Sie“, wo Sie sie unterschreiben. Wenn Tor fehlschlägt, kann der gleiche Text manuell weitergegeben werden."
+
+msgid "The payment history records a manual release of the reserve."
+msgstr "In der Zahlungshistorie wird eine manuelle Freigabe der Reserve erfasst."
+
+#. runtime
+msgid "The payment is prepared and the money reserved. Send it over Tor again with the button below, or pass this text to the recipient by hand and paste their reply."
+msgstr "Die Zahlung ist vorbereitet und das Geld ist reserviert. Senden Sie es erneut über Tor mit dem unten stehenden Button, oder geben Sie diesen Text per Hand an den Empfänger weiter und fügen Sie dessen Antwort ein."
+
+#. runtime
+msgid "The payment is still prepared and the money reserved. Send it over Tor again with the button below, pass this text on by hand and paste the reply, or cancel the payment under “Waiting for you”."
+msgstr "Die Zahlung ist noch vorbereitet und das Geld reserviert, schicke sie noch einmal über Tor mit dem unten stehenden Button, gib diesen Text von Hand weiter und füge die Antwort ein, oder storniere die Zahlung unter „Warten auf dich“."
+
+#. runtime
+msgid "The payment names another address than the one saved for this contact"
+msgstr "Die Zahlung erfolgt mit einer anderen Adresse als der für diesen Kontakt gespeicherten"
+
+#. runtime
+msgid "The payment names no amount"
+msgstr "Die Zahlung nennt keine Menge"
+
+#. runtime
+msgid "The payment of an invoice is not taken back"
+msgstr "Die Zahlung einer Rechnung wird nicht zurückgenommen"
+
+#. runtime
+msgid "The payment text, if the recipient lost it. Paste their reply below."
+msgstr "Der Zahlungstext, falls der Empfänger ihn verloren hat. Fügen Sie die Antwort unten ein."
+
+#. runtime
+msgid "The payment went over Tor to the wallet at this address. When it answers — at once if it takes payments by itself, otherwise when its owner says yes — the payment appears under “Waiting for you”, where you sign it. If Tor does not reach it, you will see why under Problems; this same text can then be passed by hand."
+msgstr "Die Zahlung ging über Tor an die Wallet unter dieser Adresse. Wenn sie antwortet – sofort, wenn sie Zahlungen von sich aus entgegen nimmt, andernfalls, wenn ihr Besitzer ja sagt – erscheint die Zahlung unter „Warten auf dich“, wo du sie unterschreibst. Wenn Tor sie nicht erreicht, siehst du unter Probleme, warum; dieser Text kann dann per Hand weitergegeben werden."
+
+#. runtime
+msgid "The payment will have no payment proof."
+msgstr "Die Zahlung hat keinen Zahlungsnachweis."
+
+#. runtime
+msgid "The point could not be made. Nothing was changed."
+msgstr "Der Punkt konnte nicht gemacht werden. Nichts wurde geändert."
+
+#. runtime
+msgid "The point could not be saved. Nothing was changed."
+msgstr "Der Punkt konnte nicht gespeichert werden, es wurde nichts geändert."
+
+#. runtime
+msgid "The point is saved, but could not be handed to the network check. Open the wallet again."
+msgstr "Der Punkt ist gespeichert, konnte aber nicht an die Netzwerkprüfung übergeben werden.Öffnen Sie die Wallet erneut."
+
+#. runtime
+msgid "The point is too long"
+msgstr "Der Punkt ist zu lang"
+
+#. runtime
+msgid "The point made could not be read. Nothing was changed."
+msgstr "Der Punkt konnte nicht gelesen werden. Nichts wurde geändert."
+
+#. runtime
+msgid "The present point is {} blocks below the checked chain: a new one will make the next opening noticeably faster."
+msgstr "Der aktuelle Punkt ist {} Blöcke unterhalb der überprüften Kette: Eine neue Kette wird die nächste Öffnung spürbar schneller machen."
+
+#. runtime
+msgid "The present point is {} blocks below the checked chain: a new one would save almost nothing now. It pays off past 20 000 blocks."
+msgstr "Der aktuelle Prüfpunkt liegt {} Blöcke hinter der geprüften Kettenspitze. Ein neuer Prüfpunkt bringt derzeit kaum eine Ersparnis. Ab etwa 20 000 Blöcken lohnt er sich."
+
+#. runtime
+msgid "The present point is {} blocks below the checked chain: a new one would save some time at the next opening."
+msgstr "Der aktuelle Punkt ist {} Blöcke unterhalb der überprüften Kette: eine neue Kette würde bei der nächsten Öffnung etwas Zeit sparen."
+
+msgid "The recipient gets"
+msgstr "Der Empfänger bekommt"
+
+msgid "The recipient's reply"
+msgstr "Die Antwort des Empfängers"
+
+#. runtime
+msgid "The reply does not match this payment and was not taken"
+msgstr "Die Antwort stimmt nicht mit dieser Zahlung überein und wurde nicht übernommen"
+
+#. runtime
+msgid "The reply is already here — sign the payment under “Waiting for you”"
+msgstr "Die Antwort ist bereits da – unterzeichnen Sie die Zahlung unter „Warten auf Sie“"
+
+#. runtime
+msgid "The reply you made to this payment, if the sender lost it."
+msgstr "Die Antwort, die Sie auf diese Zahlung gegeben haben, wenn der Absender sie verloren hat."
+
+msgid "The rest are under “Contacts”."
+msgstr "Der Rest befindet sich unter „Kontakte“."
+
+#. runtime
+msgid "The rollback guard does not match this wallet — it must not be opened here"
+msgstr "Der Rollback-Schutz passt nicht zu dieser Wallet – er darf hier nicht geöffnet werden"
+
+#. runtime
+msgid "The sender named no address."
+msgstr "Der Absender hat keine Adresse angegeben."
+
+msgid "The sender pays the network fee."
+msgstr "Der Absender zahlt die Netzgebühr."
+
+#. runtime
+msgid "The sender's text of this payment, as your wallet got it. It is kept with the payment."
+msgstr "Der Text des Absenders dieser Zahlung, wie Ihr Wallet ihn erhalten hat, wird mit der Zahlung aufbewahrt."
+
+#. runtime
+msgid "The sender's wallet no longer waits for the answer. Nothing was signed; ask them to send again"
+msgstr "Die Wallet des Absenders wartet nicht mehr auf die Antwort. Nichts wurde signiert. Bitte den Absender, erneut zu senden."
+
+#. runtime
+msgid "The signature may have happened, there is no result. This payment is not signed again — follow it in the payments"
+msgstr "Die Signatur ist möglicherweise erfolgt, es gibt kein Ergebnis.Diese Zahlung wird nicht erneut signiert - folgen Sie ihr in den Zahlungen"
+
+#. runtime
+msgid "The signing session for {} GRIN ended. Review the payment before starting a new exchange."
+msgstr "Die Signatursitzung für {} GRIN ist beendet. Überprüfen Sie die Zahlung, bevor Sie einen neuen Tausch starten."
+
+#. runtime
+msgid "The taking back is signed and goes to the network. Follow both lines in the payments: one of the two will be in a block."
+msgstr "Die Rücknahme wird unterzeichnet und geht an das Netzwerk.Folgen Sie beiden Zeilen in den Zahlungen: eine der beiden wird in einem Block sein."
+
+#. runtime
+msgid "The text failed the check: it is another payment or it is damaged"
+msgstr "Der Text hat die Prüfung nicht bestanden: Es ist eine andere Zahlung oder er ist beschädigt"
+
+msgid "The wallet and everything it keeps are removed from this computer. After that only your 24 words bring the money back. To show that you have them, type the two words with these numbers."
+msgstr "Das Wallet und seine Daten werden von diesem Computer gelöscht. Danach können Sie Ihr Guthaben nur mit den 24 Wiederherstellungswörtern wiederherstellen. Geben Sie die Wörter an den beiden angegebenen Positionen ein."
+
+#. runtime
+msgid "The wallet at this address did not answer in time"
+msgstr "Die Wallet unter dieser Adresse hat nicht rechtzeitig geantwortet"
+
+#. runtime
+msgid "The wallet at this address does not take payments this way"
+msgstr "Die Wallet unter dieser Adresse nimmt keine Zahlungen auf diese Weise an"
+
+#. runtime
+msgid "The wallet at this address refused: {}"
+msgstr "Das Wallet an dieser Adresse wurde abgelehnt: {}"
+
+#. runtime
+msgid "The wallet closed before a signed result for {} GRIN was saved in this profile. This Slatepack can no longer be signed. Check the original payment and its reserve before starting another exchange."
+msgstr "Das Wallet wurde geschlossen, bevor ein signiertes Ergebnis für {} GRIN in diesem Profil gespeichert wurde. Dieses Slatepack kann nicht mehr signiert werden. Überprüfen Sie die ursprüngliche Zahlung und ihre Reserve, bevor Sie einen neuen Tausch starten."
+
+#. runtime
+msgid "The wallet did not answer in time"
+msgstr "Die Wallet hat nicht rechtzeitig geantwortet"
+
+#. runtime
+msgid "The wallet did not give the invoice's text"
+msgstr "Die Wallet gab den Rechnungstext nicht an"
+
+#. runtime
+msgid "The wallet did not give the payment's text"
+msgstr "Die Wallet gab den Zahlungstext nicht an"
+
+#. runtime
+msgid "The wallet did not start:"
+msgstr "Die Wallet startete nicht:"
+
+#. runtime
+msgid "The wallet does not answer"
+msgstr "Das Wallet antwortet nicht"
+
+#. runtime
+msgid "The wallet gave no reply to pass on. Read the invoice again"
+msgstr "Das Wallet gab keine Antwort, die weitergegeben werden konnte. Lesen Sie die Rechnung noch einmal durch"
+
+msgid "The wallet has no outputs yet"
+msgstr "Die Wallet hat noch keine Ausgänge"
+
+#. runtime
+msgid "The wallet has not taken its first block yet. Wait until the main screen says “Verified”."
+msgstr "Warten Sie, bis auf dem Hauptbildschirm „Verified“ (Verifiziert) angezeigt wird, und klicken Sie dann auf „Next“ (Weiter)."
+
+#. runtime
+msgid "The wallet is already open"
+msgstr "Das Wallet ist bereits geöffnet"
+
+#. runtime
+msgid "The wallet is busy, try again in a minute"
+msgstr "Die Wallet ist besetzt, versuchen Sie es in einer Minute erneut"
+
+#. runtime
+msgid "The wallet is locked"
+msgstr "Das Wallet ist gesperrt"
+
+#. runtime
+msgid "The wallet is not running"
+msgstr "Die Wallet läuft nicht"
+
+#. runtime
+msgid "The wallet is still searching the chain for your old money (see Connection → Search for old money). Sending opens when the search is over: until then the balance is not final."
+msgstr "Die Wallet sucht noch in der Kette nach Ihrem alten Geld (siehe Verbindung → Suche nach altem Geld), das Senden öffnet sich, wenn die Suche beendet ist: bis dahin ist der Saldo nicht endgültig."
+
+#. runtime
+msgid "The wallet refused"
+msgstr "Die Brieftasche lehnte ab"
+
+#. runtime
+msgid "The wallet sent no words"
+msgstr "Die Brieftasche schickte keine Worte"
+
+#. runtime
+msgid "The wallet service did not confirm the scan request."
+msgstr "Der Wallet-Dienst bestätigte die Scananforderung nicht."
+
+#. runtime
+msgid "The wallet starts checking the network from a starting point built into the program. It can make one of its own from the chain it has checked itself — a block well below the tip."
+msgstr "Die Wallet beginnt mit der Überprüfung des Netzwerks von einem im Programm integrierten Ausgangspunkt aus und kann aus der Kette, die sie selbst überprüft hat, eine eigene erstellen – einen Block weit unterhalb der Spitze."
+
+msgid "The wallet starts checking the network from a starting point built into the program. It can make one of its own from the chain it has checked itself — a block well below the tip. From the next unlock the wallet starts from that point, so the start is shorter. Only you vouch for your own point: it is as good as the check this wallet has done. Money, keys and history are not touched."
+msgstr "Die Wallet beginnt mit der Überprüfung des Netzwerks von einem in das Programm integrierten Ausgangspunkt aus. Sie kann aus der Kette, die sie selbst überprüft hat, eine eigene erstellen – einen Block weit unterhalb der Spitze. Beim nächsten Entsperren beginnt die Wallet von diesem Punkt aus, so dass der Start kürzer ist. Nur Sie garantieren für Ihren eigenen Punkt: er ist so gut wie die Überprüfung, die diese Wallet durchgeführt hat. Geld, Schlüssel und Geschichte werden nicht berührt."
+
+msgid "The wallet starts checking the network from a starting point built into the program. It can make one of its own from the chain it has checked itself; from the next unlock it then starts from that one."
+msgstr "Die Wallet beginnt mit der Überprüfung des Netzwerks von einem im Programm integrierten Ausgangspunkt aus, kann aus der selbst überprüften Kette eine eigene erstellen und beim nächsten Entsperren von dieser Kette aus starten."
+
+msgid "The wallet starts from the point built into the program, and the history before that point is proved by sampling its work. The wallet can make a point of its own further up, from the chain it has checked itself since then. From the next unlock it starts from there, so the start is shorter."
+msgstr "Die Wallet beginnt mit dem Punkt, der in das Programm integriert ist, und die Geschichte vor diesem Punkt wird durch Sampling ihrer Arbeit bewiesen. Die Wallet kann einen eigenen Punkt weiter oben machen, aus der Kette, die sie seitdem selbst geprüft hat, und ab dem nächsten Entsperren beginnt sie von dort aus, so dass der Start kürzer ist."
+
+#. runtime
+msgid "The wallet starts it again by itself. If this repeats, check the internet connection and free disk space."
+msgstr "Sollte dies wieder vorkommen, überprüfen Sie bitte die Internetverbindung und den freien Speicherplatz auf Ihrer Festplatte."
+
+#. runtime
+msgid "The wallet starts it again by itself. Meanwhile payments to an address go by hand: the Slatepack text. Check the internet connection if this stays."
+msgstr "Das Wallet startet es dann wieder von selbst. Währenddessen gehen Zahlungen an eine Adresse per Hand: der Slatepack-Text. Überprüfen Sie die Internetverbindung, wenn dies so bleibt."
+
+msgid "The wallet tries the built-in obfs4 bridges, then Snowflake, up to three minutes each. Tor still hides your device."
+msgstr "Die Wallet versucht die eingebauten obfs4 Bridges, dann Snowflake, jeweils bis zu drei Minuten, Tor versteckt Ihr Gerät weiterhin."
+
+#. runtime
+msgid "The wallet will not do this now: for example, the chain is not verified yet or the payment is closed"
+msgstr "Das Wallet wird dies jetzt nicht tun: Zum Beispiel ist die Kette noch nicht verifiziert oder die Zahlung ist geschlossen"
+
+#. runtime
+msgid "The wallet will not let this payment go: it is already signed, already cancelled, or locked after a restore. Look at it in the payments"
+msgstr "Die Wallet lässt diese Zahlung nicht gehen: Sie ist bereits signiert, bereits storniert oder nach einer Wiederherstellung gesperrt.Sehen Sie sich die Zahlung in den Zahlungen an"
+
+#. runtime
+msgid "The wallet will not pay now: the chain is not verified yet, a payment is contested, or the fee has changed. Read the invoice again"
+msgstr "Das Wallet führt die Zahlung derzeit nicht aus: Die Kette ist noch ungeprüft, eine Zahlung ist strittig oder die Gebühr hat sich geändert. Lesen Sie die Rechnung erneut ein."
+
+#. runtime
+msgid "The wallet's files are damaged"
+msgstr "Die Dateien der Wallet sind beschädigt"
+
+#. runtime
+msgid "The wallet's files are held by another GrinSight process: this wallet is open in another window, or a process of the last run has not ended. Close the other window, or end the processes fly-paycore-host and fly-chain, and open the wallet again."
+msgstr "Die Dateien der Wallet werden von einem anderen GrinSight-Prozess gehalten: Diese Wallet ist in einem anderen Fenster geöffnet, oder ein Prozess des letzten Lauf ist nicht beendet.Schließen Sie das andere Fenster, oder beenden Sie die Prozesse fly-paycore-host und fly-chain, und öffnen Sie die Wallet erneut."
+
+#. runtime
+msgid "The wallet's files could not be read or written"
+msgstr "Die Dateien der Wallet konnten nicht gelesen oder geschrieben werden"
+
+#. runtime
+msgid "The wallet's folder is not known"
+msgstr "Der Ordner der Wallet ist nicht bekannt"
+
+#. runtime
+msgid "The words do not match this wallet's. Nothing was deleted."
+msgstr "Die Wörter stimmen nicht mit denen dieses Wallets überein. Es wurde nichts gelöscht."
+
+#. runtime
+msgid "The words failed the check: check each word and their order"
+msgstr "Die Wiederherstellungswörter sind ungültig. Prüfen Sie die Schreibweise und die Reihenfolge."
+
+msgid "Theme"
+msgstr "Design"
+
+msgid "Theme: "
+msgstr "Design: "
+
+#. runtime
+msgid "There is a wallet here already — a new one is not made over it"
+msgstr "Es gibt hier bereits eine Wallet – eine neue wird nicht darüber erstellt"
+
+#. runtime
+msgid "There is no QR code to save"
+msgstr "Es gibt keinen QR Code zum Speichern"
+
+#. runtime
+msgid "There is no message key in the list"
+msgstr "Es gibt keinen Nachrichtenschlüssel in der Liste"
+
+#. runtime
+msgid "There is no text to save"
+msgstr "Es gibt keinen Text zum Speichern"
+
+#. runtime
+msgid "There is no wallet in this folder"
+msgstr "Es gibt keine Wallet in diesem Ordner"
+
+#. runtime
+msgid "There is no wallet on this computer yet."
+msgstr "Es gibt noch keine Wallet auf diesem Computer."
+
+#. runtime
+msgid "There is no wallet on this phone yet."
+msgstr "Es gibt noch keine Wallet auf diesem Telefon."
+
+#. runtime
+msgid "There is nothing to check yet: save the contact's wallet address first"
+msgstr "Es gibt noch nichts zu überprüfen: Speichern Sie zuerst die Wallet-Adresse des Kontakts"
+
+#. runtime
+msgid "There is nothing to collect: fewer than two outputs can be spent now"
+msgstr "Es gibt nichts zu sammeln: weniger als zwei Ausgaben können jetzt ausgegeben werden"
+
+#. runtime
+msgid "These outputs hold less than the fee of collecting them"
+msgstr "Diese Ausgänge halten weniger als die Gebühr für das Sammeln von ihnen"
+
+msgid "They are the same"
+msgstr "Sie sind die gleichen"
+
+#. runtime
+msgid "This answers another invoice"
+msgstr "Dies beantwortet eine andere Rechnung"
+
+msgid "This build has no program for bridges (lyrebird) next to the wallet's programs: obfs4 and Snowflake will not connect."
+msgstr "Dieser Build hat kein Programm für Bridges (lyrebird) neben den Wallet-Programmen: obfs4 und Snowflake werden sich nicht verbinden."
+
+#. runtime
+msgid "This contact is no longer in the list: add it again"
+msgstr "Dieser Kontakt ist nicht mehr in der Liste: fügen Sie ihn erneut hinzu"
+
+msgid "This file could not be read as text"
+msgstr "Diese Datei konnte nicht als Text gelesen werden"
+
+#. runtime
+msgid "Saved reply — send it to the invoice issuer"
+msgstr "Gespeicherte Antwort – an den Rechnungssteller senden"
+
+#. runtime
+msgid "This is a Mainnet address, the wallet is on Testnet"
+msgstr "Dies ist eine Mainnet-Adresse, die Wallet ist auf Testnet"
+
+#. runtime
+msgid "This is a Testnet address, the wallet is on Mainnet"
+msgstr "Dies ist eine Testnet-Adresse, die Wallet ist auf Mainnet"
+
+#. runtime
+msgid "This is a recipient's reply. It goes into the send window."
+msgstr "Dies ist die Antwort eines Empfängers, die in das Sendefenster eingefügt wird."
+
+#. runtime
+msgid "This is an invoice. It is paid by its text: “Receive”, then paste the text."
+msgstr "Dies ist eine Rechnung, die durch ihren Text bezahlt wird: „Erhalten“, dann fügen Sie den Text ein."
+
+#. runtime
+msgid "This is not Slatepack text this wallet can read"
+msgstr "Dies ist kein Slatepack-Text, den diese Wallet lesen kann"
+
+#. runtime
+msgid "This is not a Grin wallet address"
+msgstr "Dies ist keine Grin Wallet Adresse"
+
+#. runtime
+msgid "This is not a payer's answer to an invoice"
+msgstr "Dies ist keine Antwort des Zahlers auf eine Rechnung"
+
+#. runtime
+msgid "This is not a payment that can be accepted"
+msgstr "Dies ist keine Zahlung, die akzeptiert werden kann"
+
+#. runtime
+msgid "This is not a starting point: paste it whole, from { to }"
+msgstr "Dies ist kein Ausgangspunkt: fügen Sie es ganz ein, von { to }"
+
+#. runtime
+msgid "This is not the recipient's reply to a payment"
+msgstr "Dies ist nicht die Antwort des Empfängers auf eine Zahlung"
+
+msgid "This locks the wallet. Unlock to recheck the saved headers and continue from the network."
+msgstr "Entsperren Sie die Wallet, um die gespeicherten Header erneut zu überprüfen und vom Netzwerk aus fortzufahren."
+
+#. runtime
+msgid "This payment can no longer be taken back: it is in a block already, or it was never signed"
+msgstr "Diese Zahlung kann nicht mehr rückgängig gemacht werden: Sie befindet sich bereits in einem Block, oder sie wurde nie unterzeichnet"
+
+#. runtime
+msgid "This payment cannot be taken back: its money is spent already or does not cover the fee"
+msgstr "Diese Zahlung kann nicht zurückgenommen werden: Ihr Geld ist bereits ausgegeben oder deckt die Gebühr nicht ab"
+
+#. runtime
+msgid "This payment is being taken back already: the wallet does not send it again"
+msgstr "Diese Zahlung wird bereits zurückgenommen: Die Wallet sendet sie nicht erneut"
+
+#. runtime
+msgid "This payment names no address: it goes by hand"
+msgstr "Diese Zahlung nennt keine Adresse: es geht per Hand"
+
+#. runtime
+msgid "This profile has no checkpoint ready to export. Import one or finish a check from the first block."
+msgstr "Dieses Profil hat keinen Checkpoint zum Exportieren, importieren Sie einen oder beenden Sie eine Prüfung aus dem ersten Block."
+
+#. runtime
+msgid "This replies to another payment"
+msgstr "Dies ist eine Antwort auf eine andere Zahlung"
+
+#. runtime
+msgid "This signing session has ended. Check the original payment before starting a new Slatepack."
+msgstr "Bitte überprüfen Sie die ursprüngliche Zahlung, bevor Sie ein neues Slatepack starten."
+
+msgid "This text is too long for one QR code. Pass it on as text or as a file."
+msgstr "Dieser Text ist zu lang für einen QR Code, geben Sie ihn als Text oder als Datei weiter."
+
+#. runtime
+msgid "This wallet already prepared a reply to a different invoice with this number"
+msgstr "Diese Wallet hat bereits eine Antwort auf eine andere Rechnung mit dieser Nummer vorbereitet."
+
+#. runtime
+msgid "This wallet has no message key yet: make it under “Message key” on the main page, then give it to your contact"
+msgstr "Diese Wallet hat noch keinen Nachrichtenschlüssel: Erstellen Sie ihn auf der Hauptseite unter „Nachrichtenschlüssel“ und geben Sie ihn an Ihren Kontakt weiter"
+
+#. runtime
+msgid "This wallet is open in another window, or a process of the last run has not ended yet — it happens when the wallet is opened again right after it was closed. Close the other window if there is one, then press “Restart the wallet”: its processes are started anew and the password is asked for again. One wallet is opened in one place at a time."
+msgstr "Dieses Wallet ist in einem anderen Fenster geöffnet, oder ein Prozess des letzten Lauf ist noch nicht beendet - dies geschieht, wenn das Wallet direkt nach dem Schließen erneut geöffnet wird. Schließen Sie das andere Fenster, wenn es eines gibt, und drücken Sie dann auf \"Wallet neu starten\": seine Prozesse werden neu gestartet und das Passwort wird erneut angefordert."
+
+#. runtime
+msgid "This wallet made no such invoice"
+msgstr "Diese Wallet hat keine solche Rechnung erstellt"
+
+#. runtime
+msgid "This went out while the network was down"
+msgstr "Dies ging aus, während das Netzwerk unten war"
+
+#. runtime
+msgid "Three conversations are open in windows already. Close one to open another."
+msgstr "Drei Gespräche sind bereits in Fenstern geöffnet. Schließen Sie eines, um ein anderes zu öffnen."
+
+#. runtime
+msgid "Through Snowflake"
+msgstr "Über Snowflake"
+
+msgid "Through Snowflake — when obfs4 does not get through"
+msgstr "Durch Snowflake — wenn obfs4 nicht durchkommt"
+
+msgid "Through Tor everything goes slower. That is the price of privacy, not a fault."
+msgstr "Durch Tor geht alles langsamer, das ist der Preis der Privatsphäre, kein Fehler."
+
+msgid "Through built-in obfs4 bridges — the first thing to try"
+msgstr "Durch die eingebauten obfs4-Brücken — das erste, was Sie versuchen sollten"
+
+msgid "Through my own bridges"
+msgstr "Durch meine eigenen Brücken"
+
+#. runtime
+msgid "Through your own bridges: {}"
+msgstr "Durch eigene Brücken: {}"
+
+#. runtime
+msgid "Through {} built-in obfs4 bridges"
+msgstr "Durch {} eingebaute obfs4-Brücken"
+
+#. runtime
+msgid "Time"
+msgstr "Zeit"
+
+#. runtime
+msgid "Tip"
+msgstr "Kettenspitze"
+
+msgid "To"
+msgstr "An"
+
+msgid "To a file"
+msgstr "Zu einer Datei"
+
+msgid "To a grin1 address — the wallet sends it itself, over Tor"
+msgstr "An eine grin1-Adresse. Die Wallet sendet die Zahlung selbst über Tor."
+
+msgid "To carry the point to another device of yours: on the login screen there, Options → Own nodes and a point from another device, paste it whole. To go back to the built-in point: clear that field and save."
+msgstr "Um den Punkt auf ein anderes Gerät zu übertragen: Im Login-Bildschirm dort, Optionen → Eigene Knoten und einen Punkt von einem anderen Gerät, fügen Sie ihn ganz ein.Um zurück zum eingebauten Punkt zu gelangen: Löschen Sie dieses Feld und speichern Sie."
+
+msgid "To go back: on the login screen, Options → Own nodes and own point, clear the Own point field and save. The wallet starts from the built-in point again. The same point can be pasted into that field on another computer of yours."
+msgstr "Um zurückzukehren: auf dem Login-Bildschirm, Optionen → Eigene Knoten und eigener Punkt, deaktivieren Sie das Feld Eigener Punkt und speichern Sie es. Die Wallet startet wieder von dem eingebauten Punkt aus, der gleiche Punkt kann auf einem anderen Computer in dieses Feld eingefügt werden."
+
+msgid "To request GRIN, send the invoice to the payer. Keep the wallet unlocked until you paste their reply and finish the invoice."
+msgstr "Um GRIN anzufordern, senden Sie die Rechnung an den Zahler und halten Sie die Wallet entsperrt, bis Sie die Antwort einfügen und die Rechnung fertigstellen."
+
+msgid "To the contact: "
+msgstr "Zum Kontakt: "
+
+#. runtime
+msgid "To yourself: outputs collected"
+msgstr "Für sich selbst: Outputs gesammelt"
+
+#. runtime
+msgid "To yourself: taking a payment back"
+msgstr "An sich selbst: Rücknahme einer Zahlung"
+
+#. runtime
+msgid "Today"
+msgstr "Heute"
+
+#. runtime
+msgid "Too large an amount"
+msgstr "Zu große Menge"
+
+#. runtime
+msgid "Too many bridges: {} at most"
+msgstr "Zu viele Brücken: {} maximal"
+
+#. runtime
+msgid "Too many messages to this contact are still waiting to be delivered: wait until they are"
+msgstr "Zu viele Nachrichten an diesen Kontakt warten noch auf Zustellung: Warten Sie, bis sie zugestellt sind."
+
+msgid "Tor bridges"
+msgstr "Tor-Brücken"
+
+#. runtime
+msgid "Tor did not come up through the built-in bridges. Your earlier choice is back: {}. Bridges of your own can be set under “Tor bridges”; the other ways out are below."
+msgstr "Tor ist nicht über die eingebauten Bridges aufgetaucht. Deine frühere Auswahl ist zurück: {}. Eigene Bridges kannst du unter „Tor Bridges“ einstellen; die anderen Auswege sind weiter unten."
+
+#. runtime
+msgid "Tor did not reach the wallet at this address: it is closed, offline, or its Tor is not up yet"
+msgstr "Tor hat die Wallet unter dieser Adresse nicht erreicht: Sie ist geschlossen, offline oder ihr Tor ist noch nicht aktiv"
+
+#. runtime
+msgid "Tor for messages: connected"
+msgstr "Tor für Nachrichten: verbunden"
+
+#. runtime
+msgid "Tor for messages: connected, but delivery is hindered — see Problems"
+msgstr "Tor für Nachrichten: Verbindung hergestellt, Zustellung jedoch verhindert — siehe Probleme"
+
+#. runtime
+msgid "Tor for messages: connecting…"
+msgstr "Tor für Nachrichten: Verbindung…"
+
+#. runtime
+msgid "Tor for messages: not set up — payments go by hand"
+msgstr "Tor für Nachrichten: nicht eingerichtet — Zahlungen gehen von Hand"
+
+#. runtime
+msgid "Tor for messages: not started — create a message key under My details"
+msgstr "Tor für Nachrichten: nicht gestartet — Nachrichtenschlüssel unter Meine Details erstellen"
+
+#. runtime
+msgid "Tor for messages: not working — see Problems"
+msgstr "Tor für Nachrichten: funktioniert nicht — siehe Probleme"
+
+#. runtime
+msgid "Tor for messages: unknown — the wallet does not answer"
+msgstr "Tor für Nachrichten: unbekannt — die Wallet antwortet nicht"
+
+#. runtime
+msgid "Tor for payments to an address is not set up — pass the text by hand"
+msgstr "Tor für Zahlungen an eine Adresse ist nicht eingerichtet — übergeben Sie den Text von Hand"
+
+#. runtime
+msgid "Tor for transactions: connects when you send; directly only if Tor fails — you allowed it"
+msgstr "Tor für Transaktionen: verbindet sich, wenn Sie senden; direkt nur, wenn Tor fehlschlägt — Sie haben es erlaubt"
+
+#. runtime
+msgid "Tor for transactions: connects when you send; never directly"
+msgstr "Tor für Transaktionen: Verbindung beim Senden, niemals direkt."
+
+#. runtime
+msgid "Tor for transactions: the last sending failed, trying again — see Problems"
+msgstr "Tor für Transaktionen: Das letzte Senden ist fehlgeschlagen, versuchen Sie es erneut — siehe Probleme"
+
+#. runtime
+msgid "Tor for transactions: the network check is missing"
+msgstr "Tor für Transaktionen: Die Netzwerkprüfung fehlt"
+
+#. runtime
+msgid "Tor for your address does not work"
+msgstr "Tor für Ihre Adresse funktioniert nicht"
+
+#. runtime
+msgid "Tor for your address: connected — sending works, your address is not reachable yet"
+msgstr "Tor für Ihre Adresse: verbunden — Senden funktioniert, Ihre Adresse ist noch nicht erreichbar"
+
+#. runtime
+msgid "Tor for your address: connected, your address is being announced…"
+msgstr "Tor für deine Adresse: verbunden, deine Adresse wird angekündigt…"
+
+#. runtime
+msgid "Tor for your address: connecting…"
+msgstr "Tor für deine Adresse: Verbindung…"
+
+#. runtime
+msgid "Tor for your address: not set up — payments to an address go by hand"
+msgstr "Tor für Ihre Adresse: nicht eingerichtet — Zahlungen an eine Adresse gehen per Hand"
+
+#. runtime
+msgid "Tor for your address: not working — see Problems"
+msgstr "Tor für deine Adresse: funktioniert nicht — siehe Probleme"
+
+#. runtime
+msgid "Tor for your address: on — payments can be sent to an address and arrive at yours"
+msgstr "Tor für Ihre Adresse: an — Zahlungen können an eine Adresse gesendet und bei Ihnen ankommen"
+
+#. runtime
+msgid "Tor for your address: unknown — the wallet does not answer"
+msgstr "Tor für Ihre Adresse: unbekannt — das Wallet antwortet nicht"
+
+#. runtime
+msgid "Tor gave no outcome: whether the wallet at this address got the payment is not known"
+msgstr "Tor gab kein Ergebnis: ob die Brieftasche unter dieser Adresse die Zahlung erhalten hat, ist nicht bekannt"
+
+msgid "Tor hides where you are on the network. Bridges are for places where Tor is blocked."
+msgstr "Tor verbirgt, wo Sie sich im Netzwerk befinden, Bridges sind für Orte, an denen Tor blockiert ist."
+
+msgid "Tor hides where you are on the network. Bridges are for places where Tor is blocked. Off: nothing of Tor is started — no payments to an address and no messages, and a transaction goes to the network directly, so the node sees your address."
+msgstr "Tor verbirgt, wo Sie sich im Netzwerk befinden. Bridges sind für Orte, an denen Tor blockiert ist. Aus: Nichts von Tor wird gestartet - keine Zahlungen an eine Adresse und keine Nachrichten, und eine Transaktion geht direkt an das Netzwerk, so dass der Knoten Ihre Adresse sieht."
+
+msgid "Tor is chosen, but delivery does not work now: payments go by hand."
+msgstr "Tor wird gewählt, aber die Lieferung funktioniert jetzt nicht: Zahlungen erfolgen von Hand."
+
+#. runtime
+msgid "Tor is connected · messages and transactions go through it"
+msgstr "Tor ist verbunden · Nachrichten und Transaktionen gehen durch ihn"
+
+#. runtime
+msgid "Tor is not working on this device now"
+msgstr "Tor funktioniert derzeit nicht auf diesem Gerät"
+
+#. runtime
+msgid "Tor is now reached through {}. Nothing in this wallet shows yet whether it works: sign the payment, and if it does not leave, try another way under “Tor bridges”."
+msgstr "Tor ist nun über {} erreichbar, in dieser Wallet zeigt noch nichts, ob es funktioniert: die Zahlung unterschreiben, und wenn es nicht geht, einen anderen Weg unter „Tor-Brücken“ versuchen."
+
+#. runtime
+msgid "Tor is still connecting. Try again in a minute or pass the text by hand"
+msgstr "Tor Versuchen Sie es in einer Minute erneut oder übergeben Sie den Text per Hand."
+
+msgid "Tor is switched off at once, the wallet stays open; after that payments go directly until you switch Tor back on."
+msgstr "Tor wird sofort ausgeschaltet, die Wallet bleibt geöffnet; danach gehen Zahlungen direkt, bis Sie Tor wieder einschalten."
+
+msgid "Tor is switched off: every payment is a text you pass on yourself."
+msgstr "Tor ist ausgeschaltet: Jede Zahlung ist ein Text, den Sie selbst weitergeben."
+
+#. runtime
+msgid "Tor is switched off: transactions go to the network directly, the node sees your address"
+msgstr "Tor ist ausgeschaltet: Transaktionen gehen direkt an das Netzwerk, der Knoten sieht Ihre Adresse"
+
+#. runtime
+msgid "Tor works through {}. This way is saved as your choice; it can be changed under “Tor bridges”."
+msgstr "Tor arbeitet über {}. Dieser Weg wird als Ihre Wahl gespeichert. Sie können ihn unter „Tor-Brücken“ ändern."
+
+msgid "Tor: a payment to a contact or to a grin1 address is delivered by itself."
+msgstr "Tor: Die Wallet übermittelt Zahlungen an einen Kontakt oder eine grin1-Adresse automatisch."
+
+msgid "Total to be spent"
+msgstr "Insgesamt auszugeben"
+
+msgid "Try through Tor bridges"
+msgstr "Versuchen Sie es durch Tor-Brücken"
+
+#. runtime
+msgid "Trying to reach Tor through {}… This can take up to three minutes. You can wait here or do something else: the payment stays prepared."
+msgstr "Der Versuch, Tor über {} zu erreichen… Das kann bis zu drei Minuten dauern. Sie können hier warten oder etwas anderes tun: Die Zahlung bleibt vorbereitet."
+
+#. runtime
+msgid "Type a name"
+msgstr "Geben Sie einen Namen ein"
+
+#. runtime
+msgid "Type an amount"
+msgstr "Geben Sie einen Betrag ein"
+
+#. runtime
+msgid "Type one word in each of the two fields"
+msgstr "Geben Sie ein Wort in jedes der beiden Felder ein"
+
+#. runtime
+msgid "Type the recipient's grin1… address"
+msgstr "grin1…-Adresse des Empfängers eingeben"
+
+msgid "Type the words with these numbers — this shows the copy is right."
+msgstr "Tippe die Wörter mit diesen Zahlen ein – das zeigt, dass die Kopie richtig ist."
+
+msgid "Unlock"
+msgstr "Entsperren"
+
+msgid "Unlocking…"
+msgstr "Wird entsperrt…"
+
+msgid "Usually not needed. Own nodes: servers of yours the wallet also asks. A point from another device: a starting point your wallet made there, so that this one starts shorter."
+msgstr "Eigene Nodes: Server von dir, die die Wallet auch fragt. Ein Punkt von einem anderen Gerät: Ein Startpunkt, den deine Wallet dort gemacht hat, so dass diese kürzer beginnt."
+
+msgid "Usually not needed. Own nodes: servers of yours the wallet also asks. Own point: the place in the chain the wallet starts checking from."
+msgstr "Eigene Knoten: Server, die Sie selbst betreiben und die die Wallet auch anfragt. Eigener Punkt: Die Stelle in der Kette, von der aus die Wallet zu checken beginnt."
+
+#. runtime
+msgid "VERIFIED"
+msgstr "GEPRÜFT"
+
+msgid "Verification and recovery"
+msgstr "Verifizierung und Wiederherstellung"
+
+#. runtime
+msgid "Verified header work"
+msgstr "Verifizierte Header-Arbeit"
+
+msgid "Verify and lock"
+msgstr "Verifizieren und Sperren"
+
+msgid "Verify from the first block myself"
+msgstr "Vom ersten Block selbst überprüfen"
+
+#. runtime
+msgid "Wait a few seconds. If it stays, lock the wallet and open it again."
+msgstr "Warten Sie ein paar Sekunden, und sperren Sie die Wallet, wenn sie nicht verschwindet, und öffnen Sie sie erneut."
+
+msgid "Wait for Tor: send through Tor again"
+msgstr "Warten auf Tor: Senden Sie erneut über Tor"
+
+msgid "Waiting for the wallet at this address to answer — this can take up to two minutes. The window to sign opens by itself."
+msgstr "Warten auf die Antwort der Wallet an dieser Adresse – dies kann bis zu zwei Minuten dauern, das Fenster zum Signieren öffnet sich von selbst."
+
+msgid "Waiting for you"
+msgstr "Warten auf dich"
+
+#. runtime
+msgid "Wallet"
+msgstr "Wallet"
+
+msgid "Wallet address"
+msgstr "Wallet-Adresse"
+
+msgid "Wallet address (optional)"
+msgstr "Wallet-Adresse (optional)"
+
+msgid "Wallet addresses (grin1…), optional"
+msgstr "Wallet-Adressen (grin1…), optional"
+
+#. runtime
+msgid "Wallet created. Unlock it with the password."
+msgstr "Geldbörse erstellt, mit dem Passwort entsperrt."
+
+#. runtime
+msgid "Wallet lock was not confirmed. Retry before opening."
+msgstr "Die Sperrung des Wallets wurde nicht bestätigt. Versuchen Sie erneut, es zu sperren, bevor Sie es öffnen."
+
+#. runtime
+msgid "Wallet network unavailable"
+msgstr "Wallet-Netzwerk nicht verfügbar"
+
+#. runtime
+msgid "Wallet restored. Unlock it with the password — it then finds its money in the chain."
+msgstr "Brieftasche wiederhergestellt. Entsperren Sie sie mit dem Passwort — sie findet dann ihr Geld in der Kette."
+
+#. runtime
+msgid "Wallet service is unavailable."
+msgstr "Der Wallet-Dienst ist nicht verfügbar."
+
+#. runtime
+msgid "What answered at this address is not a Grin wallet's reply"
+msgstr "Was an dieser Adresse beantwortet wurde, ist keine Grin-Wallet-Antwort"
+
+msgid "What is this?"
+msgstr "Was ist das?"
+
+msgid "What the program reports"
+msgstr "Was das Programm meldet"
+
+#. runtime
+msgid "What to do"
+msgstr "Was zu tun ist"
+
+msgid "When a transferable point is ready, look in this network’s chain folder under history-exports/<network>-<height>-<hash>/ for checkpoint.json and history.proof."
+msgstr "Wenn ein übertragbarer Punkt bereit ist, suchen Sie im Kettenordner dieses Netzwerks unter history-exports/<network>-<height>-<hash>/ nach checkpoint.json und history.proof."
+
+msgid "Where Tor is blocked it can be reached through bridges: relays that are not in the public list, with the traffic disguised. The choice holds for everything the wallet does through Tor: messages, payments to an address, sending transactions."
+msgstr "Dort, wo Tor blockiert ist, kann es über Bridges erreicht werden: Relais, die nicht in der öffentlichen Liste stehen, wobei der Traffic getarnt ist.Die Wahl gilt für alles, was die Wallet über Tor macht: Nachrichten, Zahlungen an eine Adresse, das Senden von Transaktionen."
+
+msgid "Where the wallet's files are"
+msgstr "Wo die Wallet-Dateien sind"
+
+msgid "Which characters a password may have"
+msgstr "Welche Zeichen ein Passwort haben darf"
+
+msgid "Who"
+msgstr "Wer"
+
+msgid "Who gets it and how — choose one"
+msgstr "Wer bekommt es und wie — wählen Sie eine"
+
+msgid "With bridges chosen the wallet reaches Tor through them only. If they do not answer, Tor does not connect; it is never reached directly instead."
+msgstr "Bei ausgewählten Bridges erreicht die Wallet Tor nur über diese Bridges. Wenn sie nicht antworten, verbindet sich Tor nicht. Stattdessen wird sie nie direkt erreicht."
+
+msgid "Word No. "
+msgstr "Wort Nr. "
+
+#. runtime
+msgid "Word No. {} does not match. Check your copy or look at the words again."
+msgstr "Wort Nr. {} stimmt nicht überein. Überprüfen Sie Ihre Kopie oder schauen Sie sich die Wörter noch einmal an."
+
+msgid "Word number "
+msgstr "Wort Nummer "
+
+msgid "Write the words on paper in order and keep them "
+msgstr "Schreiben Sie die Wörter auf Papier in der Reihenfolge und halten Sie sie "
+
+msgid "Write them on paper in order. Close this window when done."
+msgstr "Schreiben Sie sie in der Reihenfolge auf Papier. Schließen Sie dieses Fenster, wenn Sie fertig sind."
+
+#. runtime
+msgid "Wrong password"
+msgstr "Falsches Passwort"
+
+#. runtime
+msgid "Yesterday"
+msgstr "Gestern"
+
+#. runtime
+msgid "You agreed that this payment goes directly when Tor fails to send it. The wallet remembers this for this payment."
+msgstr "Sie haben zugestimmt, dass diese Zahlung direkt erfolgt, wenn Tor sie nicht senden kann, und die Wallet erinnert sich an diese Zahlung."
+
+msgid "You chose an output you marked “not to be spent”. It is spent only if you say so here, for this payment."
+msgstr "Sie haben einen Output gewählt, den Sie als „nicht auszugeben“ markiert haben, der nur dann ausgegeben wird, wenn Sie dies hier für diese Zahlung angeben."
+
+msgid "You pass the text on yourself and paste the reply. An invoice is paid from “Receive”: paste its text there."
+msgstr "Eine Rechnung wird von „Empfangen“ aus bezahlt: Fügen Sie ihren Text dort ein, wo Sie die Rechnung erhalten haben."
+
+msgid "You receive"
+msgstr "Sie erhalten"
+
+#. runtime
+msgid "You sent {} GRIN"
+msgstr "Sie haben {} GRIN gesendet"
+
+msgid "Your 24 words"
+msgstr "Ihre 24 Wörter"
+
+msgid "Your address. A payment sent to it over Tor arrives by itself while the wallet is open; a sender can also name it for a payment proof."
+msgstr "Eine Zahlung, die über Tor an sie gesendet wird, kommt von selbst an, während die Wallet geöffnet ist; ein Absender kann sie auch für einen Zahlungsnachweis benennen."
+
+msgid "Your address. A sender can name it so the payment has a payment proof."
+msgstr "Deine Adresse. Ein Absender kann sie benennen, damit die Zahlung einen Zahlungsnachweis hat."
+
+#. runtime
+msgid "Your address: does not work without Tor — payments to an address go by hand"
+msgstr "Deine Adresse: funktioniert ohne Tor nicht — Zahlungen an eine Adresse gehen per Hand"
+
+msgid "Your contacts"
+msgstr "Ihre Kontakte"
+
+#. runtime
+msgid "Your earlier choice of bridges could not be written back: the way that was tried is still the choice. Set it under “Tor bridges”."
+msgstr "Ihre vorherige Auswahl der Brücken konnte nicht zurückgeschrieben werden: Der Weg, der versucht wurde, ist immer noch die Wahl.Setzen Sie es unter \"Tor-Brücken\"."
+
+msgid "Your money is kept in outputs: one for every payment you got and for the change of every payment you made. An output you mark “not to be spent” stays yours, but the wallet passes it by when it pays, and “Available” is shown without it. You take the mark off here whenever you like."
+msgstr "Dein Geld wird in Ausgaben gehalten: eine für jede Zahlung, die du erhalten hast, und eine für den Wechselwert jeder Zahlung, den du gemacht hast. Eine Ausgabe, die du als „nicht auszugeben“ markierst, bleibt deine, aber die Wallet übergeht sie, wenn sie bezahlt wird, und „Verfügbar“ wird ohne sie angezeigt."
+
+msgid "Your money is kept in outputs: one for every payment you got and for the change of every payment you made. By itself the wallet takes the largest first. Here you can name the outputs yourself: the payment is paid with exactly those, all of them, and the change comes back as one new output."
+msgstr "Ihr Geld wird in Ausgaben gehalten: eine für jede Zahlung, die Sie erhalten haben, und eine für den Wechsel jeder Zahlung, welche Sie getätigt haben. Selbstverständlich nimmt die Wallet die größte zuerst. Hier können Sie die Ausgaben selbst benennen: Die Zahlung wird mit genau diesen bezahlt, alle von ihnen, und der Wechsel kommt als eine neue Ausgabe zurück."
+
+msgid "Your own public nodes: one https:// address a line, up to 4. They are asked like the listed ones and get your transactions first, but they never count as an independent voice."
+msgstr "Eigene öffentliche Knoten: bis zu vier https://-Adressen, eine pro Zeile. Sie werden wie die Knoten der Liste abgefragt und erhalten Ihre Transaktionen zuerst. Ihre Antworten zählen jedoch nicht als unabhängige Stimme."
+
+#. runtime
+msgid "Your own starting point is made: block {}. The wallet starts from it at the next unlock."
+msgstr "Ihr eigener Ausgangspunkt wird erstellt: Block {}, von dem die Wallet beim nächsten Entsperren ausgeht."
+
+msgid "Your point carries the proof of the built-in one: up to the built-in point the history stays proved, and from it to your point this wallet vouches. A point is made only from a chain that keeps that proof. Money, keys and history are not touched."
+msgstr "Dein Punkt trägt den Beweis des eingebauten Punktes: bis zum eingebauten Point bleibt die Geschichte bewiesen, und von ihm bis zu deinem Punkt bürgt diese Wallet. Ein Punkt wird nur aus einer Kette gemacht, die diesen Beweis aufbewahrt. Geld, Schlüssel und Geschichte werden nicht berührt."
+
+#. runtime
+msgid "Your wallet is ready to use. Public nodes verified the tip at block {}."
+msgstr "Ihr Wallet ist bereit. Öffentliche Knoten haben die Kettenspitze bei Block {} bestätigt."
+
+#. runtime
+msgid "a block reward"
+msgstr "Eine Blockbelohnung"
+
+#. runtime
+msgid "a block reward that cannot be spent yet"
+msgstr "Eine Blockbelohnung, die noch nicht ausgegeben werden kann"
+
+#. runtime
+msgid "a payment to your address — the sender's wallet waits about 40 seconds: look and accept?"
+msgstr "Eine Zahlung an Ihre Adresse — die Geldbörse des Absenders wartet etwa 40 Sekunden: schauen und akzeptieren?"
+
+#. runtime
+msgid "a public node names more work than is verified here"
+msgstr "Ein öffentlicher Knoten nennt mehr Arbeit, als hier verifiziert wird"
+
+#. runtime
+msgid "abandoned"
+msgstr "aufgegeben"
+
+#. runtime
+msgid "accepted for delivery"
+msgstr "zur Zustellung angenommen"
+
+#. runtime
+msgid "address unavailable"
+msgstr "Adresse nicht verfügbar"
+
+#. runtime
+msgid "address with a mistake"
+msgstr "Adresse mit einem Fehler"
+
+#. runtime
+msgid "after {} blocks"
+msgstr "nach {} Blöcken"
+
+msgid "amount to ask for, GRIN"
+msgstr "Betrag anzufragen, GRIN"
+
+#. runtime
+msgid "and {} earlier"
+msgstr "und {} früher"
+
+#. runtime
+msgid "asking public nodes about the tip"
+msgstr "Öffentliche Knoten nach dem Tipp fragen"
+
+#. runtime
+msgid "at the tip, block {}"
+msgstr "An der Spitze, Block {}"
+
+#. runtime
+msgid "auto-receive status unavailable"
+msgstr "Status des automatischen Empfangs nicht verfügbar"
+
+msgid "away from the computer"
+msgstr "Abseits vom Computer"
+
+msgid "away from the phone"
+msgstr "Weit weg vom Telefon"
+
+#. runtime
+msgid "being taken back — one of the two will be in a block"
+msgstr "Einer der beiden wird in einem Block stehen, der von einem anderen Spieler gespielt wird."
+
+msgid "block "
+msgstr "Block "
+
+#. runtime
+msgid "block {}"
+msgstr "Block {}"
+
+#. runtime
+msgid "block {} of {} · {} left"
+msgstr "Block {} von {} · {} links"
+
+#. runtime
+msgid "block {} · waiting for the chain"
+msgstr "block {} · wartet auf die Kette"
+
+#. runtime
+msgid "can be spent · in reserve {} · in all {}"
+msgstr "verfügbar · reserviert {} · insgesamt {}"
+
+#. runtime
+msgid "cancelled"
+msgstr "abgebrochen"
+
+#. runtime
+msgid "cannot be spent now"
+msgstr "Kann jetzt nicht ausgegeben werden"
+
+msgid "check code compared"
+msgstr "Checkcode verglichen"
+
+msgid "check code compared · you have paid them"
+msgstr "Checkcode verglichen · Sie haben sie bezahlt"
+
+msgid "check code not compared"
+msgstr "Prüfcode nicht verglichen"
+
+#. runtime
+msgid "checked by sampling its work up to the program's point; from there checked by the wallet that made your point"
+msgstr "Überprüft durch Sampling seiner Arbeit bis zum Punkt des Programms; von dort aus überprüft durch die Wallet, die Ihren Punkt gemacht hat"
+
+#. runtime
+msgid "checking the stored ones"
+msgstr "Überprüfung der gespeicherten Daten"
+
+#. runtime
+msgid "collected and checked"
+msgstr "Gesammelt und geprüft"
+
+msgid "confirmations"
+msgstr "Bestätigungen"
+
+#. runtime
+msgid "confirmed by public nodes"
+msgstr "Von öffentlichen Knoten bestätigt"
+
+#. runtime
+msgid "confirmed by public nodes, {}"
+msgstr "Bestätigung durch öffentliche Knoten, {}"
+
+#. runtime
+msgid "confirmed, with a caveat: a claim of more work went unsettled not long ago"
+msgstr "Bestätigt, mit einem Vorbehalt: ein Anspruch auf mehr Arbeit ging vor kurzem ungeklärt"
+
+#. runtime
+msgid "contested — check it"
+msgstr "Umstritten — check it"
+
+#. runtime
+msgid "create a message key first (My details)"
+msgstr "Erstellen Sie zuerst einen Nachrichtenschlüssel (Meine Daten)"
+
+#. runtime
+msgid "cut short"
+msgstr "abgeschnitten"
+
+#. runtime
+msgid "did not work: the payment reached a block first"
+msgstr "Die Zahlung hat zuerst einen Block erreicht."
+
+#. runtime
+msgid "directly"
+msgstr "direkt"
+
+#. runtime
+msgid "does not answer"
+msgstr "Antwortet nicht"
+
+#. runtime
+msgid "failed"
+msgstr "fehlgeschlagen"
+
+#. runtime
+msgid "finished · found {} · spent {}"
+msgstr "Abgeschlossen · gefunden {} · ausgegeben {}"
+
+msgid "for example 1.5"
+msgstr "Zum Beispiel 1.5"
+
+#. runtime
+msgid "found by the search for old money · in the chain by block {}"
+msgstr "Gefunden durch die Suche nach alten Geld · in der Kette von Block {}"
+
+#. runtime
+msgid "from before the restore — cannot be signed, the money is reserved"
+msgstr "Vor der Wiederherstellung vorbereitet. Signieren ist gesperrt, das Guthaben bleibt reserviert."
+
+#. runtime
+msgid "from opening to the tip: {}"
+msgstr "von der Öffnung bis zur Spitze: {}"
+
+msgid "grin1… — for a payment proof"
+msgstr "grin1… — für einen Zahlungsnachweis"
+
+msgid "grin1… — the wallet there must be open"
+msgstr "grin1… — die Wallet des Empfängers muss geöffnet sein"
+
+#. runtime
+msgid "handed to the wallet"
+msgstr "An die Brieftasche übergeben"
+
+#. runtime
+msgid "has not replied to the payment of {} GRIN yet — the money is reserved"
+msgstr "{} GRIN hat noch nicht auf die Zahlung von 79301 GRINA geantwortet — das Geld ist reserviert"
+
+#. runtime
+msgid "held by a payment under way"
+msgstr "Von einer laufenden Zahlung gehalten"
+
+#. runtime
+msgid "in a block"
+msgstr "in einem Block"
+
+#. runtime
+msgid "in a block · confirmations: 10"
+msgstr "in einem Block · Bestätigungen: 10"
+
+#. runtime
+msgid "in a block · confirmations: {}"
+msgstr "in einem Block · Bestätigungen: {}"
+
+#. runtime
+msgid "in a block · confirmations: {} of {}"
+msgstr "in einem Block · Bestätigungen: {} von {}"
+
+#. runtime
+msgid "in a block · confirmations: {} of {} · {}"
+msgstr "in einem Block · Bestätigungen: {} von {} · {}"
+
+#. runtime
+msgid "in a block · the wallet is catching up with the tip"
+msgstr "in einem Block · das Portemonnaie holt mit der Spitze auf"
+
+#. runtime
+msgid "in a block · the wallet is catching up with the tip · {}"
+msgstr "in einem Block · das Portemonnaie holt mit der Spitze auf · {}"
+
+#. runtime
+msgid "in a block · {}"
+msgstr "In einem Block · {}"
+
+#. runtime
+msgid "in block 4 118 590"
+msgstr "in Block 4 118 590"
+
+#. runtime
+msgid "in block 4 118 590 · proof"
+msgstr "in Block 4 118 590 · Nachweis"
+
+#. runtime
+msgid "in the network, waiting for a block"
+msgstr "Im Netzwerk warten auf einen Block"
+
+#. runtime
+msgid "invoice paid"
+msgstr "Rechnung bezahlt"
+
+#. runtime
+msgid "invoice paid · in block 4 118 402"
+msgstr "Rechnung bezahlt · im Block 4 118 402"
+
+#. runtime
+msgid "is {} blocks below the checked chain — with a new one the wallet opens faster next time"
+msgstr "ist {} Blöcke unterhalb der überprüften Kette — mit einer neuen Kette öffnet sich die Wallet beim nächsten Mal schneller"
+
+#. runtime
+msgid "just now"
+msgstr "gerade eben"
+
+#. runtime
+msgid "left without the wallet's answer"
+msgstr "Ohne die Antwort der Brieftasche"
+
+#. runtime
+msgid "look-alike letters in the name"
+msgstr "Ähnliche Buchstaben im Namen"
+
+#. runtime
+msgid "malformed"
+msgstr "ungültiges Format"
+
+msgid "marked “not to be spent”"
+msgstr "„Nicht auszugeben“ gekennzeichnet"
+
+#. runtime
+msgid "name changed: it had hidden characters"
+msgstr "Name geändert: es hatte versteckte Zeichen"
+
+#. runtime
+msgid "no address stored"
+msgstr "Keine Adresse hinterlegt"
+
+#. runtime
+msgid "no node address is known: the names of the network's nodes did not resolve"
+msgstr "Keine Knotenadresse bekannt: Die Namen der Knoten des Netzwerks wurden nicht aufgelöst"
+
+#. runtime
+msgid "no node is connected"
+msgstr "Kein Knoten ist verbunden"
+
+#. runtime
+msgid "no node is connected yet"
+msgstr "Es ist noch kein Knoten angeschlossen"
+
+#. runtime
+msgid "no payment record"
+msgstr "Kein Zahlungsverlauf"
+
+#. runtime
+msgid "no public nodes are listed for this network: no tip is confirmed"
+msgstr "Für dieses Netzwerk sind keine öffentlichen Knoten aufgelistet: kein Tipp bestätigt"
+
+#. runtime
+msgid "no secure channel to public nodes: no tip is confirmed"
+msgstr "Kein sicherer Kanal zu öffentlichen Knoten: kein Tipp wird bestätigt"
+
+#. runtime
+msgid "not a wallet's request"
+msgstr "Nicht eine Wallet-Anfrage"
+
+#. runtime
+msgid "not applied yet"
+msgstr "Noch nicht beworben"
+
+#. runtime
+msgid "not at the tip yet"
+msgstr "Noch nicht an der Spitze"
+
+#. runtime
+msgid "not checked: the proof in the program did not pass"
+msgstr "Nicht geprüft: Der Nachweis im Programm ist nicht erfolgreich"
+
+#. runtime
+msgid "not checked: the proof in the program is for another starting point"
+msgstr "Nicht angehakt: Der Beweis im Programm ist für einen anderen Ausgangspunkt"
+
+#. runtime
+msgid "not chosen yet: headers are being checked"
+msgstr "Noch nicht ausgewählt: Header werden geprüft"
+
+#. runtime
+msgid "not confirmed yet"
+msgstr "noch nicht bestätigt"
+
+#. runtime
+msgid "not in a block yet"
+msgstr "Noch nicht in einem Block"
+
+#. runtime
+msgid "not made"
+msgstr "nicht erstellt"
+
+#. runtime
+msgid "not needed"
+msgstr "nicht erforderlich"
+
+#. runtime
+msgid "not sent: the delivery window closed"
+msgstr "Nicht versendet: Das Lieferfenster ist geschlossen"
+
+#. runtime
+msgid "not set"
+msgstr "nicht festgelegt"
+
+#. runtime
+msgid "not started"
+msgstr "nicht gestartet"
+
+#. runtime
+msgid "of {} GRIN is signed, but Tor did not come up and it has not gone to the network — choose what to do"
+msgstr "{} GRIN ist signiert, aber Tor ist nicht aufgetaucht und es ist nicht ins Netzwerk gegangen — wählen Sie, was zu tun ist"
+
+#. runtime
+msgid "of {} GRIN was prepared before the wallet was restored from an older copy — it cannot be signed, the money is reserved"
+msgstr "{} GRIN wurde vorbereitet, bevor die Brieftasche aus einer älteren Kopie wiederhergestellt wurde — sie kann nicht signiert werden, das Geld ist reserviert"
+
+#. runtime
+msgid "off: you accept each payment"
+msgstr "Aus: Sie nehmen jede Zahlung selbst an."
+
+msgid "on this computer"
+msgstr "Auf diesem Computer"
+
+msgid "on this phone"
+msgstr "auf diesem Telefon"
+
+#. runtime
+msgid "part {} of {}"
+msgstr "Teil {} von {}"
+
+#. runtime
+msgid "part {} of {} · found {}"
+msgstr "Teil {} von {} · nicht gefunden {}"
+
+msgid "paste the BEGINSLATEPACK… ENDSLATEPACK. text here"
+msgstr "Hier den Text BEGINSLATEPACK… ENDSLATEPACK. einfügen"
+
+msgid "paste the BEGINSLATEPACK… ENDSLATEPACK. text you were sent"
+msgstr "Hier den empfangenen Text BEGINSLATEPACK… ENDSLATEPACK. einfügen"
+
+#. runtime
+msgid "Verified Nostr contacts are accepted automatically. Direct Tor payments require your approval."
+msgstr "Zahlungen verifizierter Nostr-Kontakte werden automatisch angenommen. Direkte Tor-Zahlungen erfordern Ihre Zustimmung."
+
+#. runtime
+msgid "preliminary"
+msgstr "vorläufig"
+
+#. runtime
+msgid "prepared, waiting for the reply"
+msgstr "Vorbereitet, warte auf die Antwort"
+
+#. runtime
+msgid "public nodes did not confirm the tip"
+msgstr "Public Nodes haben den Tipp nicht bestätigt"
+
+#. runtime
+msgid "public nodes did not confirm the tip ({} answered, {} needed, {} named it)"
+msgstr "Die öffentlichen Knoten haben den Tipp nicht bestätigt ({} Er antwortete: {} benötigt, {} (Ich habe es genannt)"
+
+#. runtime
+msgid "public nodes have not been asked yet"
+msgstr "Public nodes wurden noch nicht gefragt"
+
+#. runtime
+msgid "public nodes name a time before one confirmed earlier"
+msgstr "Öffentliche Knoten nennen eine Zeit vor einer früher bestätigten"
+
+#. runtime
+msgid "received"
+msgstr "empfangen"
+
+#. runtime
+msgid "received · confirmations: {}"
+msgstr "Empfangen · Bestätigungen: {}"
+
+#. runtime
+msgid "received · confirmations: {} · {}"
+msgstr "Empfangene · Bestätigungen: {} · {}"
+
+#. runtime
+msgid "replied to the payment of {} GRIN — your signature is needed"
+msgstr "Antwort auf die Zahlung von {} GRIN — Ihre Unterschrift ist erforderlich"
+
+#. runtime
+msgid "reserve released manually; a prior signature is still possible"
+msgstr "Reserve manuell freigegeben. Die Zahlung könnte zuvor signiert worden sein."
+
+#. runtime
+msgid "saving…"
+msgstr "wird gespeichert…"
+
+#. runtime
+msgid "sent a payment — look and accept?"
+msgstr "Haben Sie eine Zahlung gesendet – ansehen und akzeptieren?"
+
+#. runtime
+msgid "signed — whoever issued the invoice sends it to the network"
+msgstr "Signiert – wer auch immer die Rechnung ausgestellt hat, sendet sie an das Netzwerk"
+
+#. runtime
+msgid "signed, going to the network"
+msgstr "Signiert, geht ins Netzwerk"
+
+#. runtime
+msgid "silent"
+msgstr "keine Antwort"
+
+#. runtime
+msgid "since opening: {}"
+msgstr "Seit Eröffnung: {}"
+
+msgid "soon"
+msgstr "demnächst"
+
+#. runtime
+msgid "spendable · reserved {} · maturing {}"
+msgstr "verfügbar · reserviert {} · noch nicht fällig {}"
+
+#. runtime
+msgid "starting"
+msgstr "wird gestartet"
+
+#. runtime
+msgid "state unknown"
+msgstr "Zustand unbekannt"
+
+#. runtime
+msgid "stopped"
+msgstr "angehalten"
+
+#. runtime
+msgid "taken back — the money is yours again"
+msgstr "Zurückgenommen – das Geld gehört Ihnen wieder"
+
+#. runtime
+msgid "test"
+msgstr "Test"
+
+#. runtime
+msgid "the built-in obfs4 bridges"
+msgstr "Die eingebauten obfs4-Brücken"
+
+#. runtime
+msgid "the chain is checked to block {} · your old money is still being looked for: the amount can grow, sending opens when the search ends"
+msgstr "Die Kette wird geprüft, um zu blockieren {} · Ihr altes Geld wird immer noch gesucht: der Betrag kann wachsen, der Versand öffnet sich, wenn die Suche endet"
+
+#. runtime
+msgid "the chain is still being checked"
+msgstr "Die Kette wird noch geprüft"
+
+#. runtime
+msgid "the list of public nodes is too small to confirm a tip"
+msgstr "Die Liste der öffentlichen Knoten ist zu klein, um einen Tipp zu bestätigen"
+
+#. runtime
+msgid "the numbers for asking public nodes ran out: no tip is confirmed"
+msgstr "Die Nummern für das Anfragen öffentlicher Knoten sind ausgelaufen: kein Tipp bestätigt"
+
+#. runtime
+msgid "the part that checks the network is missing: nothing is known about the chain"
+msgstr "Der Teil, der das Netzwerk überprüft, fehlt: über die Kette ist nichts bekannt"
+
+#. runtime
+msgid "the time is not confirmed yet"
+msgstr "Die Uhrzeit ist noch nicht bestätigt."
+
+#. runtime
+msgid "the time is not confirmed: public nodes disagree about it"
+msgstr "Zeit unbestätigt: Die Zeitangaben der öffentlichen Knoten weichen voneinander ab."
+
+#. runtime
+msgid "the time is not confirmed: too few public nodes answered"
+msgstr "Zeit unbestätigt: Zu wenige öffentliche Knoten haben geantwortet."
+
+#. runtime
+msgid "the wallet is at block {} of {} · {} to go. Sending opens at the tip"
+msgstr "Die Brieftasche ist am Block {} von {} · {} Das Senden öffnet sich an der Spitze"
+
+#. runtime
+msgid "the wallet is at block {} · the tip is not chosen yet: waiting for the network check and public nodes. Sending opens at the tip"
+msgstr "Die Wallet befindet sich bei Block {} · der Tipp ist noch nicht gewählt: Warten auf die Netzwerkprüfung und öffentliche Knoten.Senden öffnet sich am Tipp"
+
+#. runtime
+msgid "the wallet said nothing about the chain"
+msgstr "Die Brieftasche sagte nichts über die Kette"
+
+msgid "this computer"
+msgstr "dieser Computer"
+
+#. runtime
+msgid "this computer's clock is far from the time of public nodes: check the clock"
+msgstr "Die Uhr dieses Computers ist weit von der Zeit der öffentlichen Knoten entfernt: Überprüfen Sie die Uhr"
+
+msgid "this phone"
+msgstr "dieses Telefon"
+
+#. runtime
+msgid "time is not confirmed"
+msgstr "Zeit unbestätigt"
+
+#. runtime
+msgid "to the tip, 4 118 626 · confirmed by Grincoin.org and Grin.money"
+msgstr "Zum Tipp, 4 118 626 · bestätigt von Grincoin.org und Grin.money"
+
+#. runtime
+msgid "to the tip, {}"
+msgstr "Bis zur Spitze, {}"
+
+#. runtime
+msgid "to {}"
+msgstr "an {}"
+
+#. runtime
+msgid "too large"
+msgstr "zu groß"
+
+#. runtime
+msgid "too many unsettled claims of more work: no tip is confirmed"
+msgstr "Zu viele unbefriedigte Ansprüche auf mehr Arbeit: kein Tipp wird bestätigt"
+
+#. runtime
+msgid "verified to {}"
+msgstr "Überprüft auf {}"
+
+#. runtime
+msgid "waiting for a signature"
+msgstr "Warten auf eine Unterschrift"
+
+#. runtime
+msgid "waiting for public nodes to confirm the tip"
+msgstr "Warten auf öffentliche Knoten, um den Tipp zu bestätigen"
+
+#. runtime
+msgid "waiting for the chain"
+msgstr "Warten auf die Kette"
+
+#. runtime
+msgid "waiting for your signature"
+msgstr "Warten auf Ihre Unterschrift"
+
+#. runtime
+msgid "waiting to be delivered"
+msgstr "Warten auf Lieferung"
+
+#. runtime
+msgid "wallet"
+msgstr "Wallet"
+
+msgid "what you call them"
+msgstr "Wie du sie nennst"
+
+msgid "word"
+msgstr "Wort"
+
+#. runtime
+msgid "working"
+msgstr "läuft"
+
+msgid "you have paid them · check code not compared"
+msgstr "Sie haben sie bezahlt · Prüfcode nicht verglichen"
+
+msgid "you have paid them: a payment is in a block"
+msgstr "Sie haben sie bezahlt: eine Zahlung ist in einem Block"
+
+#. runtime
+msgid "your own bridges"
+msgstr "Eigene Brücken bauen"
+
+#. runtime
+msgid "{} GRIN from grin18z5…9h2ykv — accept?"
+msgstr "{} GRIN von grin18z5…9h2ykv – annehmen?"
+
+#. runtime
+msgid "{} GRIN held by a payment under way"
+msgstr "{} GRIN gehalten von einer Zahlung im Gange"
+
+#. runtime
+msgid "{} GRIN marked “not to be spent”"
+msgstr "{} GRIN gekennzeichnet „nicht zu verwenden“"
+
+#. runtime
+msgid "{} GRIN maturing"
+msgstr "{} GRIN Reifung"
+
+#. runtime
+msgid "{} GRIN waits for the recipient's reply"
+msgstr "{} GRIN wartet auf die Antwort des Empfängers"
+
+#. runtime
+msgid "{} h ago"
+msgstr "vor {} Std."
+
+#. runtime
+msgid "{} h {} min"
+msgstr "{} Std. {} Min."
+
+#. runtime
+msgid "{} messages"
+msgstr "{} Nachrichten"
+
+#. runtime
+msgid "{} min ago"
+msgstr "vor {} Min."
+
+#. runtime
+msgid "{} min {} s"
+msgstr "{} Min. {} Sek."
+
+#. runtime
+msgid "{} of about {}"
+msgstr "{} von etwa {}"
+
+#. runtime
+msgid "{} of {} · {} left"
+msgstr "{} von {} · {} links"
+
+#. runtime
+msgid "{} s"
+msgstr "{} s"
+
+#. runtime
+msgid "{} set · they get transactions first; from the next unlock"
+msgstr "{} set · sie erhalten Transaktionen zuerst; ab dem nächsten Entsperren"
+
+#. runtime
+msgid "{} · gone"
+msgstr "{} · weg"
+
+#. runtime
+msgid "{} · started {} times"
+msgstr "{} · gestartet {} Zeiten"
+
+#. runtime
+msgid "{}. A payment signed now may wait until Tor works again. You can sign and wait; sign and let this one payment go directly — the node then sees the address of your device; switch Tor off for all payments; or not sign yet."
+msgstr "{}. Eine Zahlung, die jetzt signiert wurde, kann warten, bis Tor wieder funktioniert. Sie können signieren und warten; signieren und diese eine Zahlung direkt gehen lassen - der Knoten sieht dann die Adresse Ihres Geräts; schalten Sie Tor für alle Zahlungen aus; oder noch nicht signieren."
+
+#. runtime
+msgid "“Coffee shop”"
+msgstr "„Café“"
+
+msgid "✓ Checked: you compared the check code with this contact"
+msgstr "✓ Überprüft: Sie haben den Prüfcode mit diesem Kontakt verglichen"
+
+msgid "✓ Not to be spent"
+msgstr "✓ Nicht ausgegeben werden"
+
+msgid "✓ Small ones go along with payments"
+msgstr "✓ Kleine gehen mit Zahlungen einher"
+
+msgid "✓ Spend it in this payment"
+msgstr "✓ Verbringen Sie es in dieser Zahlung"
+
+msgid "✓ checked: the check code was compared"
+msgstr "✓ geprüft: Der Prüfcode wurde verglichen"

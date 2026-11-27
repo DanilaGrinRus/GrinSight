@@ -36,7 +36,7 @@ use grin_p2p::header_proof::{verify_header_proofs_with_pow, verify_memberships};
 use grin_p2p::msg::{self, GetHeaderProofs, HeaderProofItem, HeaderProofs, MsgHeader, MsgHeaderWrapper, OutputSegmentResponse, Ping, Pong, SegmentRequest, SegmentResponse, Type};
 use grin_util::secp::pedersen::RangeProof;
 use grin_p2p::{Capabilities, P2PConfig, PeerAddr, MAX_HEADER_PROOF_ITEMS};
-use std::io::Write;
+use std::io::{self,Read,Write};
 use std::net::{Ipv4Addr, SocketAddr, TcpStream};
 use std::time::{Duration, Instant};
 
@@ -199,6 +199,25 @@ pub fn display_agent(agent: &str) -> String {
     agent.chars().filter(|c| c.is_ascii_graphic() || *c == ' ').take(60).collect()
 }
 
+// A socket idle timeout alone can be restarted by every byte. Bootstrap
+// replies also have a fixed end-to-end deadline for their entire frame.
+struct ReplyStream<'a> {
+    socket: &'a TcpStream,
+    until: Option<Instant>,
+}
+impl Read for ReplyStream<'_> {
+    fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
+        if let Some(until) = self.until {
+            let left = until.saturating_duration_since(Instant::now());
+            if left.is_zero() {
+                return Err(io::ErrorKind::TimedOut.into());
+            }
+            self.socket.set_read_timeout(Some(left))?;
+        }
+        self.socket.read(bytes)
+    }
+}
+
 /// A connection to one node, made by hand.
 pub struct Session {
     conn: TcpStream,
@@ -210,6 +229,7 @@ pub struct Session {
     /// How long connecting and the handshake took.
     pub connected_in: Duration,
     work: Difficulty,
+    pub(crate) remote_work: u64,
     height: u64,
     last_sent: Option<Instant>,
 }
@@ -237,8 +257,10 @@ impl Session {
                 }
                 .to_string()
             })?;
+        let remote_work = info.total_difficulty().to_num();
         Ok(Session {
             conn,
+            remote_work,
             version: info.version,
             capabilities: info.capabilities,
             user_agent: display_agent(&info.user_agent),
@@ -247,6 +269,30 @@ impl Session {
             height,
             last_sent: None,
         })
+    }
+
+    /// Read one bounded, standard GetHeaders reply. The peer does not choose
+    /// our cursor: the locator is the hash of our last verified header.
+    pub(crate) fn next_headers(&mut self, tip: &BlockHeader) -> Result<Option<Vec<BlockHeader>>, String> {
+        struct Batch(Vec<BlockHeader>);
+        impl ser::Readable for Batch {
+            fn read<R: ser::Reader>(r: &mut R) -> Result<Self, ser::Error> {
+                let n = r.read_u16()?;
+                if u32::from(n) > grin_p2p::MAX_BLOCK_HEADERS {
+                    return Err(ser::Error::TooLargeReadErr);
+                }
+                let mut v = Vec::with_capacity(usize::from(n));
+                for _ in 0..n {
+                    v.push(BlockHeader::read(r)?);
+                }
+                Ok(Self(v))
+            }
+        }
+        let locator = msg::Locator {
+            hashes: vec![Hash::from_vec(&fly_chain_headers::hash_bytes(tip))],
+        };
+        self.exchange::<_, Batch>(Type::GetHeaders, &locator, Type::Headers, Duration::from_secs(20))
+            .map(|reply| reply.map(|(batch, _, _)| batch.0))
     }
 
     /// Whether the node says it gives its state out in segments.
@@ -319,16 +365,31 @@ impl Session {
         let began = Instant::now();
         self.send(ask, body)?;
         self.last_sent = Some(began);
+        let until = if answer == Type::Headers {
+            began.checked_add(wait)
+        } else {
+            None
+        };
+        let mut remaining = MAX_OTHER_MESSAGE;
         loop {
+            let mut stream = ReplyStream {
+                socket: &self.conn,
+                until,
+            };
             let left = wait.saturating_sub(began.elapsed());
             if left.is_zero() {
                 return Ok(None);
             }
             let _ = self.conn.set_read_timeout(Some(left));
-            let header = match msg::read_header(&mut self.conn, self.version) {
+            let header = match msg::read_header(&mut stream, self.version) {
                 Ok(MsgHeaderWrapper::Known(header)) => header,
                 Ok(MsgHeaderWrapper::Unknown(len, _)) if len <= MAX_OTHER_MESSAGE => {
-                    msg::read_discard(len, &mut self.conn).map_err(|_| "the connection ended".to_string())?;
+                    if until.is_some() {
+                        remaining = remaining
+                            .checked_sub(len.saturating_add(11))
+                            .ok_or("unsolicited message budget exhausted")?;
+                    }
+                    msg::read_discard(len, &mut stream).map_err(|_| "the connection ended".to_string())?;
                     continue;
                 }
                 Ok(MsgHeaderWrapper::Unknown(..)) => return Err("the node sent a message too large to read past".to_string()),
@@ -337,14 +398,20 @@ impl Session {
             };
             // the body may take its time, the wait for it is not cut short
             let _ = self.conn.set_read_timeout(Some(wait.max(Duration::from_secs(10))));
+            if until.is_some() && header.msg_type != answer {
+                remaining = remaining
+                    .checked_sub(header.msg_len.saturating_add(11))
+                    .ok_or("unsolicited message budget exhausted")?;
+            }
             if header.msg_type == answer {
-                let read: R = msg::read_body(&header, &mut self.conn, self.version).map_err(|_| "the answer could not be read".to_string())?;
+                let read: R = msg::read_body(&header, &mut stream, self.version).map_err(|_| "the answer could not be read".to_string())?;
                 let bytes = header.msg_len.saturating_add(u64::try_from(MsgHeader::LEN).unwrap_or(0));
                 return Ok(Some((read, bytes, began.elapsed())));
             }
             match header.msg_type {
                 Type::Ping => {
-                    let _: Ping = msg::read_body(&header, &mut self.conn, self.version).map_err(|_| "the connection ended".to_string())?;
+                    let _: Ping = msg::read_body(&header, &mut stream, self.version)
+                        .map_err(|_| "the connection ended".to_string())?;
                     let pong = Pong {
                         total_difficulty: self.work,
                         height: self.height,
@@ -352,7 +419,7 @@ impl Session {
                     self.send(Type::Pong, &pong)?;
                 }
                 _ if header.msg_len <= MAX_OTHER_MESSAGE => {
-                    msg::read_discard(header.msg_len, &mut self.conn).map_err(|_| "the connection ended".to_string())?;
+                    msg::read_discard(header.msg_len, &mut stream).map_err(|_| "the connection ended".to_string())?;
                 }
                 _ => return Err("the node sent a message too large to read past".to_string()),
             }

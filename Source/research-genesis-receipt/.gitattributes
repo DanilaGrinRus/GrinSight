@@ -1,0 +1,7 @@
+*.rs text eol=lf
+*.sh text eol=lf
+*.toml text eol=lf
+Cargo.lock text eol=lf
+*.bin binary
+*.receipt binary
+

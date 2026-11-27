@@ -30,6 +30,8 @@ pub struct PaymentBasis {
     pub state: ChainState,
     /// Height and hash selected in this snapshot.
     pub selected: Option<(u64, [u8; 32])>,
+    /// Lower bound of confirmed time from the same observation as selection.
+    pub confirmed_time: Option<u64>,
     /// Number of confirmations required by this snapshot.
     pub k_conf: u64,
 }
@@ -38,7 +40,7 @@ pub struct PaymentBasis {
 pub trait ChainView {
     /// Until a provider implements a coherent snapshot it cannot confirm a receipt.
     fn payment_basis(&self) -> PaymentBasis {
-        PaymentBasis { state: ChainState::Unknown, selected: None, k_conf: self.k_conf() }
+        PaymentBasis { state: ChainState::Unknown, selected: None, confirmed_time: None, k_conf: self.k_conf() }
     }
     /// The "state" axis of Level 5 for status rows.
     fn chain_state(&self) -> ChainState;

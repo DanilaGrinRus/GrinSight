@@ -33,6 +33,7 @@
 )]
 
 pub mod chain;
+pub mod genesis;
 pub mod checkpoint;
 pub mod origin;
 pub mod peaks;

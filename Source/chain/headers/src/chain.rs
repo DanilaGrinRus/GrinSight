@@ -25,7 +25,7 @@ use grin_core::core::BlockHeader;
 use grin_core::ser::Writer;
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufReader, Read, Seek, SeekFrom, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Name of the file inside the directory given to [`HeaderChain::open`].
 pub const FILE_NAME: &str = "headers.dat";
@@ -191,6 +191,8 @@ pub struct HeaderChain {
     /// Height of the starting point whose file this chain replaced when it
     /// was opened.
     replaced: Option<u64>,
+    // Locally sealed bootstrap tails replace a competing branch atomically.
+    published_dir: Option<PathBuf>,
 }
 
 fn io_error(e: io::Error) -> OpenError {
@@ -321,6 +323,7 @@ impl HeaderChain {
             side: None,
             max_reorg: MAX_REORG,
             replaced: None,
+            published_dir: None,
         }
     }
 
@@ -370,6 +373,62 @@ impl HeaderChain {
         Ok((chain, opened))
     }
 
+    /// Reopen a published local tail. Never create or rebase this file.
+    /// A torn trailing append may be discarded after its committed work is present.
+    pub fn open_published(
+        dir: &Path,
+        net: Net,
+        record: &[u8],
+        work: u64,
+        hash: [u8; 32],
+    ) -> Result<(HeaderChain, Opened), OpenError> {
+        let start = checkpoint::check(record, net).map_err(OpenError::Start)?;
+        net.enter();
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(dir.join(FILE_NAME))
+            .map_err(io_error)?;
+        #[cfg(not(target_os = "emscripten"))]
+        file.try_lock().map_err(|_| OpenError::Busy)?;
+        let expected = head_of(&start);
+        let mut head = vec![0; expected.len()];
+        file.read_exact(&mut head).map_err(io_error)?;
+        if head != expected {
+            return Err(OpenError::OtherStart);
+        }
+        let len = file.metadata().map_err(io_error)?.len();
+        let mut chain = Self::on(file, net, start);
+        let cut_bytes = chain.read_stored(len).map_err(io_error)?;
+        let tip = chain.tip();
+        let corrupt = OpenError::Io(io::ErrorKind::InvalidData);
+        if tip.total_work < work || (tip.total_work == work && tip.hash != hash) {
+            return Err(corrupt);
+        }
+        if cut_bytes > 0 {
+            let end = chain.end();
+            chain.file.seek(SeekFrom::Start(end)).map_err(io_error)?;
+            if cut_bytes >= 2 {
+                let mut n = [0; 2];
+                chain.file.read_exact(&mut n).map_err(io_error)?;
+                let n = u16::from_le_bytes(n);
+                if n == 0 || usize::from(n) > MAX_HEADER_LEN || cut_bytes >= 2 + u64::from(n) {
+                    return Err(corrupt);
+                }
+            }
+            chain.file.set_len(end).map_err(io_error)?;
+            chain.file.sync_all().map_err(io_error)?;
+        }
+        chain.protect_reorg(dir);
+        let kept = u64::try_from(chain.entries.len()).unwrap_or(u64::MAX);
+        Ok((chain, Opened { kept, cut_bytes }))
+    }
+
+    /// Install all future branch replacements as complete files before dropping the old branch.
+    pub fn protect_reorg(&mut self, dir: &Path) {
+        self.published_dir = Some(dir.to_owned());
+    }
+
     /// Height of the starting point whose file this chain replaced when it
     /// was opened; nothing if it opened a file of its own point or none.
     pub fn replaced(&self) -> Option<u64> {
@@ -379,6 +438,15 @@ impl HeaderChain {
     /// Verify the stored headers and cut the file where they stop
     /// following. Returns the number of bytes cut.
     fn load(&mut self, len: u64) -> io::Result<u64> {
+        let cut = self.read_stored(len)?;
+        if cut != 0 {
+            self.file.set_len(self.end())?;
+            self.file.sync_all()?;
+        }
+        Ok(cut)
+    }
+
+    fn read_stored(&mut self, len: u64) -> io::Result<u64> {
         self.file.seek(SeekFrom::Start(HEAD_LEN))?;
         let mut end = HEAD_LEN;
         {
@@ -399,10 +467,6 @@ impl HeaderChain {
                 }
             }
             self.tip = state;
-        }
-        if end < len {
-            self.file.set_len(end)?;
-            self.file.sync_all()?;
         }
         Ok(len.saturating_sub(end))
     }
@@ -660,8 +724,36 @@ impl HeaderChain {
             }
             return Ok(Outcome::Side { height });
         }
-        self.truncate(side.base)?;
-        self.append(&side.headers, side.state)?;
+        if let Some(dir) = self.published_dir.clone() {
+            let stage = dir.join(NEXT_FILE_NAME);
+            let mut file = locked(&stage, true)
+                .map_err(|e| io::Error::other(format!("open staged branch: {e:?}")))?;
+            let prefix = self
+                .index_of(side.base)
+                .map_or(HEAD_LEN, |i| self.entries[i].end);
+            self.file.seek(SeekFrom::Start(0))?;
+            if io::copy(&mut (&self.file).take(prefix), &mut file)? != prefix {
+                return Err(io::Error::new(
+                    io::ErrorKind::UnexpectedEof,
+                    "branch prefix incomplete",
+                ));
+            }
+            let mut replacement = Self::on(file, self.net, self.start.clone());
+            if replacement.read_stored(prefix)? != 0 || replacement.tip().height != side.base {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "changed branch prefix",
+                ));
+            }
+            replacement.append(&side.headers, side.state)?;
+            replacement.max_reorg = self.max_reorg;
+            replacement.protect_reorg(&dir);
+            std::fs::rename(stage, dir.join(FILE_NAME))?;
+            *self = replacement;
+        } else {
+            self.truncate(side.base)?;
+            self.append(&side.headers, side.state)?;
+        }
         Ok(Outcome::Switched {
             from: side.base,
             removed,

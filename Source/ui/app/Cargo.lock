@@ -1276,6 +1276,7 @@ dependencies = [
  "fly-host-link",
  "fly-safe-display",
  "qrcodegen",
+ "rspolib",
  "serde_json",
  "slint",
  "slint-build",

@@ -51,12 +51,23 @@ pub fn describe(view: &View) -> String {
     if let Some(failed) = &view.failed {
         return failed.clone();
     }
+    if !view.ready && view.point.autonomous() {
+        return format!(
+            "genesis bootstrap: height={}, work={}; tip freshness unknown; {}",
+            view.height,
+            view.work,
+            view.problem.as_deref().unwrap_or("verifying the local header history")
+        );
+    }
     if !view.ready {
         return "verifying the stored headers".to_string();
     }
     // what the user has to know first: the text is cut short
     let mut text = view.unsent.as_ref().map(|unsent| format!("{unsent}; ")).unwrap_or_default();
     text.push_str(&format!("headers verified to {} from a {} ({})", view.height, view.point.note(), view.start));
+    if view.point.autonomous() {
+        text.push_str(&format!("; work={}", view.work));
+    }
     match &view.state {
         // once blocks are applied, the state they were applied to goes
         // without saying: the text has to stay short
@@ -125,13 +136,12 @@ impl Feed {
     }
 }
 
-impl ChainFeed for Feed {
-    fn status(&mut self) -> Option<Status> {
-        let view = self.view();
-        let blocks = view.blocks.clone();
-        let (selected, confirmed_time) = view.selection();
-        Some(Status {
-            level: match &blocks {
+impl View {
+    fn wallet_status(&self) -> Status {
+        let blocks = &self.blocks;
+        let (selected, confirmed_time) = self.selection();
+        Status {
+            level: match blocks {
                 Some(blocks) if blocks.at_tip => Level::AtTip,
                 Some(_) => Level::Behind,
                 None => Level::Unknown,
@@ -144,7 +154,7 @@ impl ChainFeed for Feed {
             // when the blocks have reached the selected tip of the headers
             selected: blocks
                 .as_ref()
-                .filter(|blocks| blocks.at_tip && selected && blocks.height == view.height && blocks.hash == view.hash)
+                .filter(|blocks| blocks.at_tip && selected && blocks.height == self.height && blocks.hash == self.hash)
                 .map(|blocks| Tip {
                     height: blocks.height,
                     hash: blocks.hash,
@@ -154,8 +164,30 @@ impl ChainFeed for Feed {
             // the range proofs handed over are those the headers commit to
             rangeproofs_authenticated: blocks.is_some(),
             // nobody vouches for a development point
-            provisional: view.point.provisional() || view.caveat,
-        })
+            provisional: self.point.provisional() || self.caveat,
+        }
+    }
+
+    fn point_basis(&self) -> Result<(Tip, u64), String> {
+        let status = self.wallet_status();
+        let tip = status.selected.ok_or_else(|| POINT_UNSELECTED.to_string())?;
+        if status.provisional {
+            return Err(POINT_PROVISIONAL.to_string());
+        }
+        Ok((tip, self.generation))
+    }
+
+    pub(crate) fn check_point_request(&self, expected: (Tip, u64)) -> Result<(), String> {
+        if self.point_basis()? != expected {
+            return Err(POINT_CHANGED.to_string());
+        }
+        Ok(())
+    }
+}
+
+impl ChainFeed for Feed {
+    fn status(&mut self) -> Option<Status> {
+        Some(self.view().wallet_status())
     }
     fn next(&mut self, at: Option<Tip>) -> Result<Step, Unknown> {
         let (reply, answer) = sync_channel(1);
@@ -177,10 +209,6 @@ impl ChainFeed for Feed {
     fn old_outputs_since(&mut self, piece: u64, since: Tip) -> Result<OldOutputs, Unknown> {
         self.ask_old(piece, Some(since))
     }
-    /// K188: a point is made only of a chain whose tip the wallet is told
-    /// is selected, and not provisionally. What is asked of the node's
-    /// thread is the record alone; the decision is made here, from the
-    /// same view the wallet's status is made from.
     fn set_tor(&mut self, off: bool) -> bool {
         let (reply, answer) = sync_channel(1);
         if self.events.try_send(Event::Tor { off, reply }).is_err() {
@@ -189,14 +217,9 @@ impl ChainFeed for Feed {
         answer.recv_timeout(ANSWER_WITHIN).unwrap_or(false)
     }
     fn point(&mut self) -> Result<Vec<u8>, String> {
-        let status = self.status();
-        match status {
-            Some(status) if status.selected.is_some() && !status.provisional => {}
-            Some(status) if status.selected.is_some() => return Err(POINT_PROVISIONAL.to_string()),
-            _ => return Err(POINT_UNSELECTED.to_string()),
-        }
+        let expected = self.view().point_basis()?;
         let (reply, answer) = sync_channel(1);
-        self.events.try_send(Event::Point { reply }).map_err(|_| POINT_BUSY.to_string())?;
+        self.events.try_send(Event::Point { expected, reply }).map_err(|_| POINT_BUSY.to_string())?;
         answer.recv_timeout(ANSWER_WITHIN).map_err(|_| POINT_BUSY.to_string())?
     }
 }
@@ -207,6 +230,7 @@ pub const POINT_UNSELECTED: &str = "a starting point is made only when the tip i
 pub const POINT_PROVISIONAL: &str = "a starting point is not made while what is confirmed is provisional: nobody vouches for the point this program started from, or a claim of more work went unsettled not long ago";
 /// The node's thread did not take the question or did not answer in time.
 pub const POINT_BUSY: &str = "the chain process is busy; ask again in a moment";
+const POINT_CHANGED: &str = "the selected block or its public survey changed; request a new starting point";
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
@@ -229,6 +253,19 @@ mod tests {
         }
         // while the stored headers are still verified, nothing is said of it yet
         assert_eq!(describe(&View { history: Some(crate::node::HISTORY_SAMPLED), ..View::default() }), "verifying the stored headers");
+    }
+    #[test]
+    fn autonomous_status_names_the_checked_work_and_working_point() {
+        let text = describe(&View {
+            ready: true, height: 100, start: 80, work: 7654,
+            point: crate::PointKind::Genesis,
+            unselected: Some("tip freshness unknown".into()),
+            history: Some("historical transactions not replayed"),
+            ..View::default()
+        });
+        assert!(text.contains("headers verified to 100 from a local starting point: headers checked from network genesis (80); work=7654"));
+        assert!(text.contains("tip freshness unknown") && text.contains("historical transactions not replayed"));
+        assert!(text.len() <= 240);
     }
     use crate::node::BlocksView;
     use std::sync::{Arc, Mutex};
@@ -372,7 +409,8 @@ mod tests {
             let (events, inbox) = sync_channel(1);
             let mut feed = Feed::new(Arc::new(Mutex::new(view)), events);
             let node = std::thread::spawn(move || match inbox.recv_timeout(Duration::from_millis(300)) {
-                Ok(Event::Point { reply }) => {
+                Ok(Event::Point { expected, reply }) => {
+                    assert_eq!(expected.0, Tip { height: 101, hash: [7; 32] });
                     if answers {
                         let _ = reply.try_send(Ok(b"record".to_vec()));
                     } else {
@@ -388,6 +426,23 @@ mod tests {
         assert_eq!(ask(good.clone(), true), (Ok(b"record".to_vec()), true));
         let own = View { point: crate::PointKind::Own, ..good.clone() };
         assert_eq!(ask(own, true), (Ok(b"record".to_vec()), true));
+
+        // Events ahead of the request are handled by the owner before it
+        // checks this basis, including a new survey of the very same block.
+        let expected = good.point_basis().unwrap();
+        assert_eq!(good.check_point_request(expected), Ok(()));
+        let renewed = View { generation: 2, ..good.clone() };
+        assert_eq!(renewed.check_point_request(expected), Err(POINT_CHANGED.to_string()));
+        let other = View {
+            hash: [8; 32],
+            blocks: Some(BlocksView { hash: [8; 32], ..good.blocks.clone().unwrap() }),
+            ..good.clone()
+        };
+        assert_eq!(other.check_point_request(expected), Err(POINT_CHANGED.to_string()));
+        let lost = View { selected: false, ..good.clone() };
+        assert_eq!(lost.check_point_request(expected), Err(POINT_UNSELECTED.to_string()));
+        let unsettled = View { caveat: true, ..good.clone() };
+        assert_eq!(unsettled.check_point_request(expected), Err(POINT_PROVISIONAL.to_string()));
 
         let provisional = Err(POINT_PROVISIONAL.to_string());
         let development = View { point: crate::PointKind::Development, ..good.clone() };

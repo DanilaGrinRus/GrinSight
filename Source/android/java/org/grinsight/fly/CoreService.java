@@ -58,6 +58,7 @@ public class CoreService extends Service {
     /** The window's socket, closed when another window takes its place. */
     private LocalSocket clientSocket;
     private LocalServerSocket server;
+    private boolean stopping;
 
     @Override
     public void onCreate() {
@@ -82,6 +83,7 @@ public class CoreService extends Service {
     @Override
     public void onDestroy() {
         synchronized (lock) {
+            stopping = true;
             stopHost();
         }
         try {
@@ -255,6 +257,26 @@ public class CoreService extends Service {
                 }
             }
         } catch (IOException ignored) {
+        } finally {
+            hostOutputEnded(out);
+        }
+    }
+
+    private void hostOutputEnded(InputStream out) {
+        synchronized (lock) {
+            LocalSocket old;
+            synchronized (windowLock) {
+                // A replaced child must never disconnect a newly attached window.
+                if (activeOutput != out) return;
+                activeOutput = null;
+                old = clientSocket;
+                client = null;
+                clientSocket = null;
+            }
+            if (old != null) {
+                try { old.close(); } catch (IOException ignored) {}
+            }
+            stopHost();
         }
     }
 
@@ -291,6 +313,7 @@ public class CoreService extends Service {
     private void serve(LocalSocket s) throws IOException {
         final OutputStream toWindow = s.getOutputStream();
         synchronized (lock) {
+            if (stopping) throw new IOException("service stopping");
             LocalSocket old;
             String marker = "window-" + UUID.randomUUID();
             synchronized (windowLock) {
@@ -303,7 +326,8 @@ public class CoreService extends Service {
                 try { old.close(); } catch (IOException ignored) {}
             }
             try {
-                writeFence(marker);
+                HostAttachment.attach(host != null && host.isAlive() && hostIn != null,
+                    () -> { stopHost(); startHost(); }, () -> writeFence(marker));
             } catch (IOException e) {
                 synchronized (windowLock) { client = null; clientSocket = null; }
                 throw e;

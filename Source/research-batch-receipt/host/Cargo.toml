@@ -1,0 +1,23 @@
+[package]
+name = "research-grin-batch-receipt"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[features]
+producer = ["dep:tempfile", "dep:risc0-binfmt", "dep:risc0-zkos-v1compat", "risc0-zkvm/client"]
+
+[dependencies]
+anyhow = "1"
+bincode = "1.3"
+risc0-zkvm = { version = "=3.1.0", default-features = false, features = ["std", "disable-dev-mode"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+tempfile = { version = "3", optional = true }
+risc0-binfmt = { version = "=3.0.6", optional = true }
+risc0-zkos-v1compat = { version = "=2.2.3", optional = true }
+
+[target.'cfg(windows)'.dependencies]
+risc0-zkvm-platform = { version = "=2.2.3", default-features = false, features = ["export-syscalls"] }
+
+[workspace]

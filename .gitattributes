@@ -1,0 +1,6 @@
+
+# Byte-exact Tor reference data and UI source inspection tests.
+Source/ui/app/tor/pt_config.json text eol=lf
+Source/ui/app/ui/*.slint text eol=lf
+Source/build-linux.sh text eol=lf
+Source/build-macos.sh text eol=lf

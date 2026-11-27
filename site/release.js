@@ -47,10 +47,15 @@
         return data;
       });
   }
-  function newer(a, b) { // semantic-ish compare of x.y.z
-    var x = a.split(/[.-]/).map(Number), y = b.split(/[.-]/).map(Number);
-    for (var i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); }
-    return false;
+  function newer(a, b) {
+    var tag = /^(\d+)\.(\d+)\.(\d+)([A-Z]?)$/;
+    var x = tag.exec(a), y = tag.exec(b);
+    if (!x || !y) return false;
+    for (var i = 1; i <= 3; i++) {
+      var left = Number(x[i]), right = Number(y[i]);
+      if (left !== right) return left > right;
+    }
+    return x[4] > y[4];
   }
   function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
   function mb(bytes) {

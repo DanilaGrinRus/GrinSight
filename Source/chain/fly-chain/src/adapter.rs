@@ -85,6 +85,8 @@ pub enum Event {
     },
     /// The wallet asks for a starting point made from this chain (K188).
     Point {
+        /// The selected block and survey generation observed by the caller.
+        expected: (fly_paycore_chain_port::Tip, u64),
         /// Where the record, or why there is none, goes.
         reply: SyncSender<Result<Vec<u8>, String>>,
     },
@@ -120,8 +122,8 @@ pub enum Event {
     },
     /// A name was looked up.
     Resolved {
-        /// The text that was resolved.
-        text: String,
+        /// Identifies the discovery worker's chain generation.
+        origin: Arc<()>,
         /// The addresses found; empty if none.
         addrs: Vec<SocketAddr>,
     },

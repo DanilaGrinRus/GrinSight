@@ -131,7 +131,11 @@ impl ReplyStore {
             return Err(StoreError::Io(io::ErrorKind::AlreadyExists));
         }
         if self.count().map_err(io_err)? >= MAX_REPLIES {
-            return Err(StoreError::Full);
+            let now = crate::now();
+            self.purge(|stored| stored.deadline <= now).map_err(io_err)?;
+            if self.count().map_err(io_err)? >= MAX_REPLIES {
+                return Err(StoreError::Full);
+            }
         }
         let mut nonce = [0u8; NONCE_LEN];
         getrandom::getrandom(&mut nonce).map_err(|_| StoreError::Io(io::ErrorKind::Other))?;

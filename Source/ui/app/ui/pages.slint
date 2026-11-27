@@ -1,6 +1,6 @@
 // The conversation with a contact, the list of all payments, and the
 // windows for the password and the words.
-import { Theme, Device } from "theme.slint";
+import { Theme, Device, Settings } from "theme.slint";
 import { Card, Btn, Choice, Chip, Heading, Muted, Logo, Ground, Ask, Explained, Icons, Icon, IconBtn, MenuItem } from "parts.slint";
 import { Field, Sheet, TextBox, PasswordAdvice } from "flows.slint";
 
@@ -303,7 +303,7 @@ export component ChatWindow inherits Window {
     preferred-height: 640px;
     min-width: 320px;
     min-height: 360px;
-    default-font-family: "Inter";
+    default-font-family: Settings.font-family;
     background: Theme.bg;
     ChatPage {
         apart: true;
@@ -606,18 +606,15 @@ export component WordsSheet inherits Sheet {
 // The user's own nodes and own starting point, for the chain process.
 export component OwnSheet inherits Sheet {
     in-out property <string> nodes;
-    in-out property <string> point;
     in property <string> error;
     in property <string> done-note;
-    callback save(string, string);
-    title: @tr("Own nodes and a point from another device");
+    callback save(string);
+    title: @tr("Own nodes");
     Muted { text: @tr("Your own public nodes: one https:// address a line, up to 4. They are asked like the listed ones and get your transactions first, but they never count as an independent voice."); }
     TextBox { label: @tr("Own nodes"); hint: "https://node.example.org:3413"; text <=> root.nodes; box-height: 96px; }
-    Muted { text: @tr("A starting point your wallet made on another device of yours (Details → Make my own starting point) can be pasted here whole, so that this wallet starts shorter. It keeps the proof of the built-in point. Leave empty for the built-in point."); }
-    TextBox { label: @tr("Point from another device"); hint: "{ … }"; text <=> root.point; box-height: 110px; }
     if root.error != "": Text { text: root.error; color: Theme.warn; font-size: 14px; wrap: word-wrap; }
     if root.done-note != "": Text { text: root.done-note; color: Theme.accent; font-size: 14px; wrap: word-wrap; }
-    Btn { text: @tr("Save"); primary: true; height: 48px; clicked => { root.save(root.nodes, root.point); } }
+    Btn { text: @tr("Save"); primary: true; height: 48px; clicked => { root.save(root.nodes); } }
 }
 
 // How Tor is reached: directly, or through bridges where Tor is blocked.

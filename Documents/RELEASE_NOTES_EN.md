@@ -1,3 +1,17 @@
+# GrinSight 0.4.7A
+
+GrinSight checks Grin headers, unspent outputs and the selected chain tip on your device. It works with standard public nodes. Verification from genesis also produces a local checkpoint you can export with its proof.
+
+Windows portable can be updated by closing the wallet and replacing its EXE next to the existing data folder. The migration test preserved the receiving address, history, reserved inputs and signed transaction. An unsigned draft from an earlier signing session keeps its reserve and cannot be signed again in that session.
+
+On first opening, choose English, Russian, German, French, Simplified Chinese, Korean or Japanese. You can change the language later in Settings. The recovery form has a formatting example. The connection and sync panel shows a yellow indicator during verification. Once the wallet is ready, the panel shows a green indicator and “Ready to use”. The panel updates automatically in every theme. Automatic replies to contacts remain optional.
+
+[Release files](https://github.com/DanilaGrinRus/GrinSight/releases/tag/v0.4.7A) · [Verification report](BOOTSTRAP-0.4.7A-ACCEPT.md) · [Security review](RELEASE-0.4.7A-SECURITY.md)
+
+---
+
+## Previous release · 0.4.6
+
 GrinSight is a light wallet for [Grin](https://grin.mw). It needs no full node of its own: it checks the chain of headers from a built-in point to the tip, confirms the tip with public nodes, collects and checks the state its outputs depend on, and sends transactions through its own Tor.
 
 0.4.6 is the first release after 0.4.4; 0.4.5 was not released on its own, and everything made for it is in here. The main new thing: **the history before the built-in point is no longer taken on trust — it is checked by sampling its work** (after the FlyClient scheme), with the proof shipped inside the program. The wallet folder is the one of 0.4.4; wallet files are read as they are. This is a research wallet. Nothing here is signed, and **the code added in 0.4.6 has not been reviewed by anyone else**; what has never run outside tests is listed under [Not checked](#not-checked).

@@ -17,6 +17,7 @@ grin_chain = { path = "../../vendor/grin/chain" }
 grin_p2p = { path = "../../vendor/grin/p2p" }
 grin_util = { path = "../../vendor/grin/util" }
 chrono = "0.4"
+tempfile = "3.27"
 
 # Tor is a program of its own on a computer; a page has none.
 [target.'cfg(not(target_os = "emscripten"))'.dependencies]
@@ -39,6 +40,7 @@ test-net = []
 history-proof = ["fly-chain-headers/history-proof"]
 
 [dev-dependencies]
+grin_keychain = { path = "../../vendor/grin/keychain" }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 fly-chain-headers = { path = "../headers", features = ["testkit"] }
 fly-chain-state = { path = "../state", features = ["testkit"] }

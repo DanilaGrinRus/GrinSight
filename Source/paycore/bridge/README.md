@@ -65,7 +65,8 @@ Seed, ключи, контексты подписи, ключ журнала, к
 | `paycore.send.cancel` | `op` | — |
 | ↳ `paycore.send.broadcast` с ред. 0.65 (K198) | `direct: true` | согласие на прямой путь записывается в файл кошелька у этого платежа и действует для каждой следующей отправки, в том числе самим кошельком и после перезапуска; `paycore.history` отдаёт `direct` |
 | `paycore.send.take_back` | `op`, `plan?` | отзыв подписанного платежа, который не в блоке (K197, ред. 0.64): платёж самому себе теми же входами — `op` (нового), `amount`, `fee`, `inputs`, `tx`. `plan: true` — только `amount`, `fee`, `inputs`. Пока отзыв в пути, первый платёж в сеть не отдаётся. В `paycore.history` у отправок — `replaces` и `replaced_by` |
-| `paycore.send.status` | `op` | `state`, `reserve`, `conflict`, `broadcasts`, `delivery` (или `null`), `reply_held` |
+| `paycore.send.status` | `op` | `state`, `reserve`, `conflict`, `broadcasts`, `delivery` (или `null`), `reply_held`, `session_expired` |
+| ↳ `paycore.history` | — | В `sends[]` и у выставленного счёта в `incoming[]` поле `session_expired` отмечает незавершённый обмен, для которого сеанс подписи закончился. Перед новым обменом нужно проверить исходную операцию. Состояние отправки `unknown` или флаг счёта `signature_unknown` означает, что результат подписи неизвестен. Автоповтор подписи прекращается. Для отправки со статусом `finalized` используется сохранённая транзакция. |
 | `paycore.send.finalize_held` | `op` | как у `finalize`: подпись с ответом, который пришёл сам; вызывается после подтверждения пользователем |
 | `paycore.chain.sync` | — | идёт за слоем цепи от позиции кошелька, не больше 64 шагов за вызов. `chain[]` — пусто, если ничего не изменилось, иначе одна запись `{applied, rolled_back, reanchored, tip_height}`; `tip_height`; `more` — шаги ещё есть; `unknown` — слой не смог ответить (это не «ничего нового»). Когда слой ответил «ничего нового» и идёт поиск давних выходов, в том же вызове читаются куски — не больше 64 и не дольше секунды; тогда в `chain[]` добавляется запись `{search: …}` с тем же, что отвечает `paycore.search.status`, а `more` говорит, что куски ещё есть |
 | `paycore.settings.confirmations` | `count` (1–1000) | сколько подтверждений делают входящий платёж «полученным» (K190): `{k_conf}`; иное число — `invalid_params`. Только слово о статусе. `paycore.history` отдаёт действующее `k_conf`, `tip_height`, у платежей — `kernel_height`, `signed`, `reply_kept` |
@@ -73,7 +74,7 @@ Seed, ключи, контексты подписи, ключ журнала, к
 | `paycore.chain.point` | — | запись стартовой точки, которую слой цепи сделал из проверенной им цепи (спецификация, 7.33, K188): `{point}` — текст записи как пришёл. Нет точки — ошибка `no_point` с причиной слоя цепи. В кошельке ничего не меняется |
 | `paycore.search.start` | — | начать поиск давних выходов с первого куска (спецификация, 7.19); ответ как у `status` |
 | `paycore.search.status` | — | `state`: `none` — поиска не было, `reading`, `done`; для двух последних `next` (номер следующего куска или `null`), `pieces`, `found` — сколько выходов поиск добавил, `gone` — сколько выходов кошелька он нашёл потраченными |
-| `paycore.wallet.chain_status` | — | Состояние применённой кошельком вершины. `at_tip` требует совпадения высоты и хеша с выбором сети в одном снимке. |
+| `paycore.wallet.chain_status` | — | Баланс и состояние кошелька в одном ответе. `at_tip` требует подтверждённого времени и совпадения применённых высоты и хеша с выбранной вершиной. `selected_height` и `confirmed_time` берутся из одного снимка цепи. При потере времени оба поля равны `null`. `k_conf` учитывает настройку кошелька. |
 | `paycore.chain.status` | — | против чего ядро решает прямо сейчас: `state` (`at_tip`, `behind`, `unknown`), `k_conf`, `rangeproofs_authenticated`, `selected_height`, `confirmed_time`, `tip_height` кошелька |
 | `paycore.delivery.pump` | необязательно `now` | `published[]` (`op`, `delivery`), `waiting`: публикует до 16 конвертов, ещё не принятых релеем |
 
@@ -94,6 +95,8 @@ Seed, ключи, контексты подписи, ключ журнала, к
 | `paycore.invoice.issue` | `amount` | `slate_id`, `slate` (I1) |
 | `paycore.invoice.finalize` | `slate_id`, `slate` (I2) | как у `send.finalize` |
 | `paycore.invoice.pay` | `slate` (I1), `max_amount` | `op`, `slate` (I2) |
+
+Автоприём от контакта применяется к сообщению, подлинность которого проверил транспорт. Прямой запрос `receive_tx` через Tor всегда ждёт `paycore.onion.accept` или `paycore.onion.decline`. В `paycore.onion.status` поле `claimed_address_in_contacts` сообщает только о совпадении заявленного адреса с записью в адресной книге. Для прямого запроса `known_sender` всегда равно `false`.
 
 Состояния отправки: `prepared`, `cancelled`, `unknown`, `finalized`, `confirmed`, `contested`, `dead`.
 

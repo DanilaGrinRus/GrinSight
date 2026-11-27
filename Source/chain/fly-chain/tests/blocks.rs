@@ -354,3 +354,108 @@ fn a_silent_node_holds_nothing_up() {
     assert!(silent.served.blocks_asked.load(Ordering::Relaxed) >= 1, "the silent one was asked");
     assert!(took < std::time::Duration::from_secs(25), "{took:?}\n{}", run.out);
 }
+
+/// An unmodified Grin peer serves the entire header chain (no authored
+/// starting point or provider), state segments and every block after A.
+#[test]
+fn autonomous_genesis_pibd_and_restart_on_an_ordinary_node() {
+    let source = chain_of_40();
+    let node = Node::with_state(&source);
+    let t = Temp::new("genesis-pibd");
+    fly_paycore_chain_port::bootstrap::schedule(&t.0, Net::Automated.tag()).unwrap();
+    let run = apply(&t, &[node.addr], 180);
+    assert_eq!(run.code, 0, "{}", run.out);
+    assert!(run.out.contains("headers checked from network genesis"), "{}", run.out);
+    let history = t.0.join("autonomous-headers-v1.bin");
+    let manifest = t.0.join("autonomous-compact-v1.bin");
+    assert!(manifest.is_file());
+    assert!(!history.exists(), "the full journal must have been retired");
+    // Simulate interruption after publication and before retiring an old WAL.
+    std::fs::write(&history, b"stale intermediate journal").unwrap();
+    let before = node.requests();
+    let again = apply(&t, &[node.addr], 180);
+    assert_eq!(again.code, 0, "{}", again.out);
+    assert!(!history.exists());
+    assert_eq!(node.requests(), before, "no history downloaded again");
+    let raw = t.0.join("autonomous-live").join(fly_chain_headers::chain::FILE_NAME);
+    std::fs::write(&raw, b"broken published tail magic").unwrap();
+    let rejected = apply(&t, &[node.addr], 10);
+    assert_ne!(rejected.code, 0);
+    assert_eq!(std::fs::read(raw).unwrap(), b"broken published tail magic");
+    assert!(!history.exists(), "no implicit fallback");
+}
+
+/// A failed export leaves enough local material for a subsequent retry.
+#[test]
+fn autonomous_genesis_export_failure_retains_replay_until_a_verified_retry() {
+    let source = chain_of_40();
+    let node = Node::with_state(&source);
+    let t = Temp::new("genesis-export-retry");
+    fly_paycore_chain_port::bootstrap::schedule(&t.0, Net::Automated.tag()).unwrap();
+    let exports = t.0.join("history-exports");
+    std::fs::write(&exports, b"occupied").unwrap();
+    let failed = apply(&t, &[node.addr], 15);
+    assert_ne!(failed.code, 0);
+    let log = t.0.join("autonomous-headers-v1.bin");
+    assert!(std::fs::metadata(&log).unwrap().len() > 0);
+    assert!(!t.0.join("autonomous-compact-v1.bin").exists());
+    assert_eq!(std::fs::read(&exports).unwrap(), b"occupied");
+    std::fs::remove_file(&exports).unwrap();
+    let retried = apply(&t, &[node.addr], 90);
+    assert_eq!(retried.code, 0, "{}", retried.out);
+    assert!(!log.exists());
+    assert!(t.0.join("autonomous-compact-v1.bin").is_file());
+    assert_eq!(std::fs::read_dir(exports).unwrap().count(), 1);
+}
+
+/// The common ancestor is below our local checkpoint. The alternative must
+/// prove more work from the exact genesis before the active selector changes.
+#[test]
+fn autonomous_genesis_switches_a_heavier_branch_below_the_archive() {
+    let source = chain_of_40();
+    let node = Node::with_state(&source);
+    let t = Temp::new("genesis-split");
+    fly_paycore_chain_port::bootstrap::schedule(&t.0, Net::Automated.tag()).unwrap();
+    let old = apply(&t, &[node.addr], 180);
+    assert_eq!(old.code, 0, "{}", old.out);
+    let saved = std::fs::read(t.0.join("autonomous-compact-v1.bin")).unwrap();
+    let mut other = TestChain::from_headers(source.read().unwrap().headers()).fork_at(17);
+    other.mine_salted(32, 60, 1193);
+    let peer = Node::start(&other.headers);
+    let moved = kit::follow(&t, &[peer.addr], 180);
+    assert_eq!(moved.code, 0, "{}", moved.out);
+    assert_eq!(moved.field("synced:", "hash"), hex(&hash_bytes(other.tip())));
+    assert_eq!(std::fs::read(t.0.join("autonomous-active-v1")).unwrap(), b"1");
+    assert_eq!(std::fs::read(t.0.join("autonomous-compact-v1.bin")).unwrap(), saved);
+    assert!(t.0.join("autonomous-alternative/autonomous-compact-v1.bin").is_file());
+    assert!(!t.0.join("autonomous-alternative/autonomous-headers-v1.bin").exists());
+    // Only headers were served by the alternate peer. The old verified
+    // archive on disk cannot be claimed as state of the new branch.
+    assert!(!moved.out.contains("applied:"), "{}", moved.out);
+}
+
+/// Before HF4 there is no resumable checkpoint. A real node returns an
+/// empty Headers both for its tip and for a locator it does not know.
+#[test]
+fn autonomous_genesis_recovers_an_orphaned_pre_hf4_cursor() {
+    use std::io::Write;
+    let source = chain_of_40();
+    let peer = Node::with_state(&source);
+    let old = Source::thin(6);
+    let t = Temp::new("genesis-pre-hf4");
+    let path = t.0.join("autonomous-headers-v1.bin");
+    let mut file = std::fs::File::create(&path).unwrap();
+    for header in old.headers() {
+        let bytes = fly_chain_headers::write_header(&header).unwrap();
+        file.write_all(&u16::try_from(bytes.len()).unwrap().to_be_bytes())
+            .unwrap();
+        file.write_all(&bytes).unwrap();
+    }
+    drop(file);
+    let result = apply(&t, &[peer.addr], 180);
+    assert_eq!(result.code, 0, "{}", result.out);
+    assert_eq!(
+        result.field("applied:", "hash"),
+        hex(&hash_bytes(source.read().unwrap().headers().last().unwrap()))
+    );
+}

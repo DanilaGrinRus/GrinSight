@@ -19,6 +19,8 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
+pub mod bootstrap;
+
 /// Length of a Pedersen commitment.
 pub const COMMIT_LEN: usize = 33;
 /// Largest range proof of one output.
@@ -275,6 +277,11 @@ pub trait ChainFeed {
     /// record is at most [`MAX_POINT_LEN`] long.
     fn point(&mut self) -> Result<Vec<u8>, String> {
         Err("this chain layer makes no starting points".to_string())
+    }
+
+    /// Persist this profile's explicit choice to start verification from genesis on restart.
+    fn schedule_genesis(&mut self) -> Result<(), String> {
+        Err("this chain layer cannot schedule a genesis verification".to_string())
     }
 }
 

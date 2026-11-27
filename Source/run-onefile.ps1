@@ -1,6 +1,6 @@
 # Wrap the published Windows portable ZIP without rebuilding the wallet.
 # -Release: the folder that holds the ZIP and its SHA256SUMS.txt (the stable 0.4.3 stays in 'releases').
-param([ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version = '0.4.4', [ValidatePattern('^[\w.-]{1,40}$')][string]$Release = 'releases-0.4.4')
+param([ValidatePattern('^\d+\.\d+\.\d+A?$')][string]$Version = '0.4.7A', [ValidatePattern('^[\w.-]{1,40}$')][string]$Release = 'releases-0.4.7A')
 $ErrorActionPreference = 'Stop'
 $project = Split-Path $PSScriptRoot -Parent
 $releaseDir = Join-Path $project $Release
@@ -18,7 +18,7 @@ $lines = [Collections.Generic.List[string]]::new()
 $lines.Add($zipHash)
 $required = @('GrinSight.exe','README.txt','LICENSE-GPL-3.0.txt','SHA256SUMS.txt',
     'bin\fly-chain.exe','bin\fly-mailbox.exe','bin\fly-paycore-host.exe')
-$allowed = $required + @('bin\fly-onion.exe','bin\lyrebird.exe','LICENSE-lyrebird.txt')
+$allowed = $required + @('bin\fly-onion.exe','bin\lyrebird.exe','LICENSE-lyrebird.txt','FONT-LICENSES.txt')
 $seen = @{}
 $root = $null
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -46,7 +46,8 @@ foreach ($file in $required) { if (-not $seen.ContainsKey($file)) { throw "Missi
 $info = Join-Path $out 'AssemblyInfo.cs'
 [IO.File]::WriteAllLines($info,@('using System.Reflection;',
     '[assembly: AssemblyTitle("GrinSight Portable")]','[assembly: AssemblyProduct("GrinSight")]',
-    "[assembly: AssemblyFileVersion(`"$Version.0`")]","[assembly: AssemblyVersion(`"$Version.0`")]"))
+    "[assembly: AssemblyInformationalVersion(`"$Version`")]",
+    "[assembly: AssemblyFileVersion(`"$($Version.TrimEnd('A')).0`")]","[assembly: AssemblyVersion(`"$($Version.TrimEnd('A')).0`")]"))
 $exe = Join-Path $out "$baseName.exe"
 $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 $icon = Join-Path $PSScriptRoot 'installer\grinsight.ico'

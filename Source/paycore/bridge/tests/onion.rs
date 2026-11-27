@@ -165,6 +165,11 @@ impl Wallet {
     fn signatures(&self) -> u64 {
         self.b.core().signatures_made()
     }
+    fn approve_request(&mut self) {
+        assert_eq!(self.pump(), vec!["needs_approval"]);
+        let id = self.status()["asks"][0]["id"].clone();
+        self.rpc("paycore.onion.accept", json!({"id": id})).unwrap();
+    }
     fn knows(&mut self, seed: u8, other: &Wallet) {
         self.b.core_mut().contact_set([seed; 32], "a contact", Some(other.address)).unwrap();
     }
@@ -399,17 +404,22 @@ fn ed25519_public(secret: &[u8; 32]) -> [u8; 32] {
     ed25519_dalek::SigningKey::from_bytes(secret).verifying_key().to_bytes()
 }
 
-/// K153: a payment is answered without the user only where unattended
-/// receive is on and the payment names a sender the user has added.
+/// A saved address is a display hint. Direct Foreign requests always need approval.
 #[test]
-fn only_added_contacts_are_answered_without_the_user() {
-    // unattended receive on, the sender is a contact: answered at once
+fn direct_payments_require_approval_even_when_the_claimed_address_is_saved() {
     let World { tor, mut a, mut b, mut chain } = world();
     b.knows(1, &a);
     b.rpc("paycore.receive.set_auto", json!({"on": true})).unwrap();
     let p = prepare(&mut a, &b.address, GRIN);
     a.rpc("paycore.onion.send", json!({"op": p["op"]})).unwrap();
-    assert_eq!(b.pump(), vec!["payment_answered"]);
+    let before = (b.signatures(), b.sim.ops());
+    assert_eq!(b.pump(), vec!["needs_approval"]);
+    let ask = b.status()["asks"][0].clone();
+    assert_eq!(ask["claimed_address_in_contacts"], true);
+    assert_eq!(ask["known_sender"], false);
+    assert_eq!((b.signatures(), b.sim.ops()), before);
+    assert!(tor.borrow().answers.is_empty());
+    b.rpc("paycore.onion.accept", json!({"id": ask["id"]})).unwrap();
     assert!(b.status()["asks"].as_array().unwrap().is_empty());
     assert_eq!(a.pump(), vec!["reply_held"]);
     let fin = a.rpc("paycore.send.finalize_held", json!({"op": p["op"]})).unwrap();
@@ -434,7 +444,8 @@ fn only_added_contacts_are_answered_without_the_user() {
     let p = prepare(&mut a, &b.address, GRIN);
     a.rpc("paycore.onion.send", json!({"op": p["op"]})).unwrap();
     assert_eq!(b.pump(), vec!["needs_approval"]);
-    assert_eq!(b.status()["asks"][0]["known_sender"], true);
+    assert_eq!(b.status()["asks"][0]["claimed_address_in_contacts"], true);
+    assert_eq!(b.status()["asks"][0]["known_sender"], false);
     assert_eq!(b.signatures(), signed);
 
     // a payment that names no sender at all is nobody's: asked
@@ -551,7 +562,7 @@ fn dust_is_refused() {
     // the smallest amount that is taken
     let p = prepare(&mut a, &b.address, ONION_MIN_AMOUNT);
     a.rpc("paycore.onion.send", json!({"op": p["op"]})).unwrap();
-    assert_eq!(b.pump(), vec!["payment_answered"]);
+    assert_eq!(b.pump(), vec!["needs_approval"]);
     // the host may set the bound
     b.b.set_onion_min_amount(GRIN);
     let p = prepare(&mut a, &b.address, GRIN - 1);
@@ -628,7 +639,7 @@ fn only_the_reply_to_this_payment_is_kept() {
     // a real reply, to another payment of the same sender
     let other = prepare(&mut a, &b.address, GRIN / 2);
     a.rpc("paycore.onion.send", json!({"op": other["op"]})).unwrap();
-    assert_eq!(b.pump(), vec!["payment_answered"]);
+    b.approve_request();
     let other_reply = tor.borrow().answers[0].clone();
     assert_eq!(a.pump(), vec!["reply_held"]);
 
@@ -709,14 +720,14 @@ fn a_reply_through_tor_is_signed_by_itself_only_where_the_host_allows() {
     a.b.set_auto_sign(true);
     let p = prepare(&mut a, &b.address, GRIN);
     a.rpc("paycore.onion.send", json!({"op": p["op"]})).unwrap();
-    assert_eq!(b.pump(), vec!["payment_answered"]);
+    b.approve_request();
     assert_eq!(a.pump(), vec!["reply_signed"]);
     assert_eq!(send_state(&mut a, &p["op"])["state"], "finalized");
     // without a selected tip the reply waits for the user
     let q = prepare(&mut a, &b.address, GRIN);
     a.sel.set(None);
     a.rpc("paycore.onion.send", json!({"op": q["op"]})).unwrap();
-    assert_eq!(b.pump(), vec!["payment_answered"]);
+    b.approve_request();
     assert_eq!(a.pump(), vec!["reply_held"]);
     assert_eq!(send_state(&mut a, &q["op"])["state"], "prepared");
 }

@@ -4,13 +4,16 @@
 # Mint 20+, RHEL/CentOS Stream/Rocky/Alma 8+, Fedora and Arch; packs a .deb,
 # an .rpm and a .tar.gz with a PKGBUILD for Arch; runs the interface scenario
 # on the oldest system (Debian 10) and on the newest (Debian 13, from the
-# installed .deb); copies the packages to C:\DHW\dist\.
+# extracted .deb); copies the packages to C:\DHW\dist\.
 set -euo pipefail
 say() { echo "$(date +%H:%M:%S) $*"; }
 OLD=/srv/buster
+SOURCE=$(cd -- "$(dirname -- "$0")" && pwd -P)
+PHASE=${1:-all}
+case "$PHASE" in all|core) ;; *) echo 'expected all or core' >&2; exit 2;; esac
 STAMP=$(date +%Y%m%d-%H%M)
 # the version is the window's own: one line of ui/app/src/lib.rs
-VER=$(sed -n 's/^pub const APP_VERSION: &str = "\([0-9]*\.[0-9]*\.[0-9]*\)";.*/\1/p' /mnt/c/DHW/GrinFlySight/core-v0.2/ui/app/src/lib.rs)
+VER=$(sed -nE 's/^pub const APP_VERSION: \&str = "([0-9]+\.[0-9]+\.[0-9]+A?)";.*/\1/p' "$SOURCE/ui/app/src/lib.rs")
 [ -n "$VER" ] || { echo "no APP_VERSION in ui/app/src/lib.rs"; exit 2; }
 REL="0.${STAMP//-/.}"
 export DEBIAN_FRONTEND=noninteractive
@@ -42,29 +45,47 @@ if [ ! -x "$OLD/root/.cargo/bin/cargo" ]; then
 fi
 chroot "$OLD" bash -c 'ldd --version | head -1; /root/.cargo/bin/rustc --version'
 
-say "copying the sources"
-rsync -a --delete --exclude '/target*' --exclude '/*.log' --exclude '/logs/' --exclude '/points-out/' --exclude '/dist-files/' /mnt/c/DHW/GrinFlySight/core-v0.2/ "$OLD/root/src/core-v0.2/"
-rm -rf "$OLD/root/uibuild" && mkdir -p "$OLD/root/uibuild" && cp -r "$OLD/root/src/core-v0.2/ui" "$OLD/root/uibuild/"
+say "copying the candidate sources from $SOURCE"
+SRC="$OLD/root/src/grinsight-release"
+mkdir -p "$SRC"
+rsync -a --delete --exclude '/target*' --exclude '/vendor-crates' --exclude '/ui/vendor-crates' \
+  --exclude '/transport/vendor-sets' --exclude '/*.log' --exclude '/logs/' --exclude '/points-out/' "$SOURCE/" "$SRC/"
+# Use the offline registries already prepared in this build root. On a new
+# builder copy the registries provided with the source distribution instead.
+for dir in vendor-crates ui/vendor-crates transport/vendor-sets; do
+  if [[ ! -e "$SRC/$dir" && ! -L "$SRC/$dir" ]]; then
+    if [[ -d "$OLD/root/src/core-v0.2/$dir" ]]; then
+      ln -s "/root/src/core-v0.2/$dir" "$SRC/$dir"
+    else
+      mkdir -p "$SRC/$dir"
+      rsync -aL "$SOURCE/$dir/" "$SRC/$dir/"
+    fi
+  fi
+done
 
 say "building (glibc 2.28)"
 chroot "$OLD" bash -c 'set -e; export PATH=/root/.cargo/bin:$PATH CARGO_TARGET_DIR=/root/target
-  b() { t=$SECONDS; (cd "$1" && shift && cargo build --release -q "$@"); echo "  built in $((SECONDS - t)) s"; }
-  b /root/src/core-v0.2/paycore/host --bin fly-paycore-host
-  b /root/src/core-v0.2/chain/fly-chain
-  b /root/src/core-v0.2/transport/mailbox-nostr --bin fly-mailbox
-  b /root/src/core-v0.2/onion --bin fly-onion
-  CARGO_TARGET_DIR=/root/target-ui b /root/uibuild/ui/app --bin fly-ui
-  strip /root/target/release/fly-paycore-host /root/target/release/fly-chain /root/target/release/fly-mailbox /root/target/release/fly-onion /root/target-ui/release/fly-ui'
+  b() { t=$SECONDS; (cd "/root/src/grinsight-release/$1" && shift && cargo build --release --locked --offline -q "$@"); echo "  built in $((SECONDS - t)) s"; }
+  b paycore/host --bin fly-paycore-host
+  b chain/fly-chain --bin fly-chain
+  b transport/mailbox-nostr --bin fly-mailbox
+  b onion --bin fly-onion
+  if [[ $1 == core ]]; then exit 0; fi
+  CARGO_TARGET_DIR=/root/target-ui b ui/app --bin fly-ui' bash "$PHASE"
+if [[ $PHASE == core ]]; then say "core phase complete"; exit 0; fi
 
 say "scenario on Debian 10 (the oldest system)"
-chroot "$OLD" bash -c 'T=$(mktemp -d); /root/target-ui/release/fly-ui --scenario $T/out --host /root/target/release/fly-paycore-host --profile $T/p --guard-dir $T/g | tail -1; rm -rf $T'
+chroot "$OLD" bash -c 'set -euo pipefail; T=$(mktemp -d); trap '\''rm -rf "$T"'\'' EXIT; /root/target-ui/release/fly-ui --scenario "$T/out" --host /root/target/release/fly-paycore-host --profile "$T/p" --guard-dir "$T/g" | tail -1'
 
-# ---- one tree for every package
-TREE=/root/pkgtree
-rm -rf "$TREE" && mkdir -p "$TREE"
+# ---- one fresh tree for every package
+PACK_WORK=$(mktemp -d /tmp/grinsight-linux-package.XXXXXXXX)
+trap 'cleanup; rm -rf -- "$PACK_WORK"' EXIT
+TREE="$PACK_WORK/tree"
+mkdir "$TREE"
 LIB=/usr/lib/grinsight-light
 install -D -m755 "$OLD/root/target-ui/release/fly-ui" "$TREE$LIB/fly-ui"
 for p in fly-paycore-host fly-chain fly-mailbox fly-onion; do install -D -m755 "$OLD/root/target/release/$p" "$TREE$LIB/bin/$p"; done
+strip "$TREE$LIB/fly-ui" "$TREE$LIB/bin/"*
 # The program for Tor bridges is not built here: the lyrebird of the official Tor Expert
 # Bundle. Its SHA-256 is the one of the list of checksums signed by the Tor Browser
 # developers (checked when the Windows package is made: get-tor-bridge-programs.ps1).
@@ -73,9 +94,9 @@ PT=tor-expert-bundle-linux-x86_64-$PT_VER.tar.gz
 PT_SUM=7039cb16060ab22e669852e55774d894b55f25ea8bd0ab7194d3478429a58725
 [ -f "/root/$PT" ] || curl -fsSL -o "/root/$PT" "https://dist.torproject.org/torbrowser/$PT_VER/$PT"
 echo "$PT_SUM  /root/$PT" | sha256sum -c - || { say "the Tor Expert Bundle was not accepted"; exit 1; }
-rm -rf /root/pt && mkdir -p /root/pt && tar -xzf "/root/$PT" -C /root/pt
-install -D -m755 /root/pt/tor/pluggable_transports/lyrebird "$TREE$LIB/bin/lyrebird"
-install -D -m644 /root/pt/docs/lyrebird.txt "$TREE/usr/share/doc/grinsight-light/LICENSE-lyrebird.txt"
+mkdir -p "$PACK_WORK/pt" && tar -xzf "/root/$PT" -C "$PACK_WORK/pt"
+install -D -m755 "$PACK_WORK/pt/tor/pluggable_transports/lyrebird" "$TREE$LIB/bin/lyrebird"
+install -D -m644 "$PACK_WORK/pt/docs/lyrebird.txt" "$TREE/usr/share/doc/grinsight-light/LICENSE-lyrebird.txt"
 say "lyrebird: $(sha256sum "$TREE$LIB/bin/lyrebird" | cut -c1-16) $(stat -c %s "$TREE$LIB/bin/lyrebird") bytes"
 mkdir -p "$TREE/usr/bin"
 cat > "$TREE/usr/bin/grinsight-light" <<'SH'
@@ -89,7 +110,6 @@ exec "$LIB/fly-ui" --host "$LIB/bin/fly-paycore-host" --profile "$DATA/profile" 
   --chain "$LIB/bin/fly-chain" --onion "$LIB/bin/fly-onion" --transport "$LIB/bin/fly-mailbox" --relay wss://relay.floonet.dev "$@"
 SH
 chmod 755 "$TREE/usr/bin/grinsight-light"
-SRC="$OLD/root/src/core-v0.2"
 install -D -m644 "$SRC/ui/app/images/icon.png" "$TREE/usr/share/pixmaps/grinsight-light.png"
 mkdir -p "$TREE/usr/share/applications" "$TREE/usr/share/doc/grinsight-light" "$TREE/usr/share/licenses/grinsight-light"
 cat > "$TREE/usr/share/applications/grinsight-light.desktop" <<'DESK'
@@ -103,15 +123,18 @@ Icon=grinsight-light
 Terminal=false
 Categories=Office;Finance;
 DESK
-cp "$SRC/dist-files/LICENSE-GPL-3.0.txt" "$TREE/usr/share/licenses/grinsight-light/LICENSE-GPL-3.0.txt" 2>/dev/null || cp /mnt/c/DHW/GrinFlySight/core-v0.2/dist-files/LICENSE-GPL-3.0.txt "$TREE/usr/share/licenses/grinsight-light/LICENSE-GPL-3.0.txt"
+cp "$SRC/dist-files/LICENSE-GPL-3.0.txt" "$TREE/usr/share/licenses/grinsight-light/LICENSE-GPL-3.0.txt"
+for font in Inter DejaVu WalletCJK; do
+  install -m644 "$SRC/ui/app/fonts/LICENSE-$font.txt" "$TREE/usr/share/licenses/grinsight-light/"
+done
 printf 'GrinSight\nThe interface (fly-ui) is distributed under the GNU General Public License,\nversion 3 only; the text is in /usr/share/licenses/grinsight-light/.\n' > "$TREE/usr/share/doc/grinsight-light/copyright"
-OUT=/root/out && rm -rf "$OUT" && mkdir -p "$OUT"
+OUT="$PACK_WORK/out" && mkdir "$OUT"
 
 # ---- .deb (dependencies as Debian 10 names them: the lowest versions)
 DEB="$OUT/grinsight-light_${VER}~${STAMP}_amd64.deb"
-D=/root/debroot && rm -rf "$D" && cp -a "$TREE" "$D" && mkdir -p "$D/DEBIAN"
-rm -rf "$OLD/root/shl" && mkdir -p "$OLD/root/shl/debian" && touch "$OLD/root/shl/debian/control"
-DEPS=$(chroot "$OLD" bash -c 'cd /root/shl && dpkg-shlibdeps -O -e /root/target-ui/release/fly-ui -e /root/target/release/fly-paycore-host -e /root/target/release/fly-chain -e /root/target/release/fly-mailbox -e /root/target/release/fly-onion 2>/dev/null' | sed -n 's/^shlibs:Depends=//p')
+D="$PACK_WORK/debroot" && cp -a "$TREE" "$D" && mkdir -p "$D/DEBIAN"
+DEPS=$(chroot "$OLD" bash -c 'set -e; w=$(mktemp -d); trap '\''rm -rf "$w"'\'' EXIT; cd "$w"; mkdir debian; touch debian/control; dpkg-shlibdeps -O -e /root/target-ui/release/fly-ui -e /root/target/release/fly-paycore-host -e /root/target/release/fly-chain -e /root/target/release/fly-mailbox -e /root/target/release/fly-onion 2>/dev/null' | sed -n 's/^shlibs:Depends=//p')
+[ -n "$DEPS" ] || { say 'No ELF dependency metadata'; exit 1; }
 cat > "$D/DEBIAN/control" <<CTRL
 Package: grinsight-light
 Version: ${VER}~${STAMP}
@@ -130,7 +153,7 @@ dpkg-deb --build --root-owner-group "$D" "$DEB" >/dev/null
 say "deb: $(basename "$DEB") — Depends: $DEPS"
 
 # ---- .rpm (requirements found by rpm itself from the programs)
-R=/root/rpmbuild && rm -rf "$R" && mkdir -p "$R"/{SPECS,BUILD,RPMS,SOURCES,SRPMS,BUILDROOT}
+R="$PACK_WORK/rpmbuild" && mkdir -p "$R"/{SPECS,BUILD,RPMS,SOURCES,SRPMS,BUILDROOT}
 cat > "$R/SPECS/grinsight-light.spec" <<SPEC
 Name: grinsight-light
 Version: $VER
@@ -185,15 +208,20 @@ package() {
 PKG
 say "arch: $TGZ + PKGBUILD"
 
-# ---- the newest system: install the .deb here and run the scenario
-apt-get install -y -q "$DEB" >/dev/null
-T=$(mktemp -d)
-/usr/lib/grinsight-light/fly-ui --scenario "$T/out" --host /usr/lib/grinsight-light/bin/fly-paycore-host --profile "$T/p" --guard-dir "$T/g" | tail -1
-rm -rf "$T"
-apt-get remove -y -q grinsight-light >/dev/null
+# Exercise the packaged ELF files, without replacing an installed copy.
+dpkg-deb --extract "$DEB" "$PACK_WORK/deb-check"
+mkdir -p "$PACK_WORK/rpm-check" "$PACK_WORK/tar-check"
+(cd "$PACK_WORK/rpm-check" && rpm2cpio "$RPM" | cpio --quiet -id)
+tar -xzf "$OUT/$TGZ" -C "$PACK_WORK/tar-check"
+for dir in deb-check rpm-check tar-check; do
+  diff -qr "$TREE/usr" "$PACK_WORK/$dir/usr"
+done
+T="$PACK_WORK/scenario" && mkdir "$T"
+app="$PACK_WORK/deb-check$LIB"
+"$app/fly-ui" --scenario "$T/out" --host "$app/bin/fly-paycore-host" --profile "$T/p" --guard-dir "$T/g" | tail -1
 
-DEST=/mnt/c/DHW/dist/linux-$STAMP
+DEST=/mnt/c/DHW/dist/linux-$VER-$STAMP
 mkdir -p "$DEST"
 cp "$OUT"/* "$DEST/"
 (cd "$DEST" && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt)
-say "done: C:\\DHW\\dist\\linux-$STAMP"
+say "done: $DEST"

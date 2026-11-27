@@ -203,6 +203,16 @@ fn run_trial(args: &[String], goal: Goal) -> ExitCode {
             println!("opened: kept={} cut_bytes={}", now.kept, now.cut_bytes);
         }
         if !now.ready {
+            let line = describe(&now);
+            if began.elapsed() >= limit {
+                println!("timeout: height={} hash={} ({line})", now.height, hex(&now.hash));
+                break 1;
+            }
+            if line != last && (last.is_empty() || last_shown.elapsed() >= Duration::from_secs(2)) {
+                println!("{:7.1}s {line}", began.elapsed().as_secs_f32());
+                last = line;
+                last_shown = Instant::now();
+            }
             continue;
         }
         if let Some(found) = now.state.as_ref().filter(|found| state && state_at != Some(found.height)) {
@@ -1096,6 +1106,51 @@ fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
         None => pipe(),
+        Some(command @ ("import-checkpoint" | "import-checkpoint-file" | "pack-checkpoint" | "pack-profile-checkpoint")) => {
+            let net = match args.get(1).map(String::as_str) {
+                Some("main") => Net::Main,
+                Some("test") => Net::Test,
+                _ => { eprintln!("expected main or test"); return ExitCode::from(2); }
+            };
+            let result = match (command, args.get(2..).unwrap_or_default()) {
+                ("import-checkpoint", [dir, point, proof]) =>
+                    fly_chain::import_checkpoint(net, dir.as_ref(), point.as_ref(), proof.as_ref()).map(Some),
+                ("import-checkpoint-file", [dir, file]) =>
+                    fly_chain::import_checkpoint_file(net, dir.as_ref(), file.as_ref()).map(Some),
+                ("pack-checkpoint", [point, proof, dest]) =>
+                    fly_chain::pack_checkpoint(net, point.as_ref(), proof.as_ref(), dest.as_ref()).map(Some),
+                ("pack-profile-checkpoint", [dir, dest]) =>
+                    fly_chain::pack_profile_checkpoint(net, dir.as_ref(), dest.as_ref()),
+                _ => { eprintln!("incorrect arguments to {command}"); return ExitCode::from(2); }
+            };
+            match result {
+                Ok(Some(pass)) => {
+                    println!("{}", serde_json::json!({"height":pass.height,"hash":hex(&pass.hash),"samples":pass.points}));
+                    ExitCode::SUCCESS
+                }
+                Ok(None) => { eprintln!("no transferable active checkpoint"); ExitCode::from(3) }
+                Err(e) => { eprintln!("{command} failed: {e}"); ExitCode::FAILURE }
+            }
+        }
+        Some("verify-checkpoint") => {
+            let [_, network, directory] = args.as_slice() else {
+                eprintln!("usage: verify-checkpoint main|test DIRECTORY_OR_FILE");
+                return ExitCode::from(2);
+            };
+            let net = match network.as_str() {
+                "main" => Net::Main,
+                "test" => Net::Test,
+                _ => { eprintln!("expected main or test"); return ExitCode::from(2); }
+            };
+            match fly_chain::check_exported_pair(net, std::path::Path::new(directory)) {
+                Ok(pass) => {
+                    println!("GSHP1 sample verified: height={} hash={} samples={}; tip freshness unknown",
+                        pass.height, hex(&pass.hash), pass.points);
+                    ExitCode::SUCCESS
+                }
+                Err(e) => { eprintln!("checkpoint verification failed: {e}"); ExitCode::FAILURE }
+            }
+        }
         Some("headers") => run_trial(args.get(1..).unwrap_or(&[]), Goal::Headers),
         Some("state") => run_trial(args.get(1..).unwrap_or(&[]), Goal::State),
         Some("blocks") => run_trial(args.get(1..).unwrap_or(&[]), Goal::Blocks),

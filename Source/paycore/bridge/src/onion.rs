@@ -9,8 +9,7 @@
 //!
 //! What arrives at this wallet's own onion service is anybody's text: who
 //! sent it is not known and cannot be. It is read with every limit of
-//! this file, never trusted, and answered with a signature only by the
-//! rules of unattended receive or after the user said yes in the window.
+//! this file and answered with a signature only after the user approves.
 use crate::{fail, hex, Bridge, Fail};
 use fly_paycore_onion_pipe::{plain_text, Event, Onion, Phase};
 use fly_paycore_store::{Dir, Guard};
@@ -221,7 +220,8 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
                 "amount": ask.amount.to_string(),
                 // what the payment says about its sender; nobody vouches for it
                 "claimed_sender": ask.sender.map(|a| hex(&a)),
-                "known_sender": ask.sender.is_some_and(|a| self.is_contact_address(&a)),
+                "known_sender": false,
+                "claimed_address_in_contacts": ask.sender.is_some_and(|a| self.is_contact_address(&a)),
                 "left_secs": hold.saturating_sub(ask.since.elapsed()).as_secs(),
             }));
         }
@@ -403,27 +403,8 @@ impl<D: Dir, G: Guard, K: Keychain> Bridge<D, G, K> {
         if self.onion.asks.iter().any(|ask| ask.slate_id == summary.id) {
             return refuse(&rpc, "this payment already waits for the owner of the wallet");
         }
-        // K153: answered at once only where unattended receive is on and
-        // the payment names a sender the user has added
-        let known = summary.sender.is_some_and(|a| self.is_contact_address(&a));
-        if known && self.core.auto_receive_since().is_some() {
-            match self.core.receive_stateless(&slate, self.onion.min_amount) {
-                Ok(s2) => match serde_json::from_slice::<Value>(&s2) {
-                    Ok(reply) => {
-                        return (
-                            Some(rpc_ok(&rpc, reply)),
-                            json!({ "kind": "payment_answered", "slate_id": hex(&summary.id) }),
-                        )
-                    }
-                    Err(_) => return refuse(&rpc, "the wallet could not answer"),
-                },
-                Err(CoreError::BadSlate(_)) => return refuse(&rpc, "not a payment this wallet can take"),
-                // unattended receive says no (the chain is behind, ...):
-                // the user is asked instead
-                Err(_) => {}
-            }
-        }
-        // K154: everybody else waits for the user, three at most
+        // Foreign receive_tx authenticates no sender. Only the owner can
+        // approve a direct request, even when its claimed address is saved.
         if self.onion.asks.len() >= ONION_MAX_ASKS {
             return refuse(&rpc, "the wallet is busy, try again later");
         }

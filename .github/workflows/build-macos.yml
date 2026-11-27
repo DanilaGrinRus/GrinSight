@@ -1,0 +1,23 @@
+name: Build and check macOS universal DMG
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: macos-15
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Build both architectures and run the wallet checks
+        run: bash Source/build-macos.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: GrinSight-macos-universal
+          path: |
+            Source/dist-macos/*.dmg
+            Source/dist-macos/SHA256SUMS.txt
+            Source/dist-macos/scenario.log
+          if-no-files-found: error

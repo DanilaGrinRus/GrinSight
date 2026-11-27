@@ -1,0 +1,16 @@
+[package]
+name = "grin-genesis-guest"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+blake2 = { version = "=0.10.6", default-features = false }
+risc0-zkvm = { version = "=3.1.0", default-features = false, features = ["std"] }
+
+[workspace]
+
+[profile.release]
+lto = true
+opt-level = 3
+

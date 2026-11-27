@@ -41,7 +41,10 @@ use grin_keychain::{ExtKeychain, Identifier, Keychain, SwitchCommitmentType};
 use grin_util::secp::pedersen::{Commitment, RangeProof};
 use sha2::{Digest, Sha256};
 use state::{DraftRec, Event, FoundOut, SendRec, State};
+use std::collections::BTreeMap;
 use zeroize::Zeroizing;
+
+const SESSION_ENDED: &str = "signing session ended; start a new exchange";
 
 /// Frame kind used for every event of this layer.
 pub const KIND_EVENT: u8 = 0x20;
@@ -292,7 +295,7 @@ pub struct Prepared {
     pub op: OpId,
     /// S1 as slate JSON (version 4).
     pub s1: Vec<u8>,
-    /// Proof that the reservation and the signing context are durable.
+    /// Proof that the operation and its reservation are durable.
     pub sealed: Sealed,
 }
 
@@ -312,10 +315,15 @@ pub struct Finalized {
 /// The payment core of one wallet account.
 pub struct Core<D: Dir, G: Guard, K: Keychain> {
     store: Store<D, G>,
+    network: u8,
     keychain: K,
     st: State,
     maturity: u64,
     signs: u64,
+    /// Round-one messages commit to a fresh random nonce. Only this live
+    /// session can finish them. Neither map participates in journal replay.
+    send_contexts: BTreeMap<OpId, slates::SigningContext>,
+    invoice_contexts: BTreeMap<SlateId, slates::SigningContext>,
     timing: Timing,
     /// K196: how many of its smallest outputs a payment takes along on
     /// the owner's standing word; 0: none. In memory only.
@@ -365,15 +373,18 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
         let store = Store::create(dir, guard, root, id)?;
         let mut core = Core {
             store,
+            network: id.network,
             keychain,
             st: State::new(account),
             maturity: coinbase_maturity,
             signs: 0,
+            send_contexts: BTreeMap::new(),
+            invoice_contexts: BTreeMap::new(),
             timing: Timing::default(),
             gather: 0,
         };
         let branch = core.st.branch.fresh_branch().map_err(|_| CoreError::Rng)?;
-        core.commit_sealed(Event::Init { account, branch })?;
+        core.commit_sealed(Event::Init { account, branch, archive_conflict_undo: true })?;
         Ok(core)
     }
 
@@ -400,10 +411,13 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
         }
         let mut core = Core {
             store: opened.store,
+            network: id.network,
             keychain,
             st,
             maturity: coinbase_maturity,
             signs: 0,
+            send_contexts: BTreeMap::new(),
+            invoice_contexts: BTreeMap::new(),
             timing: Timing::default(),
             gather: 0,
         };
@@ -418,10 +432,16 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
             // creation did not get as far as its first frame
             let branch = core.st.branch.fresh_branch().map_err(|_| CoreError::Rng)?;
             let account = core.st.account;
-            core.commit_sealed(Event::Init { account, branch })?;
+            core.commit_sealed(Event::Init { account, branch, archive_conflict_undo: true })?;
         }
         if core.st.legacy_chain_evidence && core.st.old.is_some() && core.st.tip.is_some() {
             core.commit_plain(Event::ResetLegacyChainEvidence)?;
+        }
+        if !core.st.archive_conflict_undo {
+            core.commit_plain(Event::EnableArchiveConflictUndo)?;
+        }
+        if core.st.has_unfinished_session() {
+            core.commit_sealed(Event::SigningSessionEnded)?;
         }
         Ok((
             core,
@@ -907,15 +927,14 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
 
     // ----- chain facts ---------------------------------------------------
 
-    /// Apply one verified block. Own outputs are found by rewinding every
-    /// range proof with the wallet seed.
-    pub fn chain_advance(&mut self, a: &Advance) -> Result<(), CoreError> {
-        let began = std::time::Instant::now();
+    fn rewind_outputs(&self, outputs: &[(Commitment, RangeProof, u64, bool)], birth: Option<u64>) -> Result<Vec<FoundOut>, CoreError> {
         let mut found = Vec::new();
-        for (commit, proof, pos, coinbase) in &a.outputs {
-            if let Some(f) =
-                scan::rewind(&self.keychain, *commit, *proof).map_err(|_| CoreError::Build)?
-            {
+        if outputs.is_empty() {
+            return Ok(found);
+        }
+        let scanner = scan::OutputRewinder::new(&self.keychain, birth.map(|h| (self.network, h)));
+        for (commit, proof, pos, coinbase) in outputs {
+            if let Some(f) = scanner.rewind(*commit, *proof).map_err(|_| CoreError::Build)? {
                 found.push(FoundOut {
                     commit: commit.0.to_vec(),
                     key_id: f.key_id.to_bytes().to_vec(),
@@ -925,6 +944,14 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
                 });
             }
         }
+        Ok(found)
+    }
+
+    /// Apply one verified block. Own outputs are found by rewinding every
+    /// range proof with the wallet seed.
+    pub fn chain_advance(&mut self, a: &Advance) -> Result<(), CoreError> {
+        let began = std::time::Instant::now();
+        let found = self.rewind_outputs(&a.outputs, Some(a.height))?;
         self.timing.keys = self.timing.keys.saturating_add(began.elapsed());
         self.commit_plain(Event::Advance {
             height: a.height,
@@ -1014,17 +1041,8 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
                 }
             }
         }
-        for (commit, proof, pos, coinbase) in &p.outputs {
-            if let Some(f) = scan::rewind(&self.keychain, *commit, *proof).map_err(|_| CoreError::Build)? {
-                found.push(FoundOut {
-                    commit: commit.0.to_vec(),
-                    key_id: f.key_id.to_bytes().to_vec(),
-                    value: f.amount,
-                    coinbase: *coinbase,
-                    pos: *pos,
-                });
-            }
-        }
+        // The anchor height is not the creation height of its individual live outputs.
+        found.extend(self.rewind_outputs(&p.outputs, None)?);
         let own = found.len();
         self.timing.keys = self.timing.keys.saturating_add(began.elapsed());
         self.commit_plain(Event::Old {
@@ -1365,7 +1383,8 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
             op,
             slate_id: built.slate_id,
             s1: built.s1.clone(),
-            ctx: built.context.to_vec(),
+            legacy_context: (),
+            session_expired: false,
             inputs: picked.inputs.iter().map(|i| i.commit.clone()).collect(),
             change: built.change,
             amount,
@@ -1393,6 +1412,7 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
             direct: false,
         };
         let sealed = self.commit_sealed(Event::Prepared(Box::new(rec)))?;
+        self.send_contexts.insert(op, built.context);
         Ok(Prepared {
             op,
             s1: built.s1,
@@ -1540,6 +1560,7 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
         }
         match self.st.send_status(&s.op) {
             Some(SendStatus::Prepared) if !s.locked => Ok(s.op),
+            Some(SendStatus::Prepared) if s.session_expired => Err(CoreError::Refused(SESSION_ENDED)),
             Some(SendStatus::Cancelled | SendStatus::Released) => {
                 Err(CoreError::Refused("operation was cancelled"))
             }
@@ -1594,12 +1615,16 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
     pub fn send_cancel(&mut self, op: &OpId) -> Result<(), CoreError> {
         // Chain evidence can change the displayed status of a locked send.
         // Only an explicit release may give up that lock.
+        if self.send_session_expired(op) {
+            return Err(CoreError::Refused(SESSION_ENDED));
+        }
         if self.st.sends.get(&state::hex(op)).is_some_and(|s| s.locked) {
             return Err(CoreError::Refused(
                 "operation is locked after a detected rollback",
             ));
         }
         self.commit_sealed(Event::Cancelled { op: *op })?;
+        self.send_contexts.remove(op);
         Ok(())
     }
 
@@ -1608,6 +1633,12 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
     /// gives it up.
     pub fn send_locked(&self, op: &OpId) -> bool {
         self.st.sends.get(&state::hex(op)).is_some_and(|s| s.locked)
+            && self.st.send_status(op) == Some(SendStatus::Prepared)
+    }
+
+    /// This unarmed operation lost its signer on lock or restart.
+    pub fn send_session_expired(&self, op: &OpId) -> bool {
+        self.st.sends.get(&state::hex(op)).is_some_and(|s| s.session_expired)
             && self.st.send_status(op) == Some(SendStatus::Prepared)
     }
 
@@ -1638,6 +1669,13 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
     /// by hand again. Nothing once the operation is no longer prepared.
     pub fn prepared_s1(&self, op: &OpId) -> Result<Vec<u8>, CoreError> {
         let record = self.st.sends.get(&state::hex(op)).ok_or(CoreError::NotFound)?;
+        if record.locked {
+            return Err(CoreError::Refused(if record.session_expired {
+                SESSION_ENDED
+            } else {
+                "operation is locked after a detected rollback"
+            }));
+        }
         if self.st.send_status(op) != Some(SendStatus::Prepared) {
             return Err(CoreError::Refused("payment is not prepared"));
         }
@@ -1653,6 +1691,9 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
     fn may_take_reply(&self, rec: &SendRec) -> Result<(), CoreError> {
         if rec.cancelled {
             return Err(CoreError::Refused("operation was cancelled"));
+        }
+        if rec.session_expired {
+            return Err(CoreError::Refused(SESSION_ENDED));
         }
         if rec.locked {
             return Err(CoreError::Refused(
@@ -1688,6 +1729,9 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
             .get(&state::hex(op))
             .ok_or(CoreError::NotFound)?
             .clone();
+        if rec.session_expired && rec.armed.is_none() {
+            return Err(CoreError::Refused(SESSION_ENDED));
+        }
         if let Some(kept) = rec.armed.as_ref().or(rec.held.as_ref()) {
             return if sha(kept) == sha(s2) {
                 Ok(())
@@ -1812,7 +1856,10 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
             })?;
             (sealed, rec)
         };
-        let mut fin = self.sign(&sealed, &rec, s2)?;
+        // The exclusive Core operation takes the sole context before the
+        // first call into libwallet, including calls that subsequently fail.
+        let context = self.send_contexts.remove(op).ok_or(CoreError::UnknownOutcome)?;
+        let mut fin = self.sign(&sealed, &rec, context, s2)?;
         fin.payment_proof = proof.clone();
         self.commit_sealed(Event::Final {
             op: *op,
@@ -1878,9 +1925,14 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
 
     /// The only place a sender signature is made. It cannot be called without
     /// the receipt of the durable, guarded `Armed` event.
-    fn sign(&mut self, _armed: &Sealed, rec: &SendRec, s2: &[u8]) -> Result<Finalized, CoreError> {
+    fn sign(
+        &mut self,
+        _armed: &Sealed,
+        rec: &SendRec,
+        ctx: slates::SigningContext,
+        s2: &[u8],
+    ) -> Result<Finalized, CoreError> {
         self.signs = self.signs.saturating_add(1);
-        let ctx = Zeroizing::new(rec.ctx.clone());
         let inputs = rec
             .inputs
             .iter()
@@ -1894,7 +1946,7 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
             .collect::<Result<Vec<_>, _>>()?;
         slates::finalize(
             &self.keychain,
-            &ctx,
+            ctx,
             &inputs,
             rec.change.as_ref(),
             s2,
@@ -1961,7 +2013,8 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
             bound: false,
             bound_spent: None,
             invoice: None,
-            ctx: Vec::new(),
+            legacy_context: (),
+            session_expired: false,
             armed: None,
             fin: None,
         };
@@ -1975,7 +2028,9 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
     pub fn draft_abandon(&mut self, slate_id: &SlateId) -> Result<(), CoreError> {
         self.commit_plain(Event::DraftAbandon {
             slate_id: *slate_id,
-        })
+        })?;
+        self.invoice_contexts.remove(slate_id);
+        Ok(())
     }
 
     /// Abandon drafts older than seven days of confirmed time. Without a
@@ -1987,7 +2042,7 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
         };
         let old = self.st.expired_drafts(now, DRAFT_TTL_SECS);
         for id in &old {
-            self.commit_plain(Event::DraftAbandon { slate_id: *id })?;
+            self.draft_abandon(id)?;
         }
         Ok(old.len())
     }
@@ -2239,7 +2294,7 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
     // ----- invoices -----------------------------------------------------
 
     /// Issue an invoice for `amount`: our output on a fresh branch path, the
-    /// height R and the signing context are durable before I1 is returned.
+    /// output path and height R are durable before I1 is returned.
     pub fn invoice_issue(
         &mut self,
         amount: u64,
@@ -2287,12 +2342,24 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
             bound: false,
             bound_spent: None,
             invoice: Some(built.i1.clone()),
-            ctx: built.context.to_vec(),
+            legacy_context: (),
+            session_expired: false,
             armed: None,
             fin: None,
         };
         self.commit_sealed(Event::Draft(Box::new(rec)))?;
+        self.invoice_contexts.insert(built.slate_id, built.context);
         Ok((built.slate_id, built.i1))
+    }
+
+    /// A previously issued invoice which can no longer sign a new answer.
+    pub fn invoice_session_expired(&self, slate_id: &SlateId) -> bool {
+        self.st.drafts.get(&state::hex(slate_id)).is_some_and(|d| d.session_expired && !d.abandoned)
+    }
+
+    /// An invoice whose signing attempt did not record a result.
+    pub fn invoice_signature_unknown(&self, slate_id: &SlateId) -> bool {
+        self.st.drafts.get(&state::hex(slate_id)).is_some_and(|d| d.invoice.is_some() && d.armed.is_some() && d.fin.is_none())
     }
 
     /// Complete an invoice we issued with the payer's I2: check it, sign once,
@@ -2330,17 +2397,16 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
         if rec.abandoned {
             return Err(CoreError::Refused("invoice was abandoned"));
         }
-        if rec.ctx.is_empty() {
-            return Err(CoreError::Refused(
-                "invoice is locked after a detected rollback",
-            ));
+        if rec.session_expired {
+            return Err(CoreError::Refused(SESSION_ENDED));
         }
         slates::check_i2(&self.keychain, &i1, i2, self.tip_height())?;
         let sealed = self.commit_sealed(Event::InvoiceArmed {
             slate_id: *slate_id,
             i2: i2.to_vec(),
         })?;
-        let fin = self.sign_invoice(&sealed, &rec, i2)?;
+        let context = self.invoice_contexts.remove(slate_id).ok_or(CoreError::UnknownOutcome)?;
+        let fin = self.sign_invoice(&sealed, &rec, context, i2)?;
         self.commit_sealed(Event::InvoiceFinal {
             slate_id: *slate_id,
             tx: fin.tx.clone(),
@@ -2356,11 +2422,11 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
         &mut self,
         _armed: &Sealed,
         rec: &DraftRec,
+        ctx: slates::SigningContext,
         i2: &[u8],
     ) -> Result<Finalized, CoreError> {
         self.signs = self.signs.saturating_add(1);
-        let ctx = Zeroizing::new(rec.ctx.clone());
-        slates::finalize_i2(&self.keychain, &ctx, (&rec.key_id, rec.value), i2)
+        slates::finalize_i2(&self.keychain, ctx, (&rec.key_id, rec.value), i2)
     }
 
     /// What paying the invoice `i1` would take, by this wallet's own
@@ -2485,7 +2551,8 @@ impl<D: Dir, G: Guard, K: Keychain> Core<D, G, K> {
             op,
             slate_id: parsed.slate_id,
             s1: Vec::new(),
-            ctx: Vec::new(),
+            legacy_context: (),
+            session_expired: false,
             inputs: picked.inputs.iter().map(|i| i.commit.clone()).collect(),
             change: built.change,
             amount: parsed.amount,

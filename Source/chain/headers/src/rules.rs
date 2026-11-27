@@ -64,10 +64,18 @@ pub fn check_alone(header: &BlockHeader) -> Result<(), Reject> {
     if consensus::header_version(header.height) < HeaderVersion(5) {
         return Err(Reject::Unsupported);
     }
+    check_any_era(header)
+}
+
+/// The time-independent checks of an untrusted header; used after genesis
+/// when its predecessors are available for the DAA of its own epoch.
+pub(crate) fn check_any_era(header: &BlockHeader) -> Result<(), Reject> {
     if !consensus::valid_header_version(header.height, header.version) {
         return Err(Reject::Version);
     }
-    if !header.pow.is_primary() && !header.pow.is_secondary() {
+    if !(1..=63).contains(&header.pow.edge_bits())
+        || (!header.pow.is_primary() && !header.pow.is_secondary())
+    {
         return Err(Reject::EdgeBits);
     }
     if header.pow.proof.nonces.len() != global::proofsize() {
@@ -100,6 +108,11 @@ pub fn check_step(older: &BlockHeader, prev: &BlockHeader, header: &BlockHeader)
         return Err(Reject::Link);
     }
     check_alone(header)?;
+    let target = linked_work(prev, header)?;
+    check_wtema(older, prev, header, target)
+}
+
+pub(crate) fn linked_work(prev: &BlockHeader, header: &BlockHeader) -> Result<u64, Reject> {
     // strict progress of time: no time warp
     if header.timestamp <= prev.timestamp {
         return Err(Reject::Time);
@@ -123,6 +136,10 @@ pub fn check_step(older: &BlockHeader, prev: &BlockHeader, header: &BlockHeader)
     if header.pow.to_difficulty(header.height).to_num() < target {
         return Err(Reject::Work);
     }
+    Ok(target)
+}
+
+fn check_wtema(older: &BlockHeader, prev: &BlockHeader, header: &BlockHeader, target: u64) -> Result<(), Reject> {
     // ... must be exactly what the difficulty rule gives. The rule is the
     // node's function; its inputs are checked first so that it cannot
     // overflow on a chain no node would have accepted.

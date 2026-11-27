@@ -6,7 +6,10 @@
 //! unspent or mature: that is the business of the verified state (Level 5).
 use crate::ledger::BranchState;
 use crate::path::{classify, KeyPath};
-use grin_core::libtx::proof::{self, ProofBuilder};
+use grin_core::consensus::{
+    HARD_FORK_INTERVAL, TESTING_HARD_FORK_INTERVAL, TESTNET_FIRST_HARD_FORK, WEEK_HEIGHT,
+};
+use grin_core::libtx::proof::{self, LegacyProofBuilder, ProofBuilder};
 use grin_keychain::{Identifier, Keychain, SwitchCommitmentType};
 use grin_util::secp::pedersen::{Commitment, RangeProof};
 
@@ -53,30 +56,98 @@ pub fn rewind<K: Keychain>(
     commit: Commitment,
     proof: RangeProof,
 ) -> Result<Option<Found>, ScanError> {
-    let builder = ProofBuilder::new(keychain);
-    let info =
-        proof::rewind(keychain.secp(), &builder, commit, None, proof).map_err(|_| ScanError)?;
-    let (amount, key_id, switch) = match info {
-        Some(i) => i,
-        None => return Ok(None),
-    };
-    if switch != SwitchCommitmentType::Regular {
-        return Ok(None);
+    OutputRewinder::new(keychain, None).rewind(commit, proof)
+}
+
+/// Reuse key derivation while scanning outputs from one block or archive piece.
+pub struct OutputRewinder<'a, K: Keychain> {
+    keychain: &'a K,
+    modern: ProofBuilder<'a, K>,
+    legacy: Option<LegacyProofBuilder<'a, K>>,
+    legacy_first: bool,
+}
+
+impl<'a, K: Keychain> OutputRewinder<'a, K> {
+    /// Use the upstream legacy window for a known (journal network, creation height). An archival
+    /// output may predate its anchor by years; without a birth height, try both.
+    pub fn new(keychain: &'a K, birth: Option<(u8, u64)>) -> Self {
+        // Network tags come from the wallet journal identity (host Network::tag).
+        // An independent wallet worker need not have Grin thread-local state.
+        let early = birth.and_then(|(network, height)| {
+            let fork = match network {
+                1 => HARD_FORK_INTERVAL,
+                2 => TESTNET_FIRST_HARD_FORK,
+                3 => TESTING_HARD_FORK_INTERVAL,
+                _ => return None,
+            };
+            Some(height.saturating_sub(2 * WEEK_HEIGHT) < fork)
+        });
+        let legacy_first = early == Some(true);
+        Self {
+            keychain,
+            modern: ProofBuilder::new(keychain),
+            legacy: (early != Some(false)).then(|| LegacyProofBuilder::new(keychain)),
+            legacy_first,
+        }
     }
-    // The proof authenticates the message, but make sure the commitment
-    // really is the one this path and amount produce.
-    let expect = keychain
-        .commit(amount, &key_id, switch)
-        .map_err(|_| ScanError)?;
-    if expect != commit {
-        return Ok(None);
+
+    /// A successful rewind still requires the path and amount to open this commitment.
+    pub fn rewind(
+        &self,
+        commit: Commitment,
+        proof: RangeProof,
+    ) -> Result<Option<Found>, ScanError> {
+        let secp = self.keychain.secp();
+        let modern =
+            || proof::rewind(secp, &self.modern, commit, None, proof).map_err(|_| ScanError);
+        let legacy = || match &self.legacy {
+            Some(builder) => {
+                proof::rewind(secp, builder, commit, None, proof).map_err(|_| ScanError)
+            }
+            None => Ok(None),
+        };
+        let info = if self.legacy_first {
+            match legacy()? {
+                Some(v) => Some(v),
+                None => modern()?,
+            }
+        } else {
+            match modern()? {
+                Some(v) => Some(v),
+                None => legacy()?,
+            }
+        };
+        self.found(commit, info)
     }
-    let path = classify(&key_id);
-    Ok(Some(Found {
-        amount,
-        key_id,
-        path,
-    }))
+
+    fn found(
+        &self,
+        commit: Commitment,
+        info: Option<(u64, Identifier, SwitchCommitmentType)>,
+    ) -> Result<Option<Found>, ScanError> {
+        let (amount, key_id, switch) = match info {
+            Some(i) => i,
+            None => return Ok(None),
+        };
+        if switch != SwitchCommitmentType::Regular {
+            return Ok(None);
+        }
+        // The proof authenticates the message, but make sure the commitment
+        // really is the one this path and amount produce.
+        let expect = self
+            .keychain
+            .commit(amount, &key_id, switch)
+            .map_err(|_| ScanError)?;
+        if expect != commit {
+            return Ok(None);
+        }
+        let path = classify(&key_id);
+        Ok(Some(Found {
+            amount,
+            key_id,
+            path,
+        }))
+    }
 }
 
 /// Relate a known-class path to this instance's branches.

@@ -94,14 +94,23 @@ pub(crate) struct FinalRec {
     pub proof: Option<crate::slates::PaymentProof>,
 }
 
-/// A send operation. `ctx` holds the signing context (secret).
+// Older encrypted events and snapshots stored libwallet's serialized signing
+// context. Recognize the old field without decoding it into signing material.
+fn discard_old_context<'de, D: serde::Deserializer<'de>>(reader: D) -> Result<(), D::Error> {
+    serde::de::IgnoredAny::deserialize(reader).map(|_| ())
+}
+
+/// A send operation. Signing secrets live only in the current wallet session.
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct SendRec {
     pub op: OpId,
     pub slate_id: SlateId,
     pub s1: Vec<u8>,
-    pub ctx: Vec<u8>,
+    #[serde(default, rename = "ctx", deserialize_with = "discard_old_context", skip_serializing)]
+    pub legacy_context: (),
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub session_expired: bool,
     pub inputs: Vec<Vec<u8>>,
     /// Change output: key id, value, commitment.
     pub change: Option<(Vec<u8>, u64, Vec<u8>)>,
@@ -211,9 +220,10 @@ pub(crate) struct DraftRec {
     /// For an invoice we issued: the I1 handed out.
     #[serde(default)]
     pub invoice: Option<Vec<u8>>,
-    /// Its signing context (secret).
-    #[serde(default)]
-    pub ctx: Vec<u8>,
+    #[serde(default, rename = "ctx", deserialize_with = "discard_old_context", skip_serializing)]
+    pub legacy_context: (),
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub session_expired: bool,
     /// The I2 chosen for signing.
     #[serde(default)]
     pub armed: Option<Vec<u8>>,
@@ -229,10 +239,14 @@ pub(crate) enum Event {
     Init {
         account: u32,
         branch: u32,
+        #[serde(default)]
+        archive_conflict_undo: bool,
     },
     Recovery {
         branch: u32,
     },
+    /// An opener cannot resume signing operations from another wallet session.
+    SigningSessionEnded,
     Prepared(Box<SendRec>),
     Cancelled {
         op: OpId,
@@ -353,6 +367,8 @@ pub(crate) enum Event {
         extends: Option<bool>,
     },
     ResetLegacyChainEvidence,
+    /// Switch an existing journal to reversible archive conflict observations.
+    EnableArchiveConflictUndo,
     /// Start the search for old outputs, from the first piece.
     OldSearch {},
     /// One piece of the old outputs, read while the wallet stood at the
@@ -409,6 +425,9 @@ struct Undo {
     draft_kernels: Vec<String>,
     draft_bound: Vec<String>,
     conflicts: Vec<String>,
+    /// Sends found conflicted when the archive scan finished at this block.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    archive_conflicts: Vec<String>,
     died: Vec<String>,
 }
 
@@ -486,6 +505,8 @@ pub(crate) struct State {
     /// Old snapshots did not record whether a gap preserved the wallet's chain.
     #[serde(default = "legacy_snapshot")]
     pub legacy_chain_evidence: bool,
+    #[serde(default)]
+    pub archive_conflict_undo: bool,
     pub auto_receive: Option<u64>,
     /// K195: the outputs the owner marked "not to be spent", by commitment.
     /// A mark outlives a gap in the blocks: the output it names is found
@@ -658,6 +679,7 @@ impl State {
             continuous_since: 0,
             undo: Vec::new(),
             legacy_chain_evidence: false,
+            archive_conflict_undo: false,
             auto_receive: None,
             kept: std::collections::BTreeSet::new(),
             v_base: None,
@@ -671,7 +693,12 @@ impl State {
 
     /// An operation whose S1 went out by itself and can still be answered.
     fn delivery_open(&self, s: &SendRec) -> bool {
-        s.delivery.is_some() && self.send_status(&s.op) == Some(SendStatus::Prepared)
+        s.delivery.is_some() && !s.locked && self.send_status(&s.op) == Some(SendStatus::Prepared)
+    }
+
+    pub(crate) fn has_unfinished_session(&self) -> bool {
+        self.sends.values().any(|s| s.armed.is_none() && !s.cancelled && !s.locked)
+            || self.drafts.values().any(|d| d.invoice.is_some() && d.armed.is_none() && !d.abandoned && !d.session_expired)
     }
 
     pub(crate) fn encode(&self) -> Result<Vec<u8>, CoreError> {
@@ -1164,11 +1191,12 @@ impl State {
     /// has just been committed and when the journal is replayed.
     pub(crate) fn apply(&mut self, ev: &Event) -> Result<(), CoreError> {
         match ev {
-            Event::Init { account, branch } => {
+            Event::Init { account, branch, archive_conflict_undo } => {
                 if self.branch.current().is_some() {
                     return Err(CoreError::Corrupt);
                 }
                 self.account = *account;
+                self.archive_conflict_undo = *archive_conflict_undo;
                 self.branch
                     .note_branch(*branch)
                     .map_err(|_| CoreError::Corrupt)
@@ -1184,8 +1212,18 @@ impl State {
                 // an issued invoice that was not armed can no longer be signed
                 for d in self.drafts.values_mut() {
                     if d.invoice.is_some() && d.armed.is_none() {
-                        d.ctx.clear();
+                        d.session_expired = true;
                     }
+                }
+                Ok(())
+            }
+            Event::SigningSessionEnded => {
+                for s in self.sends.values_mut().filter(|s| s.armed.is_none() && !s.cancelled && !s.locked) {
+                    s.locked = true;
+                    s.session_expired = true;
+                }
+                for d in self.drafts.values_mut().filter(|d| d.invoice.is_some() && d.armed.is_none() && !d.abandoned) {
+                    d.session_expired = true;
                 }
                 Ok(())
             }
@@ -1263,7 +1301,6 @@ impl State {
                 // what a rollback locked may have been signed in the part
                 // of the journal that was lost: said so from here on
                 s.released = s.locked;
-                s.ctx.clear();
                 Ok(())
             }
             Event::Armed { op, s2, sel } => {
@@ -1524,8 +1561,6 @@ impl State {
                     s3: s3.clone(),
                     proof: proof.clone(),
                 });
-                // the signing context is retired together with the result
-                s.ctx.clear();
                 Ok(())
             }
             Event::Broadcast { op, outcome } => {
@@ -1570,7 +1605,7 @@ impl State {
                     .drafts
                     .get_mut(&hex(slate_id))
                     .ok_or(CoreError::NotFound)?;
-                if d.invoice.is_none() || d.armed.is_some() || d.abandoned || d.ctx.is_empty() {
+                if d.invoice.is_none() || d.armed.is_some() || d.abandoned || d.session_expired {
                     return Err(CoreError::Refused("invoice cannot be armed"));
                 }
                 d.armed = Some(i2.clone());
@@ -1596,7 +1631,6 @@ impl State {
                     s3: s3.clone(),
                     proof: None,
                 });
-                d.ctx.clear();
                 Ok(())
             }
             Event::Draft(rec) => {
@@ -1622,7 +1656,6 @@ impl State {
                     return Err(CoreError::Refused("an I2 was already chosen for signing"));
                 }
                 d.abandoned = true;
-                d.ctx.clear();
                 // K200: what was given up is not kept
                 d.s1.clear();
                 Ok(())
@@ -1666,6 +1699,30 @@ impl State {
                 self.undo.clear();
                 self.v_base = None;
                 self.v_deltas.clear();
+                Ok(())
+            }
+            Event::EnableArchiveConflictUndo => {
+                // Older journals must first replay the decisions that were
+                // actually made. A folded snapshot may have lost the branch
+                // that supplied an archive conflict. Recheck such evidence
+                // before letting it release any current input.
+                self.archive_conflict_undo = true;
+                if self.old.is_some() {
+                    let mut rescan = false;
+                    for (id, send) in &mut self.sends {
+                        if let Some(height) = send.conflict_height {
+                            let from_block = self.undo.iter().any(|u| u.height == height && u.conflicts.contains(id));
+                            if !from_block {
+                                send.conflict_height = None;
+                                send.dead = false;
+                                rescan = true;
+                            }
+                        }
+                    }
+                    if rescan {
+                        self.old = Some(OldSearch::start());
+                    }
+                }
                 Ok(())
             }
             Event::Reanchor { height, hash, since, extends } => {
@@ -1870,9 +1927,21 @@ impl State {
             }
         }
         // an operation in flight that counted on one of them is contested
-        for s in self.sends.values_mut() {
-            if Self::in_flight(s) && s.conflict_height.is_none() && s.inputs.iter().any(|i| gone.contains(i) || !self.outputs.contains_key(&hex(i))) {
+        let mut undo = self.undo.last_mut().filter(|u| self.archive_conflict_undo && u.height == at_height);
+        for (id, s) in &mut self.sends {
+            if !Self::in_flight(s) || s.conflict_height.is_some() {
+                continue;
+            }
+            let missing = s.inputs.iter().any(|input| match self.outputs.get(&hex(input)) {
+                None => true,
+                Some(o) if self.archive_conflict_undo => o.spent.is_some(),
+                Some(_) => gone.contains(input),
+            });
+            if missing {
                 s.conflict_height = Some(at_height);
+                if let Some(u) = undo.as_deref_mut() {
+                    u.archive_conflicts.push(id.clone());
+                }
             }
         }
         if let Some(search) = self.old.as_mut() {
@@ -2052,6 +2121,7 @@ impl State {
             }
         }
         self.v_deltas.retain(|(h, _)| *h <= to);
+        let mut recheck_archive_conflicts = false;
         for _ in 0..depth {
             let u = self.undo.pop().ok_or(CoreError::Corrupt)?;
             for k in &u.died {
@@ -2064,6 +2134,13 @@ impl State {
                 if let Some(s) = self.sends.get_mut(k) {
                     s.conflict_height = None;
                 }
+            }
+            for id in &u.archive_conflicts {
+                if let Some(s) = self.sends.get_mut(id) {
+                    s.conflict_height = None;
+                    s.dead = false;
+                }
+                recheck_archive_conflicts = true;
             }
             for k in &u.spent {
                 if let Some(o) = self.outputs.get_mut(k) {
@@ -2121,6 +2198,11 @@ impl State {
                 }
                 search.next = piece;
             }
+        }
+        if recheck_archive_conflicts {
+            // A partial retry finds live outputs but cannot certify that an
+            // input is still absent. Require a complete scan of this fork.
+            self.old = Some(OldSearch::start());
         }
         Ok(())
     }
@@ -2203,7 +2285,8 @@ mod tests {
             op: [op; 16],
             slate_id: [op; 16],
             s1: Vec::new(),
-            ctx: vec![1],
+            legacy_context: (),
+            session_expired: false,
             inputs,
             change: None,
             amount,
@@ -2242,6 +2325,7 @@ mod tests {
         st.apply(&Event::Init {
             account: 0,
             branch: 7,
+            archive_conflict_undo: true,
         })
         .unwrap();
         for (n, v) in [(1u8, 60u64), (2, 50), (3, 40), (4, 30)] {

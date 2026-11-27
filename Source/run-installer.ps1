@@ -4,21 +4,26 @@
 # The check: a silent install into a folder of its own, the files compared with the pack, the
 # interface scenario run from the installed programs, a silent uninstall.
 # Run: powershell -ExecutionPolicy Bypass -File C:\DHW\GrinFlySight\core-v0.2\run-installer.ps1
-param([string]$Pack = '')
+param([string]$Pack = '', [string]$RuntimeDirectory = '')
 $ErrorActionPreference = 'Continue'
 $core = Split-Path -Parent $MyInvocation.MyCommand.Path
 $dist = 'C:\DHW\dist'
 # the version is the window's own: one line of ui\app\src\lib.rs
-$version = [regex]::Match((Get-Content -LiteralPath (Join-Path $core 'ui\app\src\lib.rs') -Raw), '(?m)^pub const APP_VERSION: &str = "(\d+\.\d+\.\d+)";').Groups[1].Value
+$version = [regex]::Match((Get-Content -LiteralPath (Join-Path $core 'ui\app\src\lib.rs') -Raw), '(?m)^pub const APP_VERSION: &str = "(\d+\.\d+\.\d+A?)";').Groups[1].Value
 if (-not $version) { Write-Host "no APP_VERSION in ui\app\src\lib.rs"; exit 2 }
 $appId = '{5C098D7D-3200-4C3C-8D58-419A276DC6CF}'
 
+if ($RuntimeDirectory) {
+    $src = (Get-Item -LiteralPath $RuntimeDirectory -ErrorAction Stop).FullName
+    $name = 'GrinSight-' + $version + '-' + [Guid]::NewGuid().ToString('N').Substring(0,8) + '-setup'
+} else {
 if (-not $Pack) {
     $Pack = Get-ChildItem -LiteralPath $dist -Directory | Where-Object { $_.Name -match '^GrinSight-\d{8}-\d{4}$' } | Sort-Object Name | Select-Object -Last 1 | ForEach-Object Name
 }
 if ($Pack -notmatch '^GrinSight-\d{8}-\d{4}$') { Write-Host "no portable folder to pack: run run-portable.ps1 first"; exit 2 }
 $src = Join-Path $dist $Pack
 $name = "$Pack-setup"
+}
 $log = Join-Path $dist "$name-build.log"
 Remove-Item -LiteralPath $log -ErrorAction SilentlyContinue
 function Say($s) { Write-Host $s; Add-Content -Path $log -Value $s -Encoding utf8 }
@@ -33,9 +38,10 @@ Say "iscc: $iscc"
 
 # the pack must be whole: its own sums
 $programs = @('GrinSight.exe', 'bin\fly-paycore-host.exe', 'bin\fly-chain.exe', 'bin\fly-mailbox.exe', 'bin\fly-onion.exe', 'bin\lyrebird.exe', 'LICENSE-GPL-3.0.txt', 'LICENSE-lyrebird.txt')
+if (Test-Path -LiteralPath (Join-Path $src 'FONT-LICENSES.txt')) { $programs += 'FONT-LICENSES.txt' }
 $sums = @{}
 Get-Content -LiteralPath (Join-Path $src 'SHA256SUMS.txt') -ErrorAction SilentlyContinue | ForEach-Object {
-    if ($_ -match '^([0-9a-f]{64})  (.+)$') { $sums[$Matches[2]] = $Matches[1] }
+    if ($_ -match '^([0-9a-f]{64})  (.+)$') { $sums[$Matches[2].Replace('/','\')] = $Matches[1] }
 }
 foreach ($f in $programs) {
     $p = Join-Path $src $f
@@ -61,7 +67,8 @@ $set['grinsight.ico'] = Sha (Join-Path $core 'installer\grinsight.ico')
 
 $setup = Join-Path $dist "$name.exe"
 Remove-Item -LiteralPath $setup -ErrorAction SilentlyContinue
-$built = & $iscc "/DAppVersion=$version" "/DSourceDir=$src" "/DExtraDir=$extra" "/DOutDir=$dist" "/DOutName=$name" (Join-Path $core 'installer\grinsight.iss') 2>&1 | ForEach-Object { "$_" }
+$numeric = ($version -replace 'A$','') + '.0'
+$built = & $iscc "/DAppVersion=$version" "/DNumericVersion=$numeric" "/DSourceDir=$src" "/DExtraDir=$extra" "/DOutDir=$dist" "/DOutName=$name" (Join-Path $core 'installer\grinsight.iss') 2>&1 | ForEach-Object { "$_" }
 $code = $LASTEXITCODE
 $built | Add-Content -Path $log -Encoding utf8
 Say "iscc exit=$code"
@@ -85,12 +92,11 @@ if (Test-Path -LiteralPath $key) {
     Say "finished $(Get-Date -Format s)"
     exit 0
 }
-$check = Join-Path $dist "$name-check"
-Remove-Item -LiteralPath $check -Recurse -Force -ErrorAction SilentlyContinue
+$check = Join-Path $dist ("$name-check-" + [Guid]::NewGuid().ToString('N'))
 $app = Join-Path $check 'app'
-New-Item -ItemType Directory -Force -Path $check | Out-Null
+New-Item -ItemType Directory -Path $check -ErrorAction Stop | Out-Null
 function RunTimed($file, [string[]]$argv, [int]$seconds) {
-    $p = Start-Process -FilePath $file -ArgumentList $argv -PassThru
+    $p = Start-Process -FilePath $file -ArgumentList $argv -PassThru -WindowStyle Hidden
     $null = $p.Handle
     if (-not $p.WaitForExit($seconds * 1000)) { try { $p.Kill() } catch {}; return 124 }
     $p.WaitForExit()
@@ -128,3 +134,4 @@ if (Test-Path -LiteralPath $uninstaller) {
 Say "installer check: $(if ($failed -eq 0) { 'passed' } else { "FAILED ($failed)" })"
 Say "finished $(Get-Date -Format s)"
 if ($failed -ne 0) { exit 1 }
+Write-Output "VERIFIED_SETUP=$setup"

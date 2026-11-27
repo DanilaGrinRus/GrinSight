@@ -390,6 +390,14 @@ impl ChainFeed for HostChain {
             None => Err(NO_CHAIN_NOW.to_string()),
         }
     }
+    fn schedule_genesis(&mut self) -> Result<(), String> {
+        let folder = std::path::Path::new(&self.launcher.data_dir);
+        if self.launcher.data_dir.is_empty() {
+            return Err("the active profile has no chain directory".into());
+        }
+        fly_paycore_bridge::chain_port::bootstrap::schedule(folder, self.launcher.network)
+            .map_err(|e| format!("could not save the genesis verification choice: {e}"))
+    }
 }
 
 /// Said about a starting point when the chain process is not running.
@@ -446,6 +454,9 @@ impl ChainFeed for Link {
             Err(_) => Err(NO_CHAIN_NOW.to_string()),
         }
     }
+    fn schedule_genesis(&mut self) -> Result<(), String> {
+        self.0.try_borrow_mut().map_err(|_| NO_CHAIN_NOW.to_string())?.schedule_genesis()
+    }
 }
 
 impl Broadcaster for Link {
@@ -489,9 +500,10 @@ impl ChainView for Link {
             Some(status) => PaymentBasis {
                 state: payment_state(&status),
                 selected: status.selected.map(|tip| (tip.height, tip.hash)),
+                confirmed_time: status.confirmed_time,
                 k_conf: if status.k_conf > 0 { status.k_conf } else { DEFAULT_K_CONF },
             },
-            None => PaymentBasis { state: ChainState::Unknown, selected: None, k_conf: DEFAULT_K_CONF },
+            None => PaymentBasis { state: ChainState::Unknown, selected: None, confirmed_time: None, k_conf: DEFAULT_K_CONF },
         }
     }
     fn chain_state(&self) -> ChainState {

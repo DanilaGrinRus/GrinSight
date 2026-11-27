@@ -3,7 +3,7 @@
 //!
 //! Everything here is worked out from what the wallet process already
 //! answers (`host.status`, `paycore.wallet.chain_status`,
-//! `paycore.chain.status`, `paycore.search.status`): nothing is guessed, and
+//! `paycore.search.status`): nothing is guessed, and
 //! a number the wallet did not give is shown as a dash, not as zero.
 
 use crate::{fill, tr};
@@ -51,7 +51,7 @@ pub(crate) struct Facts {
     pub state: Option<String>,
     pub wallet_height: Option<u64>,
     pub selected_height: Option<u64>,
-    /// `paycore.chain.status` answered; only then the two below mean anything.
+    /// The wallet supplied its balance and chain snapshot in this refresh.
     pub status_answered: bool,
     pub confirmed_time: Option<u64>,
     pub k_conf: Option<u64>,
@@ -126,11 +126,29 @@ pub(crate) fn history_row(f: &Facts) -> Option<Row> {
     if !f.answered || f.chain.phase != "ready" {
         return None;
     }
-    let said = f.chain.problem.split("; ").find_map(|part| part.trim().strip_prefix("history:"))?;
+    let detail = &f.chain.problem;
+    let history = detail.split("; ").find_map(|part| part.trim().strip_prefix("history:"));
+    let imported = detail.split(';').next()?.split_once("imported starting point: GSHP1 sample verified for this checkpoint (")
+        .and_then(|(_, tail)| tail.strip_suffix(')')).and_then(|height| height.parse::<u64>().ok());
+    if let Some(height) = imported {
+        // The exact provenance survives truncation of the later history field.
+        if history.is_none_or(|h| "sampled".starts_with(h.trim())) {
+            return Some(row(tr("History before the starting point", "История до стартовой точки"),
+                fill(tr("Imported checkpoint at block {}. Its GSHP1 history sample was verified on this device.",
+                    "Импортирована точка на блоке {}. Выборка истории GSHP1 проверена на этом устройстве."), &[&spaced(height)]), 1));
+        }
+    }
+    // The host can truncate the final history field. The selected compact
+    // point also carries its provenance at the start of the chain report.
+    let compact = "locally saved after sequential verification from genesis";
+    let said = history
+        .or_else(|| f.chain.problem.contains(" from a locally saved point: headers checked from network genesis (").then_some(compact))?;
     // K202: the words come last and may be cut at the length limit: words
     // that are not one of the four whole say nothing, never "not passed"
     let (value, tone) = match said.trim() {
-        "sampled" => (tr("checked by sampling its work, from the first block", "проверена выборкой работы, от первого блока"), 1),
+        "sequentially verified from network genesis" => (tr("Headers checked from genesis. Historical transactions were not replayed.", "Заголовки проверены от первого блока. Проверка истории транзакций не проводилась."), 1),
+        "locally saved after sequential verification from genesis" => (tr("Started from this wallet’s compact point after its own header check from genesis.", "Запуск с компактной точки этого кошелька после собственной проверки заголовков от первого блока."), 1),
+        "sampled" => (tr("Release starting point. History up to it was checked by sampling its work.", "Точка из выпуска. История до неё проверена выборкой по накопленной работе."), 1),
         "sampled to the program's point" => (
             tr("checked by sampling its work up to the program's point; from there checked by the wallet that made your point", "проверена выборкой работы до точки программы; дальше — кошельком, который сделал вашу точку"),
             1,
@@ -146,13 +164,25 @@ pub(crate) fn history_row(f: &Facts) -> Option<Row> {
 }
 
 pub(crate) fn rows(f: &Facts) -> Vec<Row> {
-    if !f.answered {
+    if !f.answered && !f.status_answered {
         return vec![row(tr("Wallet", "Кошелёк"), tr("does not answer", "не отвечает").into(), 2)];
     }
     let mut out = Vec::with_capacity(8);
     let (value, tone) = phase_words(&f.chain);
     out.push(row(tr("Network check", "Проверка сети"), value, tone));
     out.extend(history_row(f));
+    if f.chain.phase == "ready" {
+        let detail = &f.chain.problem;
+        if let Some((_, tail)) = detail.split_once("headers checked from network genesis (") {
+            if let Some(height) = tail.split_once(')').and_then(|(h, _)| h.parse::<u64>().ok()) {
+                out.push(row(tr("Local checkpoint", "Локальная точка"), spaced(height), 0));
+            }
+        }
+        if let Some(work) = detail.split_once("; work=").and_then(|(_, tail)| tail.split_once(';'))
+            .and_then(|(value, _)| value.parse::<u64>().ok()) {
+            out.push(row(tr("Verified header work", "Проверенная работа заголовков"), spaced(work), 0));
+        }
+    }
 
     let (value, tone) = match (f.state.as_deref(), f.selected_height) {
         (_, Some(h)) => (fill(tr("block {}", "блок {}"), &[&spaced(h)]), 1),
@@ -249,7 +279,17 @@ fn tip_why_words(said: &str) -> Option<(String, i32)> {
     if let Some((en, ru, tone)) = known.iter().find(|(en, _, _)| *en == said) {
         return Some((tr(en, ru).to_string(), *tone));
     }
-    // these carry a name or numbers of their own: shown as they came
+    if let Some(counts) = said.strip_prefix("public nodes did not confirm the tip (").and_then(|s| s.strip_suffix(" named it)")) {
+        if let Some(((answered, needed), confirming)) = counts.split_once(" needed, ")
+            .and_then(|(left, right)| Some((left.split_once(" answered, ")?, right))) {
+            if [answered, needed, confirming].iter().all(|n| n.parse::<u64>().is_ok()) {
+                return Some((fill(tr("public nodes did not confirm the tip ({} answered, {} needed, {} named it)",
+                    "публичные ноды не подтвердили вершину (ответили: {}, требуется: {}, указали эту вершину: {})"),
+                    &[answered, needed, confirming]), 2));
+            }
+        }
+    }
+    // Unrecognized diagnostics may carry an operator name.
     let about_the_tip = said.starts_with("public node ") || said.starts_with("public nodes did not confirm the tip") || said.ends_with(": no tip is confirmed");
     about_the_tip.then(|| (said.to_string(), 2))
 }
@@ -303,7 +343,7 @@ fn said(problem: &str) -> Said {
 /// the wallet's own numbers; a stage nobody has spoken of is "not begun",
 /// never "done".
 pub(crate) fn stages(f: &Facts) -> Vec<Row> {
-    if !f.answered {
+    if !f.answered && !f.status_answered {
         return vec![row(tr("Wallet", "Кошелёк"), tr("does not answer", "не отвечает").into(), 2)];
     }
     if !f.chain.configured {
@@ -350,14 +390,22 @@ pub(crate) fn stages(f: &Facts) -> Vec<Row> {
         (None, _) => ("—".into(), 0),
     };
     out.push(row(tr("Blocks", "Блоки"), value, tone));
-    let (value, tone) = match (said.confirmed, said.tip_why.as_deref().and_then(tip_why_words)) {
-        (Some(false), _) => (tr("confirmed by public nodes", "подтверждена публичными нодами").to_string(), 1),
-        (Some(true), _) => (
+    // The host's progress text was gathered before the wallet snapshot. It
+    // may explain a compatible result, but cannot select or revoke a tip.
+    let selected = f.selected_height.is_some() && f.confirmed_time.is_some();
+    let reason = said.tip_why.as_deref().filter(|why| compatible_tip_reason(f, why)).and_then(tip_why_words);
+    let (value, tone) = match (selected, reason) {
+        (true, _) if said.confirmed == Some(true) && said.headers == f.selected_height => (
             tr("confirmed, with a caveat: a claim of more work went unsettled not long ago", "подтверждена, с оговоркой: недавно осталось неразрешённым заявление о большей работе").to_string(),
             2,
         ),
-        (None, Some(why)) => why,
-        (None, None) => ("—".into(), 0),
+        (true, _) => (tr("confirmed by public nodes", "подтверждена публичными нодами").into(), 1),
+        (false, Some(why)) => why,
+        (false, None) if f.status_answered && f.confirmed_time.is_none() =>
+            (tr("time is not confirmed", "время не подтверждено").into(), 2),
+        (false, None) if f.status_answered =>
+            (tr("waiting for public nodes to confirm the tip", "ждём подтверждения вершины публичными нодами").into(), 2),
+        _ => ("—".into(), 0),
     };
     out.push(row(tr("Tip", "Вершина"), value, tone));
     let (value, tone) = match (f.state.as_deref(), f.wallet_height, f.selected_height) {
@@ -385,6 +433,12 @@ pub(crate) fn chain_rest(f: &Facts) -> Vec<String> {
     said(&f.chain.problem).rest
 }
 
+/// Clock failures from an earlier poll cannot explain a snapshot with a valid clock.
+fn compatible_tip_reason(f: &Facts, why: &str) -> bool {
+    f.selected_height.is_none() && (f.confirmed_time.is_none() ||
+        !(why.starts_with("the time ") || why.starts_with("this computer's clock ") || why.starts_with("public nodes name a time ")))
+}
+
 /// The chain process's own account of itself, one statement to a line:
 /// how far the headers are verified and from which point, the pieces of
 /// the state, the blocks applied, whether the tip is confirmed and, if
@@ -393,7 +447,12 @@ pub(crate) fn chain_words(f: &Facts) -> Vec<String> {
     if !f.answered || f.chain.phase != "ready" {
         return Vec::new();
     }
-    f.chain.problem.split("; ").map(str::trim).filter(|part| !part.is_empty()).map(str::to_string).collect()
+    f.chain.problem.split("; ").map(str::trim).filter(|part| {
+        if part.starts_with("the tip is confirmed by public nodes") {
+            return f.selected_height.is_some() && f.confirmed_time.is_some() && said(&f.chain.problem).headers == f.selected_height;
+        }
+        !part.is_empty() && (tip_why_words(part).is_none() || compatible_tip_reason(f, part))
+    }).map(str::to_string).collect()
 }
 
 /// What came to the wallet's address, as the address process counts it:
@@ -811,7 +870,19 @@ mod tests {
         assert_eq!(history_row(&says(plain)), None, "a build without the proof has no such line");
         let with = |words: &str| says(&format!("{plain}; history: {words}"));
         let line = |words: &str| history_row(&with(words)).map(|r| (r.value, r.tone));
-        assert_eq!(line("sampled"), Some(("checked by sampling its work, from the first block".to_string(), 1)));
+        assert_eq!(line("sequentially verified from network genesis").map(|r| r.1), Some(1));
+        assert_eq!(line("sequentially verified"), None);
+        assert_eq!(line("sampled"), Some(("Release starting point. History up to it was checked by sampling its work.".to_string(), 1)));
+        assert_eq!(line("locally saved after sequential verification from genesis"), Some(("Started from this wallet’s compact point after its own header check from genesis.".to_string(), 1)));
+        assert_eq!(line("locally saved"), None);
+        let short = says("headers verified to 90 from a locally saved point: headers checked from network genesis (88)");
+        assert_eq!(history_row(&short).map(|r| (r.value,r.tone)), line("locally saved after sequential verification from genesis"));
+        let imported = "headers verified to 4122005 from an imported starting point: GSHP1 sample verified for this checkpoint (4122000)";
+        for suffix in ["", "; history: sampled", "; history: sam"] {
+            let entry = history_row(&says(&format!("{imported}{suffix}"))).unwrap();
+            assert_eq!(entry.tone, 1);
+            assert!(entry.value.starts_with("Imported checkpoint at block ") && entry.value.contains("GSHP1"));
+        }
         assert_eq!(line("sampled to the program's point"), Some(("checked by sampling its work up to the program's point; from there checked by the wallet that made your point".to_string(), 1)));
         assert_eq!(line("not proved for this point"), Some(("not checked: the proof in the program is for another starting point".to_string(), 0)));
         assert_eq!(line("the proof did not pass"), Some(("not checked: the proof in the program did not pass".to_string(), 2)));
@@ -831,6 +902,20 @@ mod tests {
         assert_eq!(history_row(&Facts { chain: Part { phase: "down".into(), ..f.chain.clone() }, ..f }), None);
     }
 
+
+    #[test]
+    fn autonomous_history_details_do_not_grant_freshness_or_read_a_truncated_number() {
+        let mut f = at_tip();
+        f.selected_height = None;
+        f.state = Some("unknown".into());
+        f.chain.problem = "headers verified to 25 from a local starting point: headers checked from network genesis (10); work=12345; no block has been applied yet".into();
+        let r = rows(&f);
+        assert_eq!(value(&r, "Verified header work").value, "12 345");
+        assert_eq!(value(&r, "Local checkpoint").value, "10");
+        assert_ne!(value(&r, "Chosen tip").tone, 1);
+        f.chain.problem = "headers verified to 25; work=123".into();
+        assert!(!rows(&f).iter().any(|r| r.label == "Verified header work"));
+    }
 
     #[test]
     fn the_starting_point_is_weighed_by_its_distance() {
@@ -1153,13 +1238,14 @@ mod tests {
         f.wallet_height = Some(4_118_000);
         assert_eq!(stage(&f, "Network state"), ("collected and checked".into(), 1));
         assert_eq!(stage(&f, "Blocks"), ("4 118 401 of 4 121 046 · 2 645 left".into(), 3));
-        assert_eq!(stage(&f, "Tip"), ("confirmed by public nodes".into(), 1));
+        assert_eq!(stage(&f, "Tip"), ("—".into(), 0), "progress text alone cannot establish the selected tip");
         assert_eq!(stage(&f, "Wallet"), ("block 4 118 000".into(), 3));
         // everything done
         let mut f = chain_says("headers verified to 4121046 from a release starting point (4115520); blocks applied to the tip, 4121046; the tip is confirmed by public nodes");
         f.state = Some("at_tip".into());
         f.wallet_height = Some(4_121_046);
         f.selected_height = Some(4_121_046);
+        f.confirmed_time = Some(1_800_000_000);
         assert!(stages(&f).iter().all(|r| r.tone == 1), "{:?}", stages(&f));
         assert_eq!(stage(&f, "Blocks"), ("to the tip, 4 121 046".into(), 1));
         assert_eq!(stage(&f, "Wallet"), ("at the tip, block 4 121 046".into(), 1));
@@ -1178,14 +1264,18 @@ mod tests {
         let f = chain_says("headers verified to 4121046 from a release starting point (4115520); blocks applied to the tip, 4121046; the time is not confirmed: too few public nodes answered; no node is connected (15 known; last attempt: no connection)");
         assert_eq!(stage(&f, "Tip"), ("the time is not confirmed: too few public nodes answered".into(), 2));
         assert_eq!(stage(&f, "Nodes"), ("no node is connected".into(), 2));
-        let f = chain_says("headers verified to 5 from a point (1); blocks applied to the tip, 5; the tip is confirmed by public nodes, with a caveat: a claim of more work went unsettled not long ago");
+        let mut f = chain_says("headers verified to 5 from a point (1); blocks applied to the tip, 5; the tip is confirmed by public nodes, with a caveat: a claim of more work went unsettled not long ago");
+        f.selected_height = Some(5);
+        f.confirmed_time = Some(1_800_000_000);
         assert_eq!(stage(&f, "Tip").1, 2);
         let f = chain_says("headers verified to 5 from a point (1); blocks applied to 3; public node node.example names more work than is verified here");
         assert_eq!(stage(&f, "Tip"), ("public node node.example names more work than is verified here".into(), 2));
         let f = chain_says("headers verified to 5 from a point (1); blocks applied to 3; this computer's clock is far from the time of public nodes: check the clock");
         assert_eq!(stage(&f, "Tip").1, 2);
         // not a stage: kept as it was said, and no stage is made of it
-        let f = chain_says("the transaction was not sent: no node took it; headers verified to 5 from a point (1); blocks applied to the tip, 5; the tip is confirmed by public nodes; signs: one, two");
+        let mut f = chain_says("the transaction was not sent: no node took it; headers verified to 5 from a point (1); blocks applied to the tip, 5; the tip is confirmed by public nodes; signs: one, two");
+        f.selected_height = Some(5);
+        f.confirmed_time = Some(1_800_000_000);
         assert_eq!(chain_rest(&f), ["the transaction was not sent: no node took it", "signs: one, two"]);
         assert!(stages(&f).iter().filter(|r| r.label != "Wallet").all(|r| r.tone == 1));
         assert_eq!(stage(&f, "Wallet"), ("waiting for the chain".into(), 0));

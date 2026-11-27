@@ -34,6 +34,7 @@ mod files;
 #[cfg(test)]
 #[allow(clippy::all, clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::indexing_slicing, clippy::arithmetic_side_effects, clippy::cast_possible_truncation)]
 mod keys_tests;
+mod language;
 mod live;
 mod qr;
 mod sync;
@@ -118,18 +119,7 @@ fn fill_sample_sheets(app: &App) {
     app.set_ask(model(vec![3, 11, 20]));
 }
 
-/// The language of the program's own messages; the screens follow Slint's
-/// bundled translation, switched together with this.
-static RUSSIAN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
-
-/// One of a message's two wordings, in the chosen language.
-pub(crate) fn tr(en: &'static str, ru: &'static str) -> &'static str {
-    if RUSSIAN.load(std::sync::atomic::Ordering::Relaxed) {
-        ru
-    } else {
-        en
-    }
-}
+pub(crate) use language::tr;
 
 /// `{}` in `template` replaced by `args` in order.
 pub(crate) fn fill(template: &str, args: &[&str]) -> String {
@@ -270,10 +260,12 @@ fn direct() -> bool {
     DIRECT.load(std::sync::atomic::Ordering::Relaxed)
 }
 
-fn set_language(russian: bool) {
-    RUSSIAN.store(russian, std::sync::atomic::Ordering::Relaxed);
-    // "" is the source language (English)
-    let _ = slint::select_bundled_translation(if russian { "ru" } else { "" });
+fn set_language(app: &App, code: &str) {
+    let code = language::known(code).unwrap_or("en");
+    language::set(code);
+    app.global::<Settings>().set_language(code.into());
+    app.global::<Settings>().set_font_license(include_str!("../fonts/LICENSE-WalletCJK.txt").into());
+    let _ = slint::select_bundled_translation(if code == "en" { "" } else { code });
 }
 
 /// Where the language and the theme are kept: `ui.txt` next to the profile
@@ -296,11 +288,11 @@ fn theme_word(name: ThemeName) -> &'static str {
 /// Reads the saved choices (English and Ice when there are none) and makes
 /// the buttons save them again.
 fn wire_settings(app: &App, path: Option<PathBuf>) {
-    let mut russian = false;
+    let mut language = None;
     if let Some(text) = path.as_ref().and_then(|p| std::fs::read_to_string(p).ok()) {
         for line in text.lines().take(16) {
             match line.trim() {
-                "lang=ru" => russian = true,
+                word if word.starts_with("lang=") => language = word.strip_prefix("lang=").and_then(language::known),
                 "direct=on" => set_direct(true),
                 "tor=off" => set_tor_off(true),
                 "nostr=off" => set_nostr_off(true),
@@ -324,13 +316,13 @@ fn wire_settings(app: &App, path: Option<PathBuf>) {
             }
         }
     }
-    app.global::<Settings>().set_russian(russian);
-    set_language(russian);
+    set_language(app, language.unwrap_or("en"));
+    app.global::<Settings>().set_choose_language(language.is_none());
     let weak = app.as_weak();
     app.global::<Settings>().on_save(move || {
         let Some(app) = weak.upgrade() else { return };
-        let russian = app.global::<Settings>().get_russian();
-        set_language(russian);
+        let language = app.global::<Settings>().get_language();
+        set_language(&app, language.as_str());
         // what the program wrote once, again in the new language
         fill_common(&app);
         live::say_again(&app);
@@ -341,7 +333,7 @@ fn wire_settings(app: &App, path: Option<PathBuf>) {
         if let Some(path) = &path {
             let text = format!(
                 "lang={}\ntheme={}\ndirect={}\ndelivery={}\ntor={}\nnostr={}\n{}{}{}",
-                if russian { "ru" } else { "en" },
+                language,
                 theme_word(app.global::<Theme>().get_name()),
                 if direct() { "on" } else { "off" },
                 if app.global::<Settings>().get_by_hand() { "hand" } else { "tor" },
@@ -364,14 +356,19 @@ fn wire_settings(app: &App, path: Option<PathBuf>) {
 /// The scripts that pack the Windows installer, the APK and the Linux and
 /// macOS packages read it here, so the window and the package it came in
 /// cannot name different versions.
-pub const APP_VERSION: &str = "0.4.6";
+pub const APP_VERSION: &str = "0.4.7A";
 
 /// Shows the synchronisation block and the troubles of this session.
 pub(crate) fn show_sync(app: &App, facts: &sync::Facts, journal: &sync::Journal) {
     let rows: Vec<SyncRow> = sync::rows(facts).into_iter().map(|r| SyncRow { label: r.label.into(), value: r.value.into(), tone: r.tone }).collect();
     app.set_sync_rows(model(rows));
+    app.set_search_active(facts.search.as_ref().is_some_and(|s| s.state == "reading"));
     // the stages of following the network, each as it stands, and what else the chain process says
     let stages: Vec<SyncRow> = sync::stages(facts).into_iter().map(|r| SyncRow { label: r.label.into(), value: r.value.into(), tone: r.tone }).collect();
+    let waiting = if facts.status_answered && facts.selected_height.is_none() {
+        stages.iter().find(|row| row.label == tr("Tip", "Вершина")).map(|row| row.value.clone())
+    } else { None };
+    app.set_tip_status_reason(waiting.unwrap_or_default());
     app.set_sync_stages(model(stages));
     app.set_sync_rest(model(sync::chain_rest(facts).into_iter().map(SharedString::from).collect()));
     // the state of both Tors, said outright
@@ -462,7 +459,7 @@ pub(crate) fn fill_common(app: &App) {
     app.set_tor_address(true);
     app.set_send_to(-2);
     app.set_version(fill(tr("GrinSight {} · a wallet for people", "GrinSight {} · кошелёк для людей"), &[APP_VERSION]).into());
-    app.set_start_point(tr("Built in: 4 115 520 · named by 5 operators", "Вшитая 4 115 520 · её назвали 5 операторов").into());
+    app.set_start_point(tr("Default: the release starting point. Choose verification from the first block in Details after unlocking.", "По умолчанию используется точка из выпуска. После входа в разделе «Подробнее» можно выбрать проверку от первого блока.").into());
     app.set_own_nodes(tr("None · up to 4, they get transactions first", "Не заданы · до 4, получат транзакции первыми").into());
 }
 
@@ -501,7 +498,8 @@ fn fill_sample(app: &App) {
     app.set_tor_line(tr("Tor is connected · messages and transactions go through it", "Tor подключён · сообщения и транзакции идут через него").into());
     show_sync(app, &sample_facts(), &sample_journal());
     app.set_auto_known(true);
-    app.set_auto_receive(fill(tr("up to {} GRIN from contacts", "до {} GRIN от контактов"), &[&amount(NANO)]).into());
+    app.set_auto_on(true);
+    app.set_auto_receive(tr("Verified Nostr contacts are accepted automatically. Direct Tor payments require your approval.", "Платежи от подтверждённых контактов Nostr принимаются автоматически. Входящие напрямую по Tor требуют вашего согласия.").into());
     let weak = app.as_weak();
     app.on_enter(move |_| {
         if let Some(app) = weak.upgrade() {
@@ -798,9 +796,10 @@ mod snapshot {
         // Kept until the pictures are drawn, then dropped: the host locks.
         // the pictures are English unless asked otherwise: the guides are
         // made in both languages from the same sample
-        let russian = std::env::var_os("GRINSIGHT_SNAPSHOT_RU").is_some();
-        app.global::<Settings>().set_russian(russian);
-        set_language(russian);
+        let language = std::env::var("GRINSIGHT_SNAPSHOT_LANG").ok()
+            .and_then(|s| language::known(&s))
+            .unwrap_or(if std::env::var_os("GRINSIGHT_SNAPSHOT_RU").is_some() { "ru" } else { "en" });
+        set_language(&app, language);
         let _host = match &args.host {
             Some(host) => Some(live::snapshot_fill(&app, host, &args.host_args)?),
             None => {
@@ -866,8 +865,7 @@ mod snapshot {
             app.global::<Device>().set_phone(true);
             app.set_has_profile(false);
             // the phone pictures in Russian: proves the bundled .po is used
-            app.global::<Settings>().set_russian(true);
-            set_language(true);
+            set_language(&app, "ru");
             for (page, step, sheet, what) in [(0, 0, 0, "phone-login"), (1, 0, 0, "phone-main"), (1, 0, 3, "phone-sign"), (1, 0, 10, "phone-invoice"), (1, 0, 11, "phone-release"), (1, 0, 1, "phone-send"), (2, 1, 0, "phone-words"), (3, 0, 0, "phone-restore"), (4, 0, 0, "phone-chat")] {
                 app.set_page(page);
                 app.set_create_step(step);
@@ -881,8 +879,7 @@ mod snapshot {
             app.set_page(0);
             app.set_has_profile(true);
             app.global::<Device>().set_phone(false);
-            app.global::<Settings>().set_russian(russian);
-            set_language(russian);
+            set_language(&app, language);
             window.set_size(PhysicalSize::new(WIDTH.saturating_mul(scale()), height().saturating_mul(scale())));
             // what stands under "Details", with a point just made (O38)
             app.set_page(1);
@@ -1193,22 +1190,19 @@ mod scenario {
         live::Live::start(&app, program, &args_a).map(drop)?;
         run.check("English by default", app.get_login_note() == "There is no wallet on this computer yet." || app.get_login_note() == "There is no wallet on this phone yet.", &app.get_login_note());
         // the checks below are written against the Russian wording
-        app.global::<Settings>().set_russian(true);
-        set_language(true);
+        set_language(&app, "ru");
 
         // ---- a new wallet
         let live = live::Live::start(&app, program, &args_a)?;
         run.check("no wallet yet: the login offers to create one", !app.get_has_profile(), &app.get_login_note());
         // ---- the options of the login screen
         app.invoke_open_own();
-        app.invoke_save_own("http://plain.example.org".into(), "".into());
+        app.invoke_save_own("http://plain.example.org".into());
         run.check("an own node without https is refused", app.get_sheet() == 9 && !app.get_sheet_error().is_empty(), &app.get_sheet_error());
-        app.invoke_save_own("https://node.example.org:3413".into(), "not json".into());
-        run.check("a broken own point is refused", !app.get_sheet_error().is_empty(), &app.get_sheet_error());
-        app.invoke_save_own("https://node.example.org:3413\n# a note\n".into(), "{\"height\": 1}".into());
+        app.invoke_save_own("https://node.example.org:3413\n# a note\n".into());
         let own_dir = args_a.iter().position(|a| a == "--profile").and_then(|i| args_a.get(i.saturating_add(1))).and_then(|p| Path::new(p).parent().map(Path::to_path_buf)).unwrap_or_default();
         let saved = std::fs::read_to_string(own_dir.join("own-nodes.txt")).unwrap_or_default();
-        run.check("own nodes and point are saved next to the profile", saved == "https://node.example.org:3413\n" && own_dir.join("own-point.json").exists() && app.get_sheet_error().is_empty(), &app.get_security_note());
+        run.check("node preferences are saved without installing a trust point", saved == "https://node.example.org:3413\n" && !own_dir.join("own-point.json").exists() && app.get_sheet_error().is_empty(), &app.get_security_note());
         app.set_sheet(0);
         app.invoke_direct_changed(true);
         run.check("«send directly» starts the wallet process again", live::answers(), "");
@@ -1525,7 +1519,7 @@ mod scenario {
         run.pump(&app, SLOW, |a| !a.get_busy() && !a.get_login_error().is_empty());
         run.check("the old password no longer opens it", app.get_page() == 0 && app.get_login_error() == "Пароль не подошёл", &app.get_login_error());
         app.set_login_error("".into());
-        app.invoke_save_own("".into(), "".into());
+        app.invoke_save_own("".into());
         app.set_sheet(0);
         app.invoke_enter(NEW_PASSWORD.into());
         let opened = run.pump(&app, SLOW, |a| a.get_page() == 1);
@@ -1572,7 +1566,7 @@ mod version_tests {
     /// packing scripts look for.
     #[test]
     fn the_version_is_three_numbers_on_the_line_the_scripts_read() {
-        let parts: Vec<&str> = APP_VERSION.split('.').collect();
+        let parts: Vec<&str> = APP_VERSION.strip_suffix('A').unwrap_or(APP_VERSION).split('.').collect();
         assert_eq!(parts.len(), 3, "{APP_VERSION}");
         for part in parts {
             assert!(!part.is_empty() && part.len() <= 2 && part.bytes().all(|b| b.is_ascii_digit()), "{APP_VERSION}");

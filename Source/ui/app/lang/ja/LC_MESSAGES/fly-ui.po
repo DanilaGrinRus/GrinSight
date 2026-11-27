@@ -1,0 +1,3325 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: ja\n"
+
+msgid " · nodes will see the IP of "
+msgstr " ノードは、IPを見る "
+
+#. runtime
+msgid " · the search for your money is still running"
+msgstr " お金の捜索は まだ続いています"
+
+msgid ". If you forget it, only the 24 words shown next will bring the wallet back."
+msgstr "。パスワードを忘れた場合は、次に表示される24個の復元用単語でのみウォレットを復元できます。"
+
+msgid ". Whoever knows these words controls the money. We show them once and never keep them in plain form."
+msgstr "。これらの単語を知っている人は誰でも資金を使えます。表示は一度だけで、平文では保存しません。"
+
+#. runtime
+msgid "1 h ago"
+msgstr "1時間前"
+
+#. runtime
+msgid "2 h ago"
+msgstr "2時間前"
+
+#. runtime
+msgid "24 words (or 12) separated by spaces are needed"
+msgstr "24個または12個の単語をスペースで区切って入力してください。"
+
+msgid "24 words, separated by spaces"
+msgstr "24個の復元用単語（スペース区切り）"
+
+#. runtime
+msgid "A"
+msgstr "A"
+
+msgid "A faint ring: not begun. A ring: under way. A filled mark: done. The warning colour: needs your attention."
+msgstr "暗いリング: 始まっていません。リング: 進行中です。満たされたマーク: 完了しました。警告色: 注意が必要です。"
+
+#. runtime
+msgid "A message is at most 2000 bytes"
+msgstr "メッセージは最大 2000 バイト"
+
+#. runtime
+msgid "A message key starts with npub1"
+msgstr "メッセージキーは npub1 で始まります"
+
+#. runtime
+msgid "A new point would be too close to the one the wallet started from. Try again in about half a day. Nothing was changed."
+msgstr "新しいポイントはウォレットの起点に近すぎます。半日後に再度試してください。何も変更されません。"
+
+#. runtime
+msgid "A part of the program is missing, so the balance cannot be checked. Start the program from its own folder or install it again."
+msgstr "プログラムの一部が欠けていますので、バランスをチェックできません。プログラムを別のフォルダから起動するか、再インストールしてください。"
+
+#. runtime
+msgid "A part of the program is missing. Install it again."
+msgstr "プログラムの一部が欠けています。再インストールしてください。"
+
+#. runtime
+msgid "A payment did not reach the address over Tor"
+msgstr "Tor 上で支払いがアドレスに届かなかった"
+
+msgid "A payment gets its first confirmation with the block it is in, and one more with every block after it. Here you choose how many make an incoming payment “received”: one at least. It is a word about the status only — it does not change what can be spent."
+msgstr "支払いはそのブロックで最初の確認を受け、次のブロックごとにさらに確認を得ます。ここでは、入金した支払いを「受け取った」人数を選択します。少なくとも一人です。これはステータスに関する言葉で、使える金額は変わりません。"
+
+#. runtime
+msgid "A payment of 0.50 GRIN was prepared before this wallet was restored from an older copy. The wallet no longer knows whether it was signed after that copy was taken, so it will not sign it and keeps the money in reserve."
+msgstr "このウォレットを古いコピーから復元する前に 0.50 GRIN の支払いを準備しました。ウォレットはそのコピーを取った後に署名されたかどうかを知らないので、署名しませんでした。お金は予備として保持されます。"
+
+#. runtime
+msgid "A payment of {} GRIN was prepared before this wallet was restored from an older copy. The wallet no longer knows whether it was signed after that copy was taken, so it will not sign it and keeps the money in reserve."
+msgstr "このウォレットを古いコピーから復元する前に {} GRIN の支払いが準備されました。ウォレットはそのコピーを取った後に署名されたかどうかを知らないので、署名しませんでした。お金は予備として保持されます。"
+
+msgid "A payment that has change now also spends up to eight of the smallest outputs, and they come back inside the change. The amount paid is the same; the fee is a little higher; the outputs spent together are seen to have one owner. Marked outputs are not touched."
+msgstr "変更がある支払いは最小の出力のうち 8 つまでを消費し、変更の中で戻ってきます。支払い額は同じですが、費用は少し高く、一緒に消費された出力は一人の所有者と見なされます。マークされた出力には触れません。"
+
+#. runtime
+msgid "A point can be made once the wallet stands at the confirmed tip. Wait until synchronisation is over. Nothing was changed."
+msgstr "ウォレットが確認された先端にあるときにポイントが得られます。同期が終了するまで待ってください。何も変更されていません。"
+
+#. runtime
+msgid "A recipient without an address"
+msgstr "アドレスのない受信者"
+
+msgid "A short password. Whoever gets the wallet file can try short passwords one after another; twelve characters or more are advised."
+msgstr "パスワードが短すぎます。ウォレットファイルを入手した人は短いパスワードを順に試せます。12文字以上を推奨します。"
+
+msgid "A starting point your wallet made on another device of yours (Details → Make my own starting point) can be pasted here whole, so that this wallet starts shorter. It keeps the proof of the built-in point. Leave empty for the built-in point."
+msgstr "別のデバイスで作成したウォレットの起点 (詳細→自分の起点を作成) をここに完全に貼り付けることができ、ウォレットの開始時間を短縮します。これは内蔵した点の証明を保持します。内蔵したポイントは空にしておきます。"
+
+#. runtime
+msgid "A transaction is not sent yet"
+msgstr "トランザクションはまだ送られていません"
+
+#. runtime
+msgid "Accept"
+msgstr "承認"
+
+msgid "Accept the Slatepack"
+msgstr "受け入れ Slatepack"
+
+msgid "Accepting…"
+msgstr "承認中…"
+
+msgid "Actions on the contact"
+msgstr "コンタクトに対するアクション"
+
+msgid "Add"
+msgstr "追加"
+
+msgid "Add a contact"
+msgstr "連絡先を追加"
+
+msgid "Add a contact by their message key (npub1…): you can write to them and pay them by name. Messages travel over Tor."
+msgstr "メッセージキー (npub1 など) で連絡先を追加します。メッセージは Tor を通して送信されます。"
+
+msgid "Add a contact to write to them and to pay them by name."
+msgstr "彼らに手紙を書き、名前で支払うための連絡先を追加します。"
+
+msgid "Add a list"
+msgstr "リストを追加"
+
+msgid "Add a node you run to the sources this wallet asks."
+msgstr "このウォレットが要求するソースに実行中のノードを追加します。"
+
+msgid "Add these contacts"
+msgstr "次の連絡先を追加"
+
+#. runtime
+msgid "Added: {}"
+msgstr "追加済み：{}"
+
+msgid "Address copied"
+msgstr "アドレスをコピーしました"
+
+#. runtime
+msgid "Address declared in the payment"
+msgstr "支払い時に申告した住所"
+
+#. runtime
+msgid "Address unavailable until network is known"
+msgstr "ネットワークが知られるまでアドレスは利用できません"
+
+msgid "After unlocking, the wallet finds its money in the chain by itself — this can take a while."
+msgstr "ロック解除後、ウォレットは自分でチェーンの中で自分の金を見つける - これはしばらくかかる。"
+
+msgid "All"
+msgstr "すべて"
+
+msgid "All contacts"
+msgstr "すべての連絡先"
+
+msgid "All payments"
+msgstr "すべての支払い"
+
+msgid "Amount, GRIN"
+msgstr "金額（GRIN）"
+
+#. runtime
+msgid "An address of the other network"
+msgstr "他のネットワークのアドレス"
+
+#. runtime
+msgid "An address that is not in your contacts"
+msgstr "連絡先にないアドレス"
+
+#. runtime
+msgid "An earlier payment could not be sent through Tor and is still waiting"
+msgstr "以前の支払いは Tor を通じて送信できず、まだ待っています"
+
+#. runtime
+msgid "An earlier payment is contested: decide about it under “Waiting for you” first."
+msgstr "早期支払いが争われた場合は、「待ち受け」で先に決定する。"
+
+msgid "An invoice does not say who issued it. Pay only an invoice you were expecting."
+msgstr "請求書には誰が発行したかは書かれていない あなたが期待していた請求書だけを支払ってください。"
+
+msgid "An invoice is paid from “Receive”: paste its text there."
+msgstr "請求書は「受取」から支払われ，そのテキストをそこに貼り付ける。"
+
+#. runtime
+msgid "Anna"
+msgstr "アンナ"
+
+#. runtime
+msgid "Another GrinSight process holds the files of the network check"
+msgstr "他の GrinSight プロセスがネットワークチェックのファイルを保持しています"
+
+#. runtime
+msgid "Another reply was already chosen for this payment"
+msgstr "この支払いに対して他の返事が選択されています"
+
+msgid "Any characters will do: letters of any language, digits, signs and spaces. Capital and small letters differ."
+msgstr "どんな文字でも使えます: 言語ごとの文字、数字、記号、スペース。大文字と小文字は異なります。"
+
+msgid "Any password is accepted. Twelve characters or more are advised: the password is all that protects the wallet file on this device."
+msgstr "任意のパスワードが許可されます。12 文字以上の長さが推奨されます。パスワーズはこのデバイス上のウォレットファイルを保護する唯一のものです。"
+
+msgid "Any program on this computer can read the clipboard. In a minute the wallet empties it if the words are still there; the clipboard history of Windows (Win+V) it cannot empty."
+msgstr "このコンピューター上のどのプログラムもクリップボードを読み取れます。1分後も復元用単語が残っていれば、ウォレットはクリップボードを消去します。Windows のクリップボード履歴（Win+V）は消去できません。"
+
+msgid "Ask for GRIN"
+msgstr "質問 GRIN"
+
+#. runtime
+msgid "At most 200 contacts at once"
+msgstr "一度に最大 200 人の連絡先"
+
+#. runtime
+msgid "At most 4 nodes"
+msgstr "最大 4 ノード"
+
+msgid "Auto-receive"
+msgstr "自動受取"
+
+#. runtime
+msgid "Auto-receive is off"
+msgstr "自動受信はオフ"
+
+msgid "Available"
+msgstr "利用可能残高"
+
+msgid "Available "
+msgstr "利用可能残高 "
+
+msgid "B/W"
+msgstr "白黒"
+
+msgid "Back"
+msgstr "戻る"
+
+#. runtime
+msgid "Balance unavailable"
+msgstr "残高を確認できません"
+
+msgid "Bear crafts"
+msgstr "クマ工房"
+
+msgid "Block"
+msgstr "ブロック"
+
+#. runtime
+msgid "Block headers"
+msgstr "ブロックヘッダー"
+
+#. runtime
+msgid "Blocks"
+msgstr "ブロック"
+
+msgid "Both wallets show the same six words when each has the other's message key and address right. Compare them with the contact over another channel — a call, another messenger, in person. They are not the words of your wallet and are no secret. The same words mean nobody swapped a key or an address between you; they do not prove who the person is."
+msgstr "両ウォレットが互いのメッセージ鍵とアドレス権限を持っているとき、両ウォレットは同じ6 文字を表示します。これを他のチャネル（電話、他のメッセンジャー、直接会話）での連絡先と比較してください。これらはあなたのウォレットの文字ではなく、秘密ではありません。同じ文字は誰も鍵やアドレスを交換していないことを意味します。その人物が誰かを証明するものではありません。"
+
+msgid "Bridges"
+msgstr "ブリッジ"
+
+msgid "Bridges, for where Tor is blocked"
+msgstr "Tor がブロックされている場所のブリッジ"
+
+#. runtime
+msgid "Broken address"
+msgstr "無効なアドレス"
+
+#. runtime
+msgid "Broken address: check all of it"
+msgstr "破損したアドレス: すべてチェック"
+
+#. runtime
+msgid "Broken message key"
+msgstr "破損したメッセージ鍵"
+
+msgid "By contact"
+msgstr "連絡先別"
+
+msgid "By hand"
+msgstr "手動"
+
+msgid "By hand — I pass the Slatepack text on myself"
+msgstr "手で ― 私は手を渡します Slatepack 自分にメールを送って"
+
+msgid "By hand — Slatepack text"
+msgstr "手動で — Slatepack テキスト"
+
+msgid "By hand: every payment is a text you pass on yourself."
+msgstr "手書きで 毎回支払いは 自分で伝えるメールで"
+
+msgid "By hand: the wallet makes a Slatepack text, you pass it on to the recipient."
+msgstr "手動: ウォレットが Slatepack テキストを作成し、受信者に渡します。"
+
+#. runtime
+msgid "C"
+msgstr "C"
+
+#. runtime
+msgid "C:\\Users\\you\\AppData\\Local\\GrinSightLight\\data"
+msgstr "C:\\Users\\you\\AppData\\Local\\GrinSightLight\\data"
+
+#. runtime
+msgid "C:\\Users\\you\\AppData\\Local\\GrinSightLight\\guard"
+msgstr "C:\\Users\\you\\AppData\\Local\\GrinSightLight\\guard"
+
+#. runtime
+msgid "CATCHING UP"
+msgstr "同期中"
+
+#. runtime
+msgid "CHECKING"
+msgstr "検証中"
+
+#. runtime
+msgid "Cancel"
+msgstr "キャンセル"
+
+msgid "Cancel payment"
+msgstr "支払いを取り消す"
+
+#. runtime
+msgid "Cancel the payment"
+msgstr "支払いをキャンセル"
+
+#. runtime
+msgid "Cannot verify signing details"
+msgstr "署名の詳細を検証できません"
+
+#. runtime
+msgid "Cannot verify the invoice's details"
+msgstr "請求書の詳細を確認できません"
+
+#. runtime
+msgid "Careful: the payment names another address than the one you checked with this contact"
+msgstr "注意: 支払い名は、この連絡先で確認したアドレスとは異なります"
+
+#. runtime
+msgid "Chain options could not be applied"
+msgstr "チェーンオプションを適用できませんでした"
+
+msgid "Chain starting point"
+msgstr "チェーンスタートポイント"
+
+msgid "Change the contact"
+msgstr "連絡先を変更"
+
+msgid "Change the contact's details"
+msgstr "連絡先の詳細を変更"
+
+msgid "Change the password"
+msgstr "パスワードを変更"
+
+msgid "Change the password, see the 24 words again, delete the wallet from this computer"
+msgstr "パスワードを変更し、24 単語を再確認し、このコンピュータからウォレットを削除します。"
+
+msgid "Check"
+msgstr "確認"
+
+msgid "Check all headers from genesis and build your own checkpoint. On Mainnet the first pass can download about 1.7 GB and take tens of minutes. It locks the wallet; unlock it to begin. Progress is in Details."
+msgstr "ジェネシスからのすべてのヘッダをチェックし、自分のチェックポイントを作成します。 Mainnet 最初のパスは 1.7GB をダウンロードします 数十分かかります ウォレットをロックします 開始するにはロックを解除してください 進捗は 詳細に表示されます"
+
+#. runtime
+msgid "Check the address with the recipient another way."
+msgstr "別の方法で受信者と住所を確認してください。"
+
+#. runtime
+msgid "Check the address with the sender some other way."
+msgstr "他の方法で送信者とアドレスを確認してください。"
+
+#. runtime
+msgid "Check the operation before paying again. A signature may already exist."
+msgstr "再度支払う前に取引を確認してください。すでに署名されている可能性があります。"
+
+#. runtime
+msgid "Check this invoice. Its signing result is unknown."
+msgstr "この請求書を確認してください。その署名の結果は不明です。"
+
+msgid "Check this network’s headers from its first block? A first Mainnet check can download about 1.7 GB. The wallet will lock. Unlock it to start or resume the check."
+msgstr "このネットワークのヘッダーを最初のブロックから検証しますか？Mainnetの初回検証では約1.7 GBをダウンロードする場合があります。ウォレットはロックされます。ロックを解除すると検証を開始または再開します。"
+
+#. runtime
+msgid "Check this payment. Signing may have completed."
+msgstr "この支払いを確認してください。署名が完了したかもしれません。"
+
+msgid "Checking…"
+msgstr "検証中…"
+
+#. runtime
+msgid "Checkpoint for block {} saved."
+msgstr "ブロック{}のチェックポイントを保存しました。"
+
+#. runtime
+msgid "Checkpoint saved at block {}. GSHP1 samples verified: {}. Unlock to continue."
+msgstr "ブロックで保存されたチェックポイント {}あなたは　どこにいるの？ GSHP1 サンプルの確認: {}ロックを解除して続行します。"
+
+msgid "Choose a .gshp file from another wallet, or checkpoint.json with history.proof in the same folder. GSHP1 is checked locally. The next sync downloads blocks after the point. Import locks the wallet and ends unfinished signing sessions."
+msgstr "他のウォレットから .gshp ファイルを選択するか、同じフォルダに history.proof を含む checkpoint.json を選択します。GSHP1 はローカルにチェックされます。次の同期はポイント後のブロックをダウンロードします。インポートはウォレットをロックし、未完了の署名セッションを終了します。"
+
+msgid "Choose a contact"
+msgstr "連絡先を選択"
+
+msgid "Choose a contact on the left to see the conversation."
+msgstr "左側の連絡先を選択して会話を表示します。"
+
+msgid "Choose a contact on the right to see the conversation."
+msgstr "会話を見るには、右側の連絡先を選択してください。"
+
+msgid "Choose a password"
+msgstr "パスワードを選択"
+
+msgid "Choose checkpoint file…"
+msgstr "チェックポイントファイルを選択..."
+
+msgid "Choose the outputs to pay with"
+msgstr "支払う出力を選択"
+
+#. runtime
+msgid "Chosen tip"
+msgstr "選択したチェーンの先端"
+
+msgid "Chosen: "
+msgstr "選択済み："
+
+msgid "Close"
+msgstr "閉じる"
+
+msgid "Close the list"
+msgstr "リストを閉じる"
+
+msgid "Close the list to add"
+msgstr "追加するリストを閉じる"
+
+msgid "Collect"
+msgstr "集約"
+
+msgid "Collect into one"
+msgstr "一つにまとめる"
+
+#. runtime
+msgid "Collect {} outputs into one of {} GRIN? The fee is {} GRIN. It is one transaction: whoever looks at the chain sees that these outputs had one owner, and that cannot be taken back. Marked outputs are left alone."
+msgstr "コレクト {} 出力は1つの {} GRIN料金は？ {} GRINこれは1つのトランザクションです。チェーンを見る人は誰でも、出力が1人の所有者を持っていたことを見ることができます。それは取り戻せません。マークされた出力はそのまま残されます。"
+
+#. runtime
+msgid "Coming in: {} GRIN · waiting for a block"
+msgstr "{} GRIN ブロック待ち"
+
+msgid "Compare the check code"
+msgstr "チェックコードを比較"
+
+#. runtime
+msgid "Confirmation"
+msgstr "確認"
+
+msgid "Connection"
+msgstr "接続"
+
+msgid "Connection and synchronisation"
+msgstr "接続と同期"
+
+#. runtime
+msgid "Contact {}"
+msgstr "連絡先 {}"
+
+#. runtime
+msgid "Contact {} of the list: {} Added before it: {}"
+msgstr "コンタクト {} リストの最後に {} 前に追加: {}"
+
+msgid "Contacts"
+msgstr "連絡先"
+
+msgid "Conversation"
+msgstr "会話"
+
+msgid "Copied"
+msgstr "コピー済み"
+
+msgid "Copy"
+msgstr "コピー"
+
+msgid "Copy the address"
+msgstr "アドレスをコピー"
+
+msgid "Copy the key"
+msgstr "鍵をコピー"
+
+msgid "Copy the words"
+msgstr "言葉をコピー"
+
+#. runtime
+msgid "Could not be sent now. The wallet keeps trying."
+msgstr "送信できませんでした。ウォレットが試み続けています。"
+
+#. runtime
+msgid "Could not confirm the export. Check the chosen folder."
+msgstr "エクスポートを確認できませんでした。選択したフォルダを確認してください。"
+
+#. runtime
+msgid "Could not confirm the startup choice. Try again after the wallet service is ready."
+msgstr "起動時の選択を確認できませんでした。ウォレットサービスが準備完了したら再度試してください。"
+
+#. runtime
+msgid "Could not create the file. Choose a new filename in a writable folder."
+msgstr "ファイルを作成できませんでした。書き込み可能なフォルダの新しいファイル名を選択してください。"
+
+msgid "Create a message key"
+msgstr "メッセージキーを作成"
+
+msgid "Create a wallet"
+msgstr "ウォレットを作成"
+
+msgid "Creating…"
+msgstr "作成中…"
+
+msgid "Current password"
+msgstr "現在のパスワード"
+
+#. runtime
+msgid "Decline"
+msgstr "拒否"
+
+#. runtime
+msgid "Default: the release starting point. Choose verification from the first block in Details after unlocking."
+msgstr "標準: リリース開始点。ロック解除後の詳細の最初のブロックから検証を選択します。"
+
+msgid "Delete"
+msgstr "削除"
+
+msgid "Delete all"
+msgstr "すべて削除"
+
+msgid "Delete every contact and conversation"
+msgstr "すべての連絡先と会話を削除"
+
+msgid "Delete the contact"
+msgstr "連絡先を削除"
+
+msgid "Delete the contact “{}”?"
+msgstr "連絡先 \"{}\" を削除しますか？"
+
+msgid "Delete the contact…"
+msgstr "連絡先を削除..."
+
+msgid "Delete the wallet"
+msgstr "ウォレットを削除"
+
+msgid "Delete the wallet for good"
+msgstr "ウォレットを永久に削除"
+
+msgid "Delete this contact and its conversation?"
+msgstr "この連絡先とその会話を削除しますか？"
+
+msgid "Delete with the conversation"
+msgstr "会話と一緒に削除"
+
+msgid "Delivery is set to “By hand” on the main screen: contacts and Tor are not offered here."
+msgstr "メイン画面の「連絡先」および「送信先」にて「手動送信」に設定する。 Tor ここでは提供されていません"
+
+msgid "Delivery is set to “By hand” on the main screen: contacts are not offered here."
+msgstr "メイン画面での配送は「手動」に設定されており、ここでは連絡先を提供しない。"
+
+#. runtime
+msgid "Delivery over Tor is not set up — send by hand"
+msgstr "Tor 上での配信は設定されていません。手動で送信してください。"
+
+msgid "Details"
+msgstr "詳細"
+
+#. runtime
+msgid "Directly · bridges are for where Tor is blocked"
+msgstr "直接 ブリッジは Tor がブロックされている場所に"
+
+msgid "Directly — the ordinary way"
+msgstr "直接 普通の方法"
+
+msgid "Do not pay"
+msgstr "払わない"
+
+msgid "Do not spend"
+msgstr "消費しない"
+
+msgid "Do not work without Tor"
+msgstr "Tor なしでは動作しません"
+
+msgid "Done"
+msgstr "完了"
+
+#. runtime
+msgid "Each line is one address starting with https://"
+msgstr "各行は https:// で始まるアドレスです。"
+
+msgid "Each of the two can be switched off, in case you need to. Off means its program does not run. Tor is switched at once and the wallet stays open; for Nostr the wallet locks and asks for the password again."
+msgstr "必要に応じて両方ともオフにできます。オフとはプログラムが実行されないことを意味します。Tor はすぐに切り替わり、ウォレットは開いていません。Nostr はウォレットをロックし、パスワードを再度要求します。"
+
+msgid "Each of the two can be switched off, in case you need to. Off means its program is not started at all. Switching takes effect at once: the wallet locks and asks for the password again."
+msgstr "必要に応じて両方をオフにすることもできます。オフはプログラムを全く起動しないことを意味します。切り替えはすぐに効果を発揮します: ウォレットはロックされ、パスワードが再度要求されます。"
+
+msgid "Emerald"
+msgstr "エメラルド"
+
+#. runtime
+msgid "Enter a password"
+msgstr "パスワードを入力"
+
+msgid "Enter your 24 recovery words in their original order, with one space between words. For example: apple river stone …"
+msgstr "24個の復元用単語を元の順番で、半角スペースで区切って入力してください。入力例：apple river stone …"
+
+msgid "Every output a payment spends adds to its fee, and a wallet restored from the words shows each as a line of its own in other programs. You can make one output of many: the wallet pays itself, for a fee. It is one transaction in the chain, and whoever looks at the chain sees from it that these outputs had one owner."
+msgstr "支払いが費やした出力はすべて費用に加算され、言葉から復元されたウォレットは他のプログラムにそれぞれ別の行として表示されます。多くの出力のうちの一つを作成できます: ウォレットは費用を支払います。これはチェーンの一つのトランザクションで、チェーンを見る誰もが、これらの出力が一人の所有者が持っていたことを見ることができます。"
+
+msgid "Everything is hidden"
+msgstr "すべてが隠されている"
+
+msgid "Everything this wallet keeps on this computer is in the first folder. The 24 words are not there as text: without the password the files are of no use. The second folder holds a small file that guards against a wallet rolled back to an old copy."
+msgstr "このコンピュータ上でこのウォレットが保持しているすべての情報は、最初のフォルダにあります。24 語はテキストではありません。パスワードなしでは、ファイルは使えません。2 番目のフォルダーには、ウォレットが古いコピーに戻らないように保護する小さなファイルが含まれています。"
+
+msgid "Find a contact"
+msgstr "連絡先を検索"
+
+msgid "Find by name"
+msgstr "名前で検索"
+
+msgid "Font license"
+msgstr "フォントライセンス"
+
+msgid "For a new wallet"
+msgstr "新しいウォレット"
+
+msgid "From"
+msgstr "送信元"
+
+msgid "From a file"
+msgstr "ファイルから"
+
+#. runtime
+msgid "Full output scan requested."
+msgstr "全出力スキャンを要求しました。"
+
+msgid "GlauxMail: soon"
+msgstr "GlauxMail：近日公開"
+
+msgid "Got it"
+msgstr "わかりました"
+
+#. runtime
+msgid "Got it, thanks 🙂"
+msgstr "分かった　ありがとう"
+
+#. runtime
+msgid "Great"
+msgstr "了解"
+
+#. runtime
+msgid "GrinSight {} · a wallet for people"
+msgstr "GrinSight {} 人々の財布"
+
+#. runtime
+msgid "Hand it to the recipient"
+msgstr "受け取る者に渡す"
+
+#. runtime
+msgid "Handed over with your agreement to send it directly. If Tor does not send it, it goes straight to the network."
+msgstr "直接送信するというあなたの同意のもとに渡された。Tor が送信しなければ、ネットワークに直接送られます。"
+
+#. runtime
+msgid "Handed over; the answer is not known yet. The wallet keeps trying."
+msgstr "送信しました。答えはまだ分かりません。ウォレットは試み続けています。"
+
+#. runtime
+msgid "Headers checked from genesis. Historical transactions were not replayed."
+msgstr "ヘッダを創設時からチェックしました。過去のトランザクションは再生されません。"
+
+#. runtime
+msgid "Hi! Can you send 0.5 for lunch?\nhttps://example.com — a link is shown as text only"
+msgstr "ランチに0.5を送ってくれないか？\nhttps://example.com — リンクはテキストのみで表示されます"
+
+msgid "Hidden in this window:"
+msgstr "このウィンドウで隠す:"
+
+msgid "Hide"
+msgstr "非表示"
+
+msgid "Hide details"
+msgstr "詳細を隠す"
+
+msgid "Hide every payment that has ended by now from the lists of this window? Nothing is deleted: the records stay in the wallet's encrypted file, which needs them — for payments under way and so that no payment is answered twice. Payments still under way and new ones stay visible. You can show the hidden ones again."
+msgstr "このウィンドウのリストからすでに終了した支払いをすべて隠しますか？何も削除されません。レコードはウォレットの暗号化ファイルに保存されます。これは進行中の支払いに必要で、二度の支払いの返信を避けるためです。まだ進行中で新しい支払いは表示されます。隠されたものは再び表示できます。"
+
+msgid "Hide options"
+msgstr "オプションを隠す"
+
+msgid "Hide the QR code"
+msgstr "QR コードを隠す"
+
+msgid "Hide the history"
+msgstr "履歴を隠す"
+
+msgid "Hide the numbers"
+msgstr "数字を隠す"
+
+msgid "Hide what the program reports"
+msgstr "プログラムが報告する内容を隠す"
+
+#. runtime
+msgid "History before the starting point"
+msgstr "出発点以前の歴史"
+
+msgid "Honey"
+msgstr "ハニー"
+
+msgid "How Tor is reached"
+msgstr "Tor へのアクセス方法"
+
+msgid "How far the wallet has checked the network, and what its programs say"
+msgstr "ウォレットがネットワークをどの程度チェックしたか、プログラムが何を言っているか"
+
+msgid "How it gets there"
+msgstr "どうやってそこに行くの？"
+
+msgid "I wrote down all 24 words"
+msgstr "24語全てを書き留めました"
+
+msgid "I wrote the words down"
+msgstr "私は言葉を書き留めた"
+
+msgid "Ice"
+msgstr "アイス"
+
+msgid "If you release the reserve and the payment was signed, whoever has it can still send it to the network, and the money leaves anyway. Release it only if you know the payment was never signed, or after asking the recipient."
+msgstr "署名済みの支払いは、予約を解除しても、その取引を持つ人がネットワークに送信でき、資金が支払われます。一度も署名していないと確信できる場合か、受取人に確認した場合にのみ解除してください。"
+
+msgid "Import a checkpoint"
+msgstr "チェックポイントをインポート"
+
+msgid "Import locks the wallet. Any pending Slatepack that still needs your signature will need a new exchange. Unlock after import to sync from the saved point."
+msgstr "インポートするとウォレットがロックされます。署名待ちの Slatepack は再度交換する必要があります。インポート後にロックを解除すると、保存されたチェックポイントから同期します。"
+
+#. runtime
+msgid "Import outcome unknown. Unlock and check the starting point in Details."
+msgstr "インポートの結果は不明です。ロックを解除して詳細で開始点を確認してください。"
+
+#. runtime
+msgid "Import refused. Check the checkpoint file and the open profile."
+msgstr "インポートを拒否しました。チェックポイントファイルと開いたプロファイルを確認してください。"
+
+#. runtime
+msgid "Import refused. Check the checkpoint file, wallet network and current starting point, then unlock to try again."
+msgstr "インポートを拒否しました。チェックポイントファイル、ウォレットネットワーク、現在の起点を確認し、ロックを解除してもう一度試してください。"
+
+#. runtime
+msgid "Imported checkpoint at block {}. Its GSHP1 history sample was verified on this device."
+msgstr "ブロックでインポートされたチェックポイント {}それは GSHP1 この装置で歴史サンプルが確認された"
+
+msgid "Importing checkpoint…"
+msgstr "チェックポイントをインポート中…"
+
+#. runtime
+msgid "Incoming"
+msgstr "受取"
+
+msgid "Incoming only"
+msgstr "受取のみ"
+
+msgid "Incoming payment"
+msgstr "受取予定の支払い"
+
+#. runtime
+msgid "Invoice payment"
+msgstr "請求書の支払い"
+
+#. runtime
+msgid "Reply ready — send it to the invoice issuer"
+msgstr "返信の準備ができました。請求書の発行者に送ってください。"
+
+#. runtime
+msgid "Invoice session ended. Check the payment before issuing a new invoice."
+msgstr "請求書セッションが終了しました。新しい請求書を発行する前に支払いを確認してください。"
+
+#. runtime
+msgid "Invoice to pass on"
+msgstr "送付する請求書"
+
+msgid "Is it really them?"
+msgstr "本当に彼らなのか？"
+
+#. runtime
+msgid "It cannot be paid to."
+msgstr "支払いはできない"
+
+#. runtime
+msgid "It is sent again by itself. Check the connection. Open the payment in Recent payments: there you can send it to the network again now. If Tor is closed on this network: try Tor bridges, allow direct sending in the options of the first screen, or switch Tor off — the node then sees your address."
+msgstr "それは自動的に再送信されます。接続を確認してください。最近の支払いを最後に開きます。そこでネットワークに再送ることができます。このネットワーク上で Tor が閉じている場合は、Tor ブリッジを試して、最初のスクリーンのオプションで直接送信を許可し、または Tor を無効にしてください。ノードはそのときあなたのアドレスを見ることができます。"
+
+msgid "Keep it reserved"
+msgstr "予約を維持"
+
+msgid "Keep the wallet unlocked until this payment is signed. Closing or locking it ends the signing session."
+msgstr "この支払いが署名されるまでウォレットをロック解除しておく。閉じたりロックしたりすると署名セッションが終了します。"
+
+msgid "Key copied"
+msgstr "キーをコピーしました"
+
+msgid "Language"
+msgstr "言語"
+
+msgid "Later starts use the compact point saved by this wallet. Your keys and payments stay in this profile."
+msgstr "後でこのウォレットで保存されたコンパクトポイントを使用します。鍵と支払いはこのプロファイルに残ります。"
+
+msgid "Let the wallet choose the outputs"
+msgstr "ウォレットに出力を選択させる"
+
+msgid "Let's check the words are written down"
+msgstr "言葉が書かれているか確認しましょう"
+
+#. runtime
+msgid "Line {} is not a bridge line: it should read like obfs4 203.0.113.7:443 <40 hex digits> cert=…"
+msgstr "行 {} はブリッジ行ではありません。 obfs4 203.0.113.7:443 <40 hex digits> cert=... のように読むべきです。"
+
+#. runtime
+msgid "Line {} is too long for a bridge line"
+msgstr "{}号線は橋上線になるには長すぎる"
+
+#. runtime
+msgid "Line {}: a message key starts with npub1"
+msgstr "線 {}メッセージキーは npub1 で始まります"
+
+#. runtime
+msgid "Line {}: the address is broken or of the other network"
+msgstr "{}行: アドレスが破損しているか、他のネットワークのものです"
+
+#. runtime
+msgid "Local checkpoint"
+msgstr "ローカルチェックポイント"
+
+msgid "Lock"
+msgstr "ロック"
+
+#. runtime
+msgid "Look"
+msgstr "外観"
+
+#. runtime
+msgid "Look-alike letters"
+msgstr "見分けにくい文字"
+
+msgid "Mainnet is real GRIN. Testnet is practice coins that are worth nothing."
+msgstr "Mainnet 本物だ GRINあなたは　どこにいるの？ Testnet 何の価値もないコインを 練習するのです"
+
+msgid "Mainnet. "
+msgstr "Mainnet。"
+
+#. runtime
+msgid "Make a new point"
+msgstr "新しいポイントを作成"
+
+msgid "Make an invoice"
+msgstr "請求書を作成"
+
+#. runtime
+msgid "Make my own starting point"
+msgstr "自分の出発点を作る"
+
+msgid "Make sure nobody sees the screen. Whoever knows the words controls the money."
+msgstr "スクリーンを見ないで 言葉を知ってる人が 金を支配する"
+
+msgid "Make the Slatepack text"
+msgstr "それを Slatepack テキスト"
+
+msgid "Making the point…"
+msgstr "ポイントを作る..."
+
+msgid "Many small outputs"
+msgstr "多くの小さな出力"
+
+msgid "Message"
+msgstr "メッセージ"
+
+#. runtime
+msgid "Message delivery"
+msgstr "メッセージ配信"
+
+#. runtime
+msgid "Message delivery does not work — see the log"
+msgstr "メッセージの配信ができません。ログを参照してください。"
+
+#. runtime
+msgid "Message delivery is hindered"
+msgstr "メッセージの送信が妨げられています"
+
+#. runtime
+msgid "Message delivery is not set up — payments go by hand (Slatepack)"
+msgstr "メッセージの配信は設定されていません - 手動で支払いを行います (Slatepack)"
+
+#. runtime
+msgid "Message delivery is starting"
+msgstr "メッセージの配信を開始"
+
+#. runtime
+msgid "Message delivery stopped"
+msgstr "メッセージの配信が停止しました"
+
+#. runtime
+msgid "Message key"
+msgstr "メッセージ用の鍵"
+
+msgid "Message keys (npub1…)"
+msgstr "メッセージキー (npub1...)"
+
+msgid "Message keys one a line; wallet addresses one a line, each on the line of its key (a line may be left empty). The contacts get the names “Contact 1”, “Contact 2”…"
+msgstr "メッセージ鍵を1行に1つ入力します。ウォレットアドレス欄には対応する鍵と同じ行番号にアドレスを入力します。アドレスの行は空欄でもかまいません。連絡先には「連絡先1」「連絡先2」のような名前が付きます。"
+
+msgid "Messages (Nostr)"
+msgstr "メッセージ（Nostr）"
+
+#. runtime
+msgid "Messages (Nostr): do not work without Tor — payments go by hand"
+msgstr "メッセージ (Nostr): Tor なしでは動作しません - 手作業で支払います"
+
+#. runtime
+msgid "Messages (Nostr): switched off — payments to contacts go by hand"
+msgstr "メッセージ (Nostr): オフ - 連絡先への支払いは手動"
+
+msgid "Messages and payments to saved contacts travel through Nostr servers, over Tor. Off: the program for them is not started; payments go by hand or to an address."
+msgstr "保存した連絡先へのメッセージと支払いは Nostr サーバを経由して Tor を介して送信されます。オフ: プログラムを起動しません。支払いを手動またはアドレスに行います。"
+
+#. runtime
+msgid "Messages go over Tor"
+msgstr "メッセージは Tor を通過します"
+
+msgid "More"
+msgstr "その他"
+
+msgid "My bridges"
+msgstr "自分のブリッジ"
+
+msgid "My details"
+msgstr "自分の情報"
+
+#. runtime
+msgid "NETWORK UNKNOWN"
+msgstr "ネットワーク状態不明"
+
+#. runtime
+msgid "NO CHAIN"
+msgstr "チェーンなし"
+
+#. runtime
+msgid "NO DATA"
+msgstr "データなし"
+
+msgid "Name"
+msgstr "名前"
+
+msgid "Network"
+msgstr "ネットワーク"
+
+#. runtime
+msgid "Network check"
+msgstr "ネットワークの確認"
+
+msgid "Network fee"
+msgstr "ネットワーク手数料"
+
+#. runtime
+msgid "Network state"
+msgstr "ネットワークの状態"
+
+msgid "New contact"
+msgstr "新規連絡先"
+
+msgid "New password"
+msgstr "新しいパスワード"
+
+msgid "New wallet"
+msgstr "新規ウォレット"
+
+msgid "Next"
+msgstr "次へ"
+
+msgid "No"
+msgstr "いいえ"
+
+#. runtime
+msgid "No bridge lines: paste at least one"
+msgstr "ブリッジ線がありません: 少なくとも 1 つ貼り付けます"
+
+#. runtime
+msgid "No connection to the chain"
+msgstr "チェーンに接続しない"
+
+msgid "No contacts yet"
+msgstr "まだ連絡先がありません"
+
+msgid "No contacts yet."
+msgstr "まだ連絡はない"
+
+msgid "No files yet. Put a .txt or .slatepack file into this folder: "
+msgstr "ファイルはまだありません。 .txt または .slatepack ファイルをこのフォルダに置いてください: "
+
+msgid "No messages yet. Messages travel over Tor and wait on a delivery server until the contact comes online."
+msgstr "メッセージはまだありません。メッセージが Tor を経由して送信され、コンタクトがオンラインになるまで配信サーバで待ちます。"
+
+#. runtime
+msgid "No more than nine digits after the point"
+msgstr "点の後の9桁以下"
+
+#. runtime
+msgid "No payment this replies to"
+msgstr "支払いはありません"
+
+#. runtime
+msgid "No payment to send"
+msgstr "送信する支払いはありません"
+
+msgid "No payments yet"
+msgstr "まだ支払いはありません"
+
+#. runtime
+msgid "No point can be made now: the tip is confirmed only with a caveat. Try later. Nothing was changed."
+msgstr "ヒントは警告のみで確認されます。後で試してください。何も変更されていません。"
+
+#. runtime
+msgid "No profile folder"
+msgstr "プロファイルフォルダはありません"
+
+#. runtime
+msgid "No such contact"
+msgstr "そんな接触はない"
+
+#. runtime
+msgid "No such payment"
+msgstr "そのような支払いはありません"
+
+#. runtime
+msgid "Nodes"
+msgstr "ノード"
+
+#. runtime
+msgid "None · up to 4, they get transactions first"
+msgstr "なし · 4 までは、トランザクションを先に取得します"
+
+#. runtime
+msgid "Not an address of your contacts"
+msgstr "連絡先のアドレスではありません"
+
+#. runtime
+msgid "Not enough money with the fee"
+msgstr "費用が足りない"
+
+#. runtime
+msgid "Not one of your contacts"
+msgstr "あなたの連絡先ではありません"
+
+#. runtime
+msgid "Nothing was changed."
+msgstr "何も変わらなかった"
+
+msgid "Nothing went wrong since the wallet was opened."
+msgstr "財布を開けてから 何も悪くなかった"
+
+msgid "Off"
+msgstr "オフ"
+
+msgid "Off · nodes will see the IP of "
+msgstr "オフノードは次の IP を見る "
+
+msgid "Off · payments to contacts go by hand"
+msgstr "オフ 連絡先への支払いは手作業"
+
+msgid "On"
+msgstr "オン"
+
+msgid "On: if Tor does not work, a payment goes out without it and the node sees your address. Off: the wallet waits for Tor."
+msgstr "オン: if Tor ノードはあなたのアドレスを見ることができます。 Torあなたは　どこにいるの？"
+
+msgid "Once more"
+msgstr "もう一度"
+
+msgid "Once signed, the payment cannot be cancelled. You pass the reply to whoever issued the invoice; they complete the payment and send it to the network."
+msgstr "一度署名されたら、支払いはキャンセルできません。 あなたは返事を請求書を発行した人に渡します。彼らは支払いを完了し、ネットワークに送ります。"
+
+msgid "One bridge a line, as Tor gives them. Fresh ones: bridges.torproject.org, or the Telegram bot @GetBridgesBot."
+msgstr "Tor が提供するように 線ごとに一つのブリッジ 新しいものは bridges.torproject.org か Telegram ボット @GetBridgesBot です"
+
+#. runtime
+msgid "One of the chosen outputs cannot be spent now: it is held by another payment or is not mature yet"
+msgstr "選択した出力の一つは現在使えません。他の支払いで保持されていますか、まだ期限が到来していません。"
+
+#. runtime
+msgid "One of the chosen outputs is marked “not to be spent”"
+msgstr "選択した出力のうち１つを「消費しない」とマークする。"
+
+#. runtime
+msgid "One of the chosen outputs is marked “not to be spent”: confirm below that it is spent in this payment, or take it out of the choice"
+msgstr "選択した出力の一つが「使わない」にマークされています。この支払いで使うことを確認するか、選択から外すかを下で確認してください。"
+
+#. runtime
+msgid "One of the chosen outputs is no longer in the wallet: open the list again"
+msgstr "選択した出力の一つがウォレットにありません。リストを再開します。"
+
+#. runtime
+msgid "Only digits and one point or comma in an amount"
+msgstr "金額の数字と点またはコンマのみ"
+
+msgid "Open the conversation in a window of its own"
+msgstr "会話を別のウィンドウで開く"
+
+msgid "Open the conversation on a page of its own"
+msgstr "会話を別のページで開く"
+
+msgid "Options"
+msgstr "オプション"
+
+msgid "Or a Slatepack you were sent: a payment or an invoice"
+msgstr "あるいは Slatepack 送られてきた支払いや請求書"
+
+msgid "Or a Slatepack you were sent: a payment, an invoice, or the answer to your invoice"
+msgstr "あるいは Slatepack 支払いや請求書 請求書に対する返事など"
+
+msgid "Outgoing only"
+msgstr "送金のみ"
+
+msgid "Outputs"
+msgstr "出力"
+
+msgid "Over Tor — to a grin1 address"
+msgstr "Tor経由でgrin1アドレスへ"
+
+#. runtime
+msgid "Over Tor, sender unverified"
+msgstr "Tor を通して、送信者を確認していません"
+
+msgid "Own nodes"
+msgstr "自分のノード"
+
+msgid "Own nodes and a point from another device"
+msgstr "自分のノードと他のデバイスからの点"
+
+msgid "Own nodes and own point"
+msgstr "自分のノードと自分の点"
+
+msgid "Own point"
+msgstr "自分のチェックポイント"
+
+msgid "Own starting point: an open wallet makes it under Connection → Details. A point made on another computer of yours can be pasted here whole. Leave empty for the built-in point."
+msgstr "自分の起点: 開いたウォレットは 接続 → 詳細で作成します。他のコンピュータで作成した起点はここに完全に貼り付けられます。内蔵した起点の場合は空にしてください。"
+
+#. runtime
+msgid "P"
+msgstr "P"
+
+msgid "Pass on this text"
+msgstr "このテキストを送信"
+
+#. runtime
+msgid "Pass on to the recipient"
+msgstr "受信者に転送"
+
+#. runtime
+msgid "Pass this text to the sender. The money arrives when they sign the payment and the transaction is in a block."
+msgstr "このテキストを送信者に渡す 彼らが支払いにサインしたら 金が届く 取引はブロックで"
+
+#. runtime
+msgid "Pass this text to whoever pays you. Paste their answer below: the wallet checks it against this invoice and signs its part. The money is yours when the payment is in a block."
+msgstr "このテキストをお金を払う人に渡してください。彼らの答えを下に貼り付けてください。ウォレットはこの請求書とチェックし、その部分に署名します。支払いがブロックで行われた場合、お金はあなたのものになります。"
+
+msgid "Password"
+msgstr "パスワード"
+
+msgid "Password and words"
+msgstr "パスワードと単語"
+
+msgid "Password for "
+msgstr "パスワード："
+
+msgid "Paste"
+msgstr "貼り付け"
+
+#. runtime
+msgid "Paste the payer's answer"
+msgstr "支払者の答えを貼り付け"
+
+#. runtime
+msgid "Paste the recipient's reply"
+msgstr "受信者の返信を貼り付け"
+
+#. runtime
+msgid "Paste the reply"
+msgstr "返信を貼り付け"
+
+#. runtime
+msgid "Paste the sender's text"
+msgstr "送信者のテキストを貼り付け"
+
+#. runtime
+msgid "Paul"
+msgstr "ポール"
+
+msgid "Pay the invoice"
+msgstr "請求書を払え"
+
+#. runtime
+msgid "Payment"
+msgstr "支払い"
+
+msgid "Payment delivery"
+msgstr "支払い情報の送達"
+
+msgid "Payment or invoice as text"
+msgstr "支払いまたは請求書をテキストとして"
+
+#. runtime
+msgid "Payment prepared"
+msgstr "支払いの準備完了"
+
+#. runtime
+msgid "Payment prepared — Tor did not take it"
+msgstr "支払い準備完了 — Tor は受け取らなかった"
+
+#. runtime
+msgid "Payment sent over Tor"
+msgstr "送金 Tor"
+
+#. runtime
+msgid "Payments still go by hand (Slatepack). It is started again by itself; Tor may be blocked on this network."
+msgstr "支払いはまだ手動で行われています (Slatepack)。自動的に再起動されます。このネットワークでは Tor がブロックされている可能性があります。"
+
+msgid "Phrase to find you in Nostr"
+msgstr "Nostr で見つけるフレーズ"
+
+msgid "Point from another device"
+msgstr "他のデバイスからのポインティング"
+
+msgid "Preparing…"
+msgstr "準備中…"
+
+msgid "Problems"
+msgstr "問題"
+
+msgid "QR code"
+msgstr "QRコード"
+
+msgid "QR code to a file"
+msgstr "QR コードをファイルに書き込み"
+
+msgid "Read the text"
+msgstr "テキストを読む"
+
+msgid "Reading…"
+msgstr "読み込み中…"
+
+#. runtime
+msgid "Ready to use"
+msgstr "使用できます"
+
+msgid "Receive"
+msgstr "受け取る"
+
+msgid "Receive and copy the address"
+msgstr "アドレスを受信してコピー"
+
+msgid "Received after"
+msgstr "これ以降に受取"
+
+msgid "Recent payments"
+msgstr "最近の支払い"
+
+msgid "Recheck headers from genesis"
+msgstr "genesis からヘッダを再チェック"
+
+#. runtime
+msgid "Recipient"
+msgstr "受取人"
+
+msgid "Recipient's address"
+msgstr "受取人のアドレス"
+
+msgid "Recipient's address (optional)"
+msgstr "受信者の住所 (オプション)"
+
+#. runtime
+msgid "Release starting point. History up to it was checked by sampling its work."
+msgstr "リリース開始点。作業をサンプルして、それまでの履歴をチェックしました。"
+
+msgid "Release the reserve"
+msgstr "予約を解除"
+
+msgid "Releasing…"
+msgstr "確保を解除中…"
+
+msgid "Repeat the password"
+msgstr "パスワードを繰り返します"
+
+#. runtime
+msgid "Reply to the sender"
+msgstr "送信者に返信"
+
+msgid "Requesting the full output scan…"
+msgstr "全出力スキャンを要求中..."
+
+msgid "Rescan old wallet outputs"
+msgstr "古いウォレット出力を再スキャン"
+
+msgid "Restart the wallet"
+msgstr "ウォレットを再起動"
+
+msgid "Restore"
+msgstr "復元"
+
+msgid "Restore a wallet from words"
+msgstr "Word からウォレットを復元"
+
+msgid "Restore from words"
+msgstr "復元フレーズから復元"
+
+msgid "Restoring…"
+msgstr "復元中…"
+
+#. runtime
+msgid "Review payment"
+msgstr "支払いを確認"
+
+msgid "Review the payment reserve"
+msgstr "支払予備金の見直し"
+
+#. runtime
+msgid "SEARCHING"
+msgstr "検索中"
+
+msgid "Safety"
+msgstr "セキュリティ"
+
+msgid "Save"
+msgstr "保存"
+
+msgid "Save a changed address first: the code is of the saved one, and the mark goes when the address changes."
+msgstr "変更したアドレスを先に保存: コードは保存したもので、アドレスが変更されるとマークは消えます。"
+
+#. runtime
+msgid "Save checkpoint to a new .gshp file"
+msgstr "チェックポイントを新しい .gshp ファイルに保存"
+
+msgid "Save checkpoint to one file…"
+msgstr "チェックポイントを一つのファイルに保存..."
+
+msgid "Save this wallet’s verified checkpoint and GSHP1 proof together. You can send the file to another device. This is a local copy without wallet keys or funds."
+msgstr "このウォレットのチェックポイントと GSHP1 証明を一緒に保存します。ファイルを他のデバイスに送信できます。これはウォレットの鍵や資金を含まないローカルコピーです。"
+
+#. runtime
+msgid "Saved. It is used from the next unlock."
+msgstr "保存しました。次のロック解除時に使用します。"
+
+#. runtime
+msgid "Saved. It takes effect at the next unlock."
+msgstr "次のロック解除時に有効になります。"
+
+#. runtime
+msgid "Saved: {}"
+msgstr "保存済み：{}"
+
+msgid "Saving checkpoint…"
+msgstr "チェックポイントを保存中…"
+
+msgid "Saving your startup choice…"
+msgstr "起動選択を保存中..."
+
+msgid "Saving…"
+msgstr "保存中…"
+
+#. runtime
+msgid "Search for old money"
+msgstr "古銭探し"
+
+msgid "Search the archive for outputs belonging to this wallet, including older proof formats. It keeps the current chain checkpoint. The scan can download hundreds of MB or more. Keep the wallet unlocked and follow progress in Details."
+msgstr "このウォレットに属する出力のアーカイブを検索します。古い証明書形式を含む。現在のチェーンチェックポイントを保持します。スキャンは何百MB以上のダウンロードを可能にします。ウォレットをロック解除し、詳細で進捗を追跡してください。"
+
+msgid "Search the whole archive for this wallet’s outputs, including older proof formats? This can download hundreds of MB or more. Keep the wallet open to follow progress above."
+msgstr "このウォレットの出力をアーカイブ全体で検索しますか？古い証明書形式を含めます。これは何百MB以上のファイルをダウンロードします。上記のプロセスを確認するには、ウォレットを開いておいてください。"
+
+msgid "Search the whole archive for this wallet’s outputs? This can download hundreds of MB or more. The wallet stays open."
+msgstr "このウォレットの出力をアーカイブ全体で検索しますか？これは何百MB以上のファイルをダウンロードします。ウォレットは開いていません。"
+
+#. runtime
+msgid "Select a .gshp file or checkpoint.json"
+msgstr ".gshp ファイルまたは checkpoint.json を選択"
+
+msgid "Send"
+msgstr "送る"
+
+msgid "Send GRIN"
+msgstr "GRINを送る"
+
+msgid "Send GRIN to the contact"
+msgstr "連絡先に GRIN を送信"
+
+msgid "Send directly"
+msgstr "直接送信"
+
+msgid "Send directly if Tor fails"
+msgstr "Tor が失敗した場合直接送信"
+
+msgid "Send it directly"
+msgstr "直接送る"
+
+msgid "Send over Tor"
+msgstr "Tor 上で送信"
+
+msgid "Send over Tor to the address"
+msgstr "Tor を次のアドレスに送信"
+
+msgid "Send this one payment without Tor? The node that takes it sees the address of your device. Other payments still go through Tor."
+msgstr "Tor を使わずにこの支払いを送信しますか？ 受け取るノードはデバイスのアドレスを見ます。他の支払いは Tor を使用します。"
+
+msgid "Send this payment directly"
+msgstr "この支払いを直接送る"
+
+#. runtime
+msgid "Send this text to the recipient any way you like. They paste it into their wallet and send a reply back — paste the reply below."
+msgstr "このテキストを受信者に好きな方法で送信します。受信者はそれをウォレットに貼り付け、返信を送ります。返信を下に貼りつけてください。"
+
+#. runtime
+msgid "Send this text to the recipient any way you like. They paste it into their wallet and send a reply — paste the reply below. The money is reserved until the payment is signed or cancelled."
+msgstr "このメッセージを受信者に好きな方法で送信します。受信者はそれをウォレットに貼り付けて返信を送ります。返信を下に貼りつけてください。お金は支払いに署名するかキャンセルするまで保持されます。"
+
+#. runtime
+msgid "Send this text to whoever issued the invoice. They complete the payment and send it to the network; until then the money stays reserved. If the text is lost, read the same invoice again: the wallet gives this reply again and pays nothing twice."
+msgstr "このメッセージを請求書を発行した人に送信します。彼らは支払いを完了し、ネットワークに送ります。その時までお金は予約されています。テキストがなくなったら、同じ請求書の読み込みを繰り返します。ウォレットはこの返事を繰り戻し、二度と支払いはしません。"
+
+msgid "Send to the contact"
+msgstr "コンタクトに送信"
+
+msgid "Send to the network again"
+msgstr "ネットワークに再送信"
+
+#. runtime
+msgid "Sender unverified"
+msgstr "送信者未検証"
+
+#. runtime
+msgid "Sending…"
+msgstr "送信中…"
+
+msgid "Set"
+msgstr "設定"
+
+msgid "Settings"
+msgstr "設定"
+
+msgid "Show the 24 words"
+msgstr "24 語を表示"
+
+msgid "Show the Slatepack text"
+msgstr "Slatepack のテキストを表示"
+
+msgid "Show the check code"
+msgstr "チェックコードを表示"
+
+msgid "Show the payment as it came"
+msgstr "支払いを受け取ったときに表示します"
+
+msgid "Show the text"
+msgstr "テキストを表示"
+
+msgid "Show the words"
+msgstr "単語を表示"
+
+msgid "Show the words again"
+msgstr "単語を再度表示"
+
+msgid "Show them again"
+msgstr "もう一度見せる"
+
+#. runtime
+msgid "Sign"
+msgstr "署名"
+
+msgid "Sign and send"
+msgstr "サインして送信"
+
+msgid "Sign and wait for Tor"
+msgstr "Tor に署名して待つ"
+
+msgid "Sign the payment"
+msgstr "支払いに署名"
+
+msgid "Sign, and send this one directly"
+msgstr "署名して直接送る"
+
+#. runtime
+msgid "Signed payment"
+msgstr "署名済みの支払い"
+
+#. runtime
+msgid "Signed, not in a block yet. The wallet keeps sending it through Tor by itself. If Tor does not come up, choose below: wait for Tor and try again; send this one payment directly — the node then sees the address of your device; or switch Tor off for everything, so that you are not asked again. This text can be passed to the recipient as proof that you signed. A signed payment cannot be cancelled; while it is in no block you can try to take it back - below."
+msgstr "署名済みですが、まだブロックには含まれていません。ウォレットはTor経由で自動送信を続けます。Torに接続できない場合は、Torを待って再試行する、この支払いだけ直接送信する（ノードに端末のネットワークアドレスが見えます）、または今後確認されないようすべての接続でTorをオフにする、のいずれかを選べます。このテキストは署名の証明として受取人に渡せます。署名済みの支払いは取り消せません。ブロックに含まれるまでは、下の操作で資金の取り戻しを試せます。"
+
+#. runtime
+msgid "Signed. The outputs are held until the payment is in a block; it has its line in the payments."
+msgstr "署名された。出力は支払いがブロックに入るまで保持されます。支払いには行があります。"
+
+#. runtime
+msgid "Signing session ended. Check this payment before starting a new Slatepack."
+msgstr "署名セッションが終了しました。新しい Slatepack を開始する前にこの支払いを確認してください。"
+
+#. runtime
+msgid "Signing…"
+msgstr "署名中…"
+
+msgid "Spend it in this payment"
+msgstr "この支払いに使え"
+
+msgid "Start a new check from genesis? The wallet will lock, ending pending signing sessions. Unlock to begin the download."
+msgstr "genesis から新しいチェックを開始しますか？ウォレットはロックされ、署名待ちのセッションが終了します。ロックを解除してダウンロードを開始します。"
+
+msgid "Start full output scan"
+msgstr "全出力スキャンを開始"
+
+#. runtime
+msgid "Started from this wallet’s compact point after its own header check from genesis."
+msgstr "このウォレットのコンパクトポイントからゲニシスから自身のヘッダチェックを行った後に始めました。"
+
+#. runtime
+msgid "Starting point"
+msgstr "開始点"
+
+msgid "State"
+msgstr "状態"
+
+msgid "Stop trying the bridges"
+msgstr "ブリッジはやめろ"
+
+#. runtime
+msgid "Sure, sending now"
+msgstr "もちろん　送信中です"
+
+msgid "Switch Nostr off? Without it there are no messages and no payments to saved contacts; everything else works. The wallet locks and asks for the password again."
+msgstr "スイッチ Nostr それが無ければ メッセージや 保存した連絡先への支払いはできません 他のすべては機能します"
+
+msgid "Switch Nostr on? The wallet locks and asks for the password again."
+msgstr "Nostr をオンにすると ウォレットがロックされ パスワードが再度要求されます"
+
+msgid "Switch Tor off for all payments"
+msgstr "すべての支払いに対して Tor を無効にする"
+
+msgid "Switch Tor off? Without it there are no payments to an address and no messages, and a transaction goes to the network directly: the node sees the address of your device. It takes effect at once; the wallet stays open."
+msgstr "スイッチ Tor これをオフにすると、アドレスへの支払いもメッセージもなく、トランザクションはネットワークに直接送信されます。ノードはデバイスのアドレスを見ます。すぐに効果を発揮します。ウォレットは開いていません。"
+
+msgid "Switch Tor off? Without it there are no payments to an address and no messages, and a transaction goes to the network directly: the node sees the address of your device. The wallet locks and asks for the password again."
+msgstr "Tor をオフにしますか？ アドレス宛ての支払いやメッセージは利用できなくなります。取引はネットワークに直接送られ、ノードに端末の IP アドレスが見えます。ウォレットがロックされ、パスワードが再度必要になります。"
+
+msgid "Switch Tor on? It takes effect at once; Tor needs a little time to come up."
+msgstr "Tor を有効にしますか？すぐに有効になります。Tor が起動するのに少し時間がかかります。"
+
+msgid "Switch Tor on? The wallet locks and asks for the password again."
+msgstr "Tor を有効にしますか？ウォレットはロックされ、パスワードを再度入力してください。"
+
+msgid "Switch off"
+msgstr "オフにする"
+
+msgid "Switch on"
+msgstr "オンにする"
+
+msgid "Switching Tor off locks the wallet and asks for the password again; after that payments go directly until you switch Tor back on."
+msgstr "Tor をオフにするとウォレットがロックされ、パスワードが再度要求されます。その後、Tor を再びオンにするまで、支払いは直接行われます。"
+
+msgid "Synchronisation"
+msgstr "同期"
+
+msgid "Synchronisation numbers"
+msgstr "同期の詳細"
+
+msgid "Take it back"
+msgstr "それを取り戻せ"
+
+msgid "Take small ones along with payments"
+msgstr "支払いと一緒に小さなものを取って"
+
+msgid "Take the mark off"
+msgstr "マークを取って"
+
+msgid "Take this payment back"
+msgstr "この支払いを取り下げて"
+
+#. runtime
+msgid "Take this payment back? The wallet signs a second payment of the same money - to itself: {} GRIN return to you, the fee is {} GRIN more. Only one of the two can be in a block, and it is not sure to be this one: if the first payment has reached the network, or the recipient sends it there, it may get into a block all the same - then the payment stands and only this try is lost. Without a connection it waits like any payment. Until one of them is in a block the payment is shown as “being taken back”, and the wallet stops sending the first one."
+msgstr "この支払いの取り戻しを試みますか？ウォレットは同じ資金を自分宛てに送る2件目の支払いに署名します。戻る額は{} GRINで、手数料は{} GRIN増えます。ブロックに含まれるのはどちらか一方だけで、取り戻しの成功は保証されません。最初の支払いがすでにネットワークに届いている場合や受取人が送信した場合、そちらが先に含まれることがあります。その場合は元の支払いが成立し、取り戻しは失敗します。接続がなければ新しい支払いは待機します。いずれかがブロックに入るまで「取り戻し中」と表示し、最初の支払いの送信を停止します。"
+
+msgid "Taken from the file "
+msgstr "ファイルから取得 "
+
+msgid "Testnet. "
+msgstr "Testnet。"
+
+#. runtime
+msgid "Text adjusted"
+msgstr "テキストを調整しました"
+
+#. runtime
+msgid "Text adjusted · look-alike letters"
+msgstr "文字調整・類似文字"
+
+#. runtime
+msgid "Thanks, it arrived"
+msgstr "ありがとう 到着しました"
+
+#. runtime
+msgid "The Windows file dialog could not open. Try again."
+msgstr "Windows ファイルダイアログを開けませんでした。もう一度試してください。"
+
+#. runtime
+msgid "The address of the payment is the one you checked with this contact"
+msgstr "支払い先の住所は この連絡先とチェックしたものです"
+
+#. runtime
+msgid "The amount must be more than zero"
+msgstr "金額はゼロより大きくなければなりません"
+
+#. runtime
+msgid "The answer does not name its invoice"
+msgstr "答えはその請求書の名前を示していません"
+
+#. runtime
+msgid "The choice of bridges could not be written down."
+msgstr "橋梁の選択は記録できなかった。"
+
+#. runtime
+msgid "The chosen outputs do not cover the amount and its fee: choose more, or let the wallet choose"
+msgstr "選択した出力は金額と料金をカバーしていません。もっと選択するか、ウォレットに選択させてください。"
+
+#. runtime
+msgid "The connection to the wallet at this address was lost"
+msgstr "このアドレスのウォレットへの接続が失われました"
+
+msgid "The contact finds their message key (npub1…) under “My details”. The address lets the signing window name them."
+msgstr "コンタクトは、メッセージの鍵 (npub1...) を「私の詳細」の下に見つけます。アドレスは署名ウィンドウに名前を付けることができます。"
+
+msgid "The conversation will be here"
+msgstr "会話はここで行われる"
+
+msgid "The conversation with them is deleted too. Payments stay in the list of payments."
+msgstr "彼らとの会話も削除されます 支払いは支払いリストに残ります"
+
+#. runtime
+msgid "The delivery server or Tor does not answer. Sending is retried; a payment can go by hand meanwhile."
+msgstr "配送サーバまたは Tor が応答しません。送信を再試みます。支払いは手動で行うことができます。"
+
+#. runtime
+msgid "The file could not be read"
+msgstr "ファイルを読めませんでした"
+
+#. runtime
+msgid "The file could not be written"
+msgstr "ファイルに書き込めませんでした"
+
+#. runtime
+msgid "The file is not text"
+msgstr "ファイルはテキストではありません"
+
+#. runtime
+msgid "The file is too large to be a Slatepack text"
+msgstr "ファイルは Slatepack テキストになるには大きすぎます"
+
+#. runtime
+msgid "The final text of this payment, with your signature."
+msgstr "支払い書類の最終文書 君の署名を"
+
+#. runtime
+msgid "The folder for Slatepack files cannot be used"
+msgstr "Slatepack ファイルのフォルダは使用できません"
+
+msgid "The invoice asks for"
+msgstr "請求書には"
+
+#. runtime
+msgid "The invoice can be paid before block 4117000."
+msgstr "請求書はブロック4117000前に支払うことができる。"
+
+#. runtime
+msgid "The invoice can be paid before block {}."
+msgstr "請求書はブロック{}前に支払うことができる。"
+
+#. runtime
+msgid "The invoice failed the check: it is damaged, of a kind this wallet does not pay, or its time has run out"
+msgstr "請求書はチェックに失敗しました。損傷した、このウォレットで支払えない、または時間切れです。"
+
+#. runtime
+msgid "Transaction signed. Track its submission and confirmations in Payments."
+msgstr "取引に署名しました。送信状況と承認数は支払い履歴で確認できます。"
+
+#. runtime
+msgid "The message could not be sealed for this contact: the message service is not running. Check “Problems”; if Nostr is switched off, switch it on and open the wallet again"
+msgstr "メッセージサービスが実行されていません。問題をチェックしてください。Nostr がオフになっている場合は、オンにしてウォレットを再開してください。"
+
+#. runtime
+msgid "The message is empty or too long"
+msgstr "メッセージは空か長すぎます"
+
+#. runtime
+msgid "The money stays reserved. Open “All payments”, show the payment's text and send it over Tor again or pass it by hand; or cancel the payment under “Waiting for you”."
+msgstr "お金は予約されています。「すべての支払い」を開き、支払いのテキストを表示し、Tor 上で再送信するか、手動で送信する、または「お前を待っている」の下で支払いをキャンセルする。"
+
+msgid "The name and the wallet address can be changed. The message key cannot: with another key it is another contact — add that one and delete this."
+msgstr "名前とウォレットアドレスは変更できます。メッセージキーは変更できません。他のキーを使うと別の連絡先になります。そのキーを追加してこれを削除してください。"
+
+#. runtime
+msgid "The network check is busy. Try again in a minute. Nothing was changed."
+msgstr "ネットワークチェックが忙しくなりました。少し後に再度試してください。何も変更されませんでした。"
+
+#. runtime
+msgid "The network check is missing"
+msgstr "ネットワークチェックが欠けています"
+
+msgid "The network check reports"
+msgstr "ネットワークチェックレポート"
+
+#. runtime
+msgid "The network check stopped"
+msgstr "ネットワークチェックが停止しましたName"
+
+#. runtime
+msgid "The network refused it. Look at the payment's state in the payments."
+msgstr "ネットワークが拒否しました 支払い状態を確認してください"
+
+#. runtime
+msgid "The network took it. It will show as in a block once it is."
+msgstr "ネットワークがそれを取った ブロックとして表示される"
+
+msgid "The network was chosen when the wallet was made"
+msgstr "ウォレットを作成したときに選択されたネットワーク"
+
+#. runtime
+msgid "The password is changed."
+msgstr "パスワードが変更されました。"
+
+#. runtime
+msgid "The password is too long"
+msgstr "パスワードが長すぎます"
+
+msgid "The password is twelve characters or longer."
+msgstr "パスワードは 12 文字以上です。"
+
+msgid "The password opens the wallet "
+msgstr "パスワードがウォレットを開きます "
+
+#. runtime
+msgid "The passwords differ"
+msgstr "入力したパスワードが一致しません。"
+
+#. runtime
+msgid "The payment as it came"
+msgstr "支払いが来た"
+
+#. runtime
+msgid "The payment did not get through Tor"
+msgstr "支払いは Tor を通じて行われませんでした"
+
+msgid "The payment goes over Tor straight to the wallet at this address. You sign it when that wallet replies."
+msgstr "支払いは Tor を経由して直接このアドレスのウォレットに行われます。ウォレットが応答したときに署名します。"
+
+msgid "The payment goes to the contact over Tor. You sign it when the contact replies."
+msgstr "支払いは Tor を通じて連絡先に送られます。 連絡先が返信するときに署名します。"
+
+#. runtime
+msgid "The payment goes to “{}” over Tor. When they reply it appears under “Waiting for you”, where you sign it. If Tor fails, this same text can be passed on by hand."
+msgstr "支払いは Tor を介して “{}” に行われます。返事が来たときは、 “Waiting for you” の下に表示され、署名することができます。 Tor が失敗した場合、同じテキストを手動で送信できます。"
+
+msgid "The payment history records a manual release of the reserve."
+msgstr "支払い履歴は、手動で予備金を解除したことを記録しています。"
+
+#. runtime
+msgid "The payment is prepared and the money reserved. Send it over Tor again with the button below, or pass this text to the recipient by hand and paste their reply."
+msgstr "支払いは準備され、お金は予約されました。下のボタンを使って Tor を通して再送信するか、このテキストを受信者に手動で送り、返信を貼り付けます。"
+
+#. runtime
+msgid "The payment is still prepared and the money reserved. Send it over Tor again with the button below, pass this text on by hand and paste the reply, or cancel the payment under “Waiting for you”."
+msgstr "支払いはまだ準備中で、お金は予約されています。下のボタンで Tor を使って再送信し、このテキストを手動で送り、返事を貼り付けるか、「お待ちしています」の下で支払いをキャンセルしてください。"
+
+#. runtime
+msgid "The payment names another address than the one saved for this contact"
+msgstr "支払い名はこの連絡先のために保存されたものとは異なるアドレスです"
+
+#. runtime
+msgid "The payment names no amount"
+msgstr "支払い名は無い"
+
+#. runtime
+msgid "The payment of an invoice is not taken back"
+msgstr "請求書の支払いは取り消さない"
+
+#. runtime
+msgid "The payment text, if the recipient lost it. Paste their reply below."
+msgstr "受信者が紛失した場合の支払いテキストです。下に彼らの返信を貼り付けてください。"
+
+#. runtime
+msgid "The payment went over Tor to the wallet at this address. When it answers — at once if it takes payments by itself, otherwise when its owner says yes — the payment appears under “Waiting for you”, where you sign it. If Tor does not reach it, you will see why under Problems; this same text can then be passed by hand."
+msgstr "支払いは Tor を通してこのアドレスのウォレットに送られました。 返信が来たとき、自動的に支払いを受け付けている場合はすぐに、そうでない場合は所有者がイエスと言ったときに、支払いが “Waiting for you” の下に表示され、サインすることができます。 Tor が届かない場合は、問題の項目で理由を見ることができます。同じテキストを手動で送信できます。"
+
+#. runtime
+msgid "The payment will have no payment proof."
+msgstr "支払い証明書はない。"
+
+#. runtime
+msgid "The point could not be made. Nothing was changed."
+msgstr "要点は説明できなかった。何も変更されなかった。"
+
+#. runtime
+msgid "The point could not be saved. Nothing was changed."
+msgstr "点を保存できませんでした。何も変更されませんでした"
+
+#. runtime
+msgid "The point is saved, but could not be handed to the network check. Open the wallet again."
+msgstr "ポイントは保存されましたが、ネットワークチェックに渡せませんでした。ウォレットを再開してください。"
+
+#. runtime
+msgid "The point is too long"
+msgstr "ポイントが長すぎる"
+
+#. runtime
+msgid "The point made could not be read. Nothing was changed."
+msgstr "作成したポイントは読み込めませんでした。何も変更されません。"
+
+#. runtime
+msgid "The present point is {} blocks below the checked chain: a new one will make the next opening noticeably faster."
+msgstr "これらの結果を基に，本研究の目的を明らかにし，本研究における実験結果と比較検討した。 {} チェックされたチェーンの下のブロック 新しいブロックは次のオープンを かなり早くします"
+
+#. runtime
+msgid "The present point is {} blocks below the checked chain: a new one would save almost nothing now. It pays off past 20 000 blocks."
+msgstr "現在のチェックポイントは検証済みの先端から{}ブロック手前です。今は新しく作ってもほとんど節約できません。20 000ブロックを超えると効果があります。"
+
+#. runtime
+msgid "The present point is {} blocks below the checked chain: a new one would save some time at the next opening."
+msgstr "現在の点はチェックチェーンの下に{}ブロックあり、新しいチェーンは次のオープニングで時間を節約する。"
+
+msgid "The recipient gets"
+msgstr "受信者は"
+
+msgid "The recipient's reply"
+msgstr "受信者の返信"
+
+#. runtime
+msgid "The reply does not match this payment and was not taken"
+msgstr "返信はこの支払いと一致しませんでしたので、受け取られませんでした"
+
+#. runtime
+msgid "The reply is already here — sign the payment under “Waiting for you”"
+msgstr "返事はもうここにある 支払いにサインして"
+
+#. runtime
+msgid "The reply you made to this payment, if the sender lost it."
+msgstr "送信者が見失ったら 返事を書く"
+
+msgid "The rest are under “Contacts”."
+msgstr "残りは「連絡先」である。"
+
+#. runtime
+msgid "The rollback guard does not match this wallet — it must not be opened here"
+msgstr "ロールバックガードはこのウォレットと一致しません。ここで開くべきではありません。"
+
+#. runtime
+msgid "The sender named no address."
+msgstr "送信者は住所を明記していません。"
+
+msgid "The sender pays the network fee."
+msgstr "送信者はネットワーク料金を支払う。"
+
+#. runtime
+msgid "The sender's text of this payment, as your wallet got it. It is kept with the payment."
+msgstr "送信者のメールアドレスを入力してください。ウォレットに送信されました。メールは送信時に保存されます。"
+
+#. runtime
+msgid "The sender's wallet no longer waits for the answer. Nothing was signed; ask them to send again"
+msgstr "送信者のウォレットはもはや応答を待っていません。何も署名されていません。もう一度送信を依頼してください。"
+
+#. runtime
+msgid "The signature may have happened, there is no result. This payment is not signed again — follow it in the payments"
+msgstr "署名が行われたかもしれませんが、結果はありません。この支払いはもう一度署名されません。支払いに従ってください。"
+
+#. runtime
+msgid "The signing session for {} GRIN ended. Review the payment before starting a new exchange."
+msgstr "{} GRIN の署名セッションが終了しました。新しい取引を開始する前に支払いを確認してください。"
+
+#. runtime
+msgid "The taking back is signed and goes to the network. Follow both lines in the payments: one of the two will be in a block."
+msgstr "取り戻しは署名され、ネットワークに送られます。支払いにおいて両行に従ってください。片方はブロックになります。"
+
+#. runtime
+msgid "The text failed the check: it is another payment or it is damaged"
+msgstr "テキストがチェックに失敗しました。他の支払いか、破損しています。"
+
+msgid "The wallet and everything it keeps are removed from this computer. After that only your 24 words bring the money back. To show that you have them, type the two words with these numbers."
+msgstr "このコンピューターからウォレットとそのデータがすべて削除されます。その後、資金の復元に使えるのは24個の復元用単語だけです。指定された2つの番号の単語を入力してください。"
+
+#. runtime
+msgid "The wallet at this address did not answer in time"
+msgstr "このアドレスのウォレットは時間通りに応答しませんでした"
+
+#. runtime
+msgid "The wallet at this address does not take payments this way"
+msgstr "このアドレスのウォレットはこの方法では支払いを受け付けません"
+
+#. runtime
+msgid "The wallet at this address refused: {}"
+msgstr "このアドレスのウォレットは拒否されました: {}"
+
+#. runtime
+msgid "The wallet closed before a signed result for {} GRIN was saved in this profile. This Slatepack can no longer be signed. Check the original payment and its reserve before starting another exchange."
+msgstr "{} GRIN の署名結果がこのプロファイルに保存される前にウォレットが閉じられました。この Slatepack はもはや署名できません。他の交換を開始する前に元の支払いとそのリザーブを確認してください。"
+
+#. runtime
+msgid "The wallet did not answer in time"
+msgstr "ウォレットが時間通りに応答しなかった"
+
+#. runtime
+msgid "The wallet did not give the invoice's text"
+msgstr "ウォレットは請求書のテキストを提供しませんでした"
+
+#. runtime
+msgid "The wallet did not give the payment's text"
+msgstr "ウォレットは支払いのテキストを出していません"
+
+#. runtime
+msgid "The wallet did not start:"
+msgstr "ウォレットが起動されませんでした:"
+
+#. runtime
+msgid "The wallet does not answer"
+msgstr "ウォレットが応答しません"
+
+#. runtime
+msgid "The wallet gave no reply to pass on. Read the invoice again"
+msgstr "ウォレットから送信する返信がありません。請求書を再読み込みしてください。"
+
+msgid "The wallet has no outputs yet"
+msgstr "ウォレットにはまだ出力がありません"
+
+#. runtime
+msgid "The wallet has not taken its first block yet. Wait until the main screen says “Verified”."
+msgstr "ウォレットはまだ最初のブロックを取得していません。メインスクリーンが「確認済み」と表示されるまで待ってください。"
+
+#. runtime
+msgid "The wallet is already open"
+msgstr "ウォレットは既に開いています"
+
+#. runtime
+msgid "The wallet is busy, try again in a minute"
+msgstr "ウォレットが忙しいので、すぐに再度試してください。"
+
+#. runtime
+msgid "The wallet is locked"
+msgstr "ウォレットはロックされています"
+
+#. runtime
+msgid "The wallet is not running"
+msgstr "ウォレットは実行されていません"
+
+#. runtime
+msgid "The wallet is still searching the chain for your old money (see Connection → Search for old money). Sending opens when the search is over: until then the balance is not final."
+msgstr "ウォレットはまだチェーンを探しています (接続 → 古いお金を探すを参照)。探しが終わったら送信が開始されます。残高は最終的ではありません。"
+
+#. runtime
+msgid "The wallet refused"
+msgstr "財布が拒否しました"
+
+#. runtime
+msgid "The wallet sent no words"
+msgstr "財布は言葉を送りませんでした"
+
+#. runtime
+msgid "The wallet service did not confirm the scan request."
+msgstr "ウォレットサービスはスキャン要求を確認しませんでした。"
+
+#. runtime
+msgid "The wallet starts checking the network from a starting point built into the program. It can make one of its own from the chain it has checked itself — a block well below the tip."
+msgstr "ウォレットはプログラムに組み込まれた出発点からネットワークをチェックし始めます。自分でチェックしたチェーンから自分でブロックを作成できます。ブロックはチップのすぐ下にあります。"
+
+msgid "The wallet starts checking the network from a starting point built into the program. It can make one of its own from the chain it has checked itself — a block well below the tip. From the next unlock the wallet starts from that point, so the start is shorter. Only you vouch for your own point: it is as good as the check this wallet has done. Money, keys and history are not touched."
+msgstr "ウォレットはプログラムに組み込まれた開始点からネットワークをチェックし始めます。自分でチェックしたチェーンからブロックを作成できます。次のロック解除時には、ウォレットはその点から始まりますので、開始時間が短くなります。自分のポイントを保証するのはあなただけです。これはウォレットがチェックした点と同じです。お金、鍵、履歴は触れません。"
+
+msgid "The wallet starts checking the network from a starting point built into the program. It can make one of its own from the chain it has checked itself; from the next unlock it then starts from that one."
+msgstr "ウォレットはプログラムに組み込まれた開始点からネットワークをチェックし始めます。チェックしたチェーンから独自のチェーンを作成できます。次のロック解除時には、そのチェーンから開始します。"
+
+msgid "The wallet starts from the point built into the program, and the history before that point is proved by sampling its work. The wallet can make a point of its own further up, from the chain it has checked itself since then. From the next unlock it starts from there, so the start is shorter."
+msgstr "ウォレットはプログラムに組み込まれた点から始まり、その点以前の履歴はその作業をサンプリングすることで証明されます。ウォレットはそれ以来自分でチェックしたチェーンからさらに上の点を作成できます。次のロック解除からは、そこから始まります。だから、始まりは短いでしょう。"
+
+#. runtime
+msgid "The wallet starts it again by itself. If this repeats, check the internet connection and free disk space."
+msgstr "ウォレットは自動的に再起動します。このようなことが起きたら、インターネット接続とディスクの空き容量を確認してください。"
+
+#. runtime
+msgid "The wallet starts it again by itself. Meanwhile payments to an address go by hand: the Slatepack text. Check the internet connection if this stays."
+msgstr "ウォレットは自動的に再起動します。一方、アドレスへの支払いは手動で行われます: Slatepack テキスト。これが続くなら、インターネット接続を確認してください。"
+
+msgid "The wallet tries the built-in obfs4 bridges, then Snowflake, up to three minutes each. Tor still hides your device."
+msgstr "ウォレットは組み込みの obfs4 ブリッジと Snowflake をそれぞれ最大 3 分間試みます。Tor はデバイスを隠します。"
+
+#. runtime
+msgid "The wallet will not do this now: for example, the chain is not verified yet or the payment is closed"
+msgstr "ウォレットはこれを今は行いません。例えば、チェーンがまだ検証されていないか、支払いが閉じられた場合です。"
+
+#. runtime
+msgid "The wallet will not let this payment go: it is already signed, already cancelled, or locked after a restore. Look at it in the payments"
+msgstr "ウォレットはこの支払いを許可しません。これは既に署名されているか、キャンセルされているか復元後にロックされています。支払いで見てください。"
+
+#. runtime
+msgid "The wallet will not pay now: the chain is not verified yet, a payment is contested, or the fee has changed. Read the invoice again"
+msgstr "現在は支払いを実行できません。チェーンの検証が未完了、支払いが競合中、または手数料が変更されています。請求書をもう一度読み込んでください。"
+
+#. runtime
+msgid "The wallet's files are damaged"
+msgstr "ウォレットのファイルが損傷しています"
+
+#. runtime
+msgid "The wallet's files are held by another GrinSight process: this wallet is open in another window, or a process of the last run has not ended. Close the other window, or end the processes fly-paycore-host and fly-chain, and open the wallet again."
+msgstr "ウォレットのファイルは他の GrinSight プロセスに保存されています: このウォレットは別のウィンドウで開いています、または最後に実行したプロセスが終了していません。他のウインドウを閉じるか、プロセス fly-paycore-host と fly-chain を終了してウォレットを再開してください。"
+
+#. runtime
+msgid "The wallet's files could not be read or written"
+msgstr "ウォレットのファイルを読み書きできませんでした"
+
+#. runtime
+msgid "The wallet's folder is not known"
+msgstr "ウォレットのフォルダが不明です"
+
+#. runtime
+msgid "The words do not match this wallet's. Nothing was deleted."
+msgstr "入力した単語はこのウォレットの復元用単語と一致しません。データは削除されていません。"
+
+#. runtime
+msgid "The words failed the check: check each word and their order"
+msgstr "復元用単語を検証できませんでした。各単語のつづりと順番を確認してください。"
+
+msgid "Theme"
+msgstr "テーマ"
+
+msgid "Theme: "
+msgstr "テーマ："
+
+#. runtime
+msgid "There is a wallet here already — a new one is not made over it"
+msgstr "ここにはすでに財布があります 新しい財布を作る必要はありません"
+
+#. runtime
+msgid "There is no QR code to save"
+msgstr "保存する QR コードがありません"
+
+#. runtime
+msgid "There is no message key in the list"
+msgstr "リストにメッセージキーがありません"
+
+#. runtime
+msgid "There is no text to save"
+msgstr "保存するテキストがありません"
+
+#. runtime
+msgid "There is no wallet in this folder"
+msgstr "このフォルダにはウォレットがありません"
+
+#. runtime
+msgid "There is no wallet on this computer yet."
+msgstr "このコンピュータにはまだウォレットがありません。"
+
+#. runtime
+msgid "There is no wallet on this phone yet."
+msgstr "この電話にはまだ財布がありません。"
+
+#. runtime
+msgid "There is nothing to check yet: save the contact's wallet address first"
+msgstr "まだチェックするものはありません: まず連絡先のウォレットアドレスを保存します"
+
+#. runtime
+msgid "There is nothing to collect: fewer than two outputs can be spent now"
+msgstr "集めるものはありません: 2 つ以下の出力が使えるようになりました"
+
+#. runtime
+msgid "These outputs hold less than the fee of collecting them"
+msgstr "これらの出力は収集費用よりも少ない"
+
+msgid "They are the same"
+msgstr "同じだ"
+
+#. runtime
+msgid "This answers another invoice"
+msgstr "これは別の請求書に答える"
+
+msgid "This build has no program for bridges (lyrebird) next to the wallet's programs: obfs4 and Snowflake will not connect."
+msgstr "このビルドはウォレットのプログラムの隣にブリッジ (lyrebird) プログラムがありません。obfs4 と Snowflake は接続しません。"
+
+#. runtime
+msgid "This contact is no longer in the list: add it again"
+msgstr "この連絡先はもはやリストにありません。再び追加してください。"
+
+msgid "This file could not be read as text"
+msgstr "このファイルをテキストとして読めませんでした"
+
+#. runtime
+msgid "Saved reply — send it to the invoice issuer"
+msgstr "保存済みの返信を請求書の発行者に送ってください。"
+
+#. runtime
+msgid "This is a Mainnet address, the wallet is on Testnet"
+msgstr "これは Mainnet 住所 ウォレットは Testnet"
+
+#. runtime
+msgid "This is a Testnet address, the wallet is on Mainnet"
+msgstr "これは Testnet 住所 ウォレットは Mainnet"
+
+#. runtime
+msgid "This is a recipient's reply. It goes into the send window."
+msgstr "これは受信者の返信です。送信ウィンドウに表示されます。"
+
+#. runtime
+msgid "This is an invoice. It is paid by its text: “Receive”, then paste the text."
+msgstr "これは請求書です。「受け取る」というテキストで支払い、テキストを貼り付けます。"
+
+#. runtime
+msgid "This is not Slatepack text this wallet can read"
+msgstr "これはこのウォレットが読める Slatepack テキストではありません"
+
+#. runtime
+msgid "This is not a Grin wallet address"
+msgstr "これは Grin ウォレットアドレスではありません"
+
+#. runtime
+msgid "This is not a payer's answer to an invoice"
+msgstr "これは請求書に対する 支払者の返事ではない"
+
+#. runtime
+msgid "This is not a payment that can be accepted"
+msgstr "これは受け入れられない支払いだ"
+
+#. runtime
+msgid "This is not a starting point: paste it whole, from { to }"
+msgstr "これは出発点ではありません。全体を貼り付けます。 { to }"
+
+#. runtime
+msgid "This is not the recipient's reply to a payment"
+msgstr "これは支払いに対する受取人の返信ではありません"
+
+msgid "This locks the wallet. Unlock to recheck the saved headers and continue from the network."
+msgstr "これはウォレットをロックします。ロックを解除して保存されたヘッダを再確認し、ネットワークから続行します。"
+
+#. runtime
+msgid "This payment can no longer be taken back: it is in a block already, or it was never signed"
+msgstr "この支払いはもはや取り消せません: ブロックに既にあるか、署名されていません"
+
+#. runtime
+msgid "This payment cannot be taken back: its money is spent already or does not cover the fee"
+msgstr "この支払いは取り戻せません。そのお金はすでに使われているか、費用をカバーしていません。"
+
+#. runtime
+msgid "This payment is being taken back already: the wallet does not send it again"
+msgstr "この支払いは既に取り消されています: ウォレットは再送信しません"
+
+#. runtime
+msgid "This payment names no address: it goes by hand"
+msgstr "この支払いは住所を名乗らない それは手で行う"
+
+#. runtime
+msgid "This profile has no checkpoint ready to export. Import one or finish a check from the first block."
+msgstr "このプロファイルにはエクスポートできるチェックポイントがありません。チェックポイントをインポートするか、最初のブロックからチェックを終了します。"
+
+#. runtime
+msgid "This replies to another payment"
+msgstr "これは別の支払いに対する応答です"
+
+#. runtime
+msgid "This signing session has ended. Check the original payment before starting a new Slatepack."
+msgstr "この署名セッションは終了しました。新しい Slatepack を開始する前に元の支払いを確認してください。"
+
+msgid "This text is too long for one QR code. Pass it on as text or as a file."
+msgstr "このテキストは一つの QR コードには長すぎます。テキストまたはファイルとして送信してください。"
+
+#. runtime
+msgid "This wallet already prepared a reply to a different invoice with this number"
+msgstr "このウォレットは同じ番号の別の請求書に対する返信を準備済みです。"
+
+#. runtime
+msgid "This wallet has no message key yet: make it under “Message key” on the main page, then give it to your contact"
+msgstr "このウォレットにはまだメッセージキーがありません。メインページの メッセージ鍵の下で作成して、コンタクトに渡してください。"
+
+#. runtime
+msgid "This wallet is open in another window, or a process of the last run has not ended yet — it happens when the wallet is opened again right after it was closed. Close the other window if there is one, then press “Restart the wallet”: its processes are started anew and the password is asked for again. One wallet is opened in one place at a time."
+msgstr "このウォレットは別のウィンドウで開いていますか、または最後に実行したプロセスがまだ終了していません。閉じた直後にウォレットを再開したときに起こります。別のウインドウがある場合は閉じて、「ウォレットをリスタート」を押してください。そのプロセスは再開され、パスワードが再度要求されます。一度に一つのウォレットを一つの場所で開きます。"
+
+#. runtime
+msgid "This wallet made no such invoice"
+msgstr "このウォレットはそのような請求書を作成していません"
+
+#. runtime
+msgid "This went out while the network was down"
+msgstr "これはネットワークがダウンした時に 出たものだ"
+
+#. runtime
+msgid "Three conversations are open in windows already. Close one to open another."
+msgstr "既にウィンドウ内で 3 つの会話が開いています。 1 つを閉じると 2 つ目が開きます。"
+
+#. runtime
+msgid "Through Snowflake"
+msgstr "Snowflake経由"
+
+msgid "Through Snowflake — when obfs4 does not get through"
+msgstr "Snowflake を通して — obfs4 が通らないとき"
+
+msgid "Through Tor everything goes slower. That is the price of privacy, not a fault."
+msgstr "スルー Tor プライバシーの代償だ 過ちじゃない"
+
+msgid "Through built-in obfs4 bridges — the first thing to try"
+msgstr "obfs4 のブリッジを使って - まず試してみる"
+
+msgid "Through my own bridges"
+msgstr "自分の橋を通って"
+
+#. runtime
+msgid "Through your own bridges: {}"
+msgstr "自分の橋を通って：{}"
+
+#. runtime
+msgid "Through {} built-in obfs4 bridges"
+msgstr "{} 内蔵 obfs4 ブリッジを通して"
+
+#. runtime
+msgid "Time"
+msgstr "時刻"
+
+#. runtime
+msgid "Tip"
+msgstr "チェーンの先端"
+
+msgid "To"
+msgstr "宛先"
+
+msgid "To a file"
+msgstr "ファイルに"
+
+msgid "To a grin1 address — the wallet sends it itself, over Tor"
+msgstr "grin1アドレス宛てにウォレットがTor経由で送信します。"
+
+msgid "To carry the point to another device of yours: on the login screen there, Options → Own nodes and a point from another device, paste it whole. To go back to the built-in point: clear that field and save."
+msgstr "点を他のデバイスに移動するには、ログイン画面で オプション→自分のノードを選択し、他のデバッガからの点を全体を貼り付けます。内蔵した点に戻るには、フィールドをクリアして保存します。"
+
+msgid "To go back: on the login screen, Options → Own nodes and own point, clear the Own point field and save. The wallet starts from the built-in point again. The same point can be pasted into that field on another computer of yours."
+msgstr "戻るには、ログインスクリーンで、オプション→自分のノードと自分の点を選択し、自分のポイントフィールドを無効にして保存します。ウォレットは再び内蔵ポイントから開始します。同じポイントを他のコンピュータのフィールドに貼り付けることもできます。"
+
+msgid "To request GRIN, send the invoice to the payer. Keep the wallet unlocked until you paste their reply and finish the invoice."
+msgstr "GRIN を要求するには、支払者に請求書を送信します。返信を貼り付けて請求書の作成を完了するまで、ウォレットをロック解除しておいてください。"
+
+msgid "To the contact: "
+msgstr "連絡先: "
+
+#. runtime
+msgid "To yourself: outputs collected"
+msgstr "自分自身に対して: 出力を収集"
+
+#. runtime
+msgid "To yourself: taking a payment back"
+msgstr "自分に対しては 返済を取り戻す"
+
+#. runtime
+msgid "Today"
+msgstr "今日"
+
+#. runtime
+msgid "Too large an amount"
+msgstr "金額が大きすぎます"
+
+#. runtime
+msgid "Too many bridges: {} at most"
+msgstr "ブリッジが多すぎます: 最大{}"
+
+#. runtime
+msgid "Too many messages to this contact are still waiting to be delivered: wait until they are"
+msgstr "この連絡先に送信されるメッセージが多すぎます。送信されますまで待ってください。"
+
+msgid "Tor bridges"
+msgstr "Torブリッジ"
+
+#. runtime
+msgid "Tor did not come up through the built-in bridges. Your earlier choice is back: {}. Bridges of your own can be set under “Tor bridges”; the other ways out are below."
+msgstr "Tor は組み込みのブリッジを使って起動できませんでした。 あなたの以前の選択は {} に戻ります。 Tor の ブリッジの中で自分でブリッジの設定を行うことができます。他の方法は下にあります。"
+
+#. runtime
+msgid "Tor did not reach the wallet at this address: it is closed, offline, or its Tor is not up yet"
+msgstr "Tor はこのアドレスのウォレットにアクセスできませんでした: 閉じられた、オフライン、または Tor がまだ起動されていません"
+
+#. runtime
+msgid "Tor for messages: connected"
+msgstr "メッセージのための Tor: 接続"
+
+#. runtime
+msgid "Tor for messages: connected, but delivery is hindered — see Problems"
+msgstr "メッセージの Tor: 接続しましたが、配信が妨げられています。問題を参照してください。"
+
+#. runtime
+msgid "Tor for messages: connecting…"
+msgstr "メッセージのための Tor: 接続中..."
+
+#. runtime
+msgid "Tor for messages: not set up — payments go by hand"
+msgstr "Tor メッセージ: 設定されていません - 手動で支払い"
+
+#. runtime
+msgid "Tor for messages: not started — create a message key under My details"
+msgstr "Tor のメッセージ: 開始されていません - 私の詳細の下にメッセジキーを作成"
+
+#. runtime
+msgid "Tor for messages: not working — see Problems"
+msgstr "メッセージのための Tor: 動作しません。問題を参照してください。"
+
+#. runtime
+msgid "Tor for messages: unknown — the wallet does not answer"
+msgstr "Tor メッセージ: 未知 - ウォレットは応答しません"
+
+#. runtime
+msgid "Tor for payments to an address is not set up — pass the text by hand"
+msgstr "アドレスへの支払い用の Tor は設定されていません。手動でテキストを渡します。"
+
+#. runtime
+msgid "Tor for transactions: connects when you send; directly only if Tor fails — you allowed it"
+msgstr "トランザクションのための Tor: 送信時に接続します。直接接続は Tor が失敗した場合のみです。許可されています。"
+
+#. runtime
+msgid "Tor for transactions: connects when you send; never directly"
+msgstr "取引用 Tor：送信時に接続し、直接接続は行いません。"
+
+#. runtime
+msgid "Tor for transactions: the last sending failed, trying again — see Problems"
+msgstr "トランザクションのための Tor: 最後の送信が失敗しました。再度試してください。問題を参照してください。"
+
+#. runtime
+msgid "Tor for transactions: the network check is missing"
+msgstr "トランザクションのための Tor: ネットワークチェックがありません"
+
+#. runtime
+msgid "Tor for your address does not work"
+msgstr "Tor はあなたのアドレスでは機能しません"
+
+#. runtime
+msgid "Tor for your address: connected — sending works, your address is not reachable yet"
+msgstr "Tor for your address: 接続済み - 送信中、あなたのアドレスにはまだアクセスできません"
+
+#. runtime
+msgid "Tor for your address: connected, your address is being announced…"
+msgstr "Tor for your address: 接続しました、あなたのアドレスを発表しています..."
+
+#. runtime
+msgid "Tor for your address: connecting…"
+msgstr "Tor のアドレス: 接続中..."
+
+#. runtime
+msgid "Tor for your address: not set up — payments to an address go by hand"
+msgstr "あなたのアドレスのための Tor: 設定されていません - アドレスへの支払いは手動で行います"
+
+#. runtime
+msgid "Tor for your address: not working — see Problems"
+msgstr "Tor for your address: 動作しません。問題を参照してください。"
+
+#. runtime
+msgid "Tor for your address: on — payments can be sent to an address and arrive at yours"
+msgstr "Tor for your address: on — 支払いはアドレスに送られ、あなたのアドレスに到着します"
+
+#. runtime
+msgid "Tor for your address: unknown — the wallet does not answer"
+msgstr "あなたのアドレスのための Tor: 未知 — ウォレットは応答しません"
+
+#. runtime
+msgid "Tor gave no outcome: whether the wallet at this address got the payment is not known"
+msgstr "Tor は結果を返さなかった: このアドレスのウォレットが支払いを受け取ったかどうかは分かりません"
+
+msgid "Tor hides where you are on the network. Bridges are for places where Tor is blocked."
+msgstr "Tor はネットワーク上のあなたの場所を隠します。ブリッジは Tor がブロックされている場所です。"
+
+msgid "Tor hides where you are on the network. Bridges are for places where Tor is blocked. Off: nothing of Tor is started — no payments to an address and no messages, and a transaction goes to the network directly, so the node sees your address."
+msgstr "Tor はネットワーク上のあなたの場所を隠します。ブリッジは Tor がブロックされている場所です。オフ: Tor は始まりません。アドレスへの支払いやメッセージはありません。トランザクションはネットワーックに直接送られます。ノードはあなたのアドレスを見ることができます。"
+
+msgid "Tor is chosen, but delivery does not work now: payments go by hand."
+msgstr "Tor 選択されますが 配達はできません 支払いは手作業です"
+
+#. runtime
+msgid "Tor is connected · messages and transactions go through it"
+msgstr "Tor メッセージやトランザクションが通り抜け"
+
+#. runtime
+msgid "Tor is not working on this device now"
+msgstr "Tor は現在このデバイスで動作していません"
+
+#. runtime
+msgid "Tor is now reached through {}. Nothing in this wallet shows yet whether it works: sign the payment, and if it does not leave, try another way under “Tor bridges”."
+msgstr "Tor は現在 {} を通してアクセスできます。このウォレットには、それが機能するかどうかを示すものはありません。支払いにサインしてください。もしそれが出てこないなら、Tor ブリッジの下の他の方法を試してください。"
+
+#. runtime
+msgid "Tor is still connecting. Try again in a minute or pass the text by hand"
+msgstr "Tor はまだ接続しています。 少し後に再度試してください。あるいは手動でテキストを送信してください。"
+
+msgid "Tor is switched off at once, the wallet stays open; after that payments go directly until you switch Tor back on."
+msgstr "Tor は一度切り替えられ、ウォレットは開いているままになり、Tor を再び切り替えるまで支払いは直接行われる。"
+
+msgid "Tor is switched off: every payment is a text you pass on yourself."
+msgstr "Tor 全ての支払いは 自分自身に送るメッセージです"
+
+#. runtime
+msgid "Tor is switched off: transactions go to the network directly, the node sees your address"
+msgstr "Tor をオフにすると、トランザクションはネットワークに直接行き、ノードはあなたのアドレスを見ることができます。"
+
+#. runtime
+msgid "Tor works through {}. This way is saved as your choice; it can be changed under “Tor bridges”."
+msgstr "Tor は {} を介して動作します。この方法は選択に保存されます。Tor ブリッジの下で変更できます。"
+
+msgid "Tor: a payment to a contact or to a grin1 address is delivered by itself."
+msgstr "Tor：ウォレットが連絡先またはgrin1アドレスへ支払い情報を自動で届けます。"
+
+msgid "Total to be spent"
+msgstr "支出総額"
+
+msgid "Try through Tor bridges"
+msgstr "Tor ブリッジを試してみる"
+
+#. runtime
+msgid "Trying to reach Tor through {}… This can take up to three minutes. You can wait here or do something else: the payment stays prepared."
+msgstr "{} を通して Tor に接続しようとしています... 3 分までかかります。ここで待つか、他の方法を選択してください。支払いは準備されています。"
+
+#. runtime
+msgid "Type a name"
+msgstr "名前を入力"
+
+#. runtime
+msgid "Type an amount"
+msgstr "金額を入力"
+
+#. runtime
+msgid "Type one word in each of the two fields"
+msgstr "2 つのフィールドにそれぞれ1 つの単語を入力します"
+
+#. runtime
+msgid "Type the recipient's grin1… address"
+msgstr "受取人のgrin1…アドレスを入力してください"
+
+msgid "Type the words with these numbers — this shows the copy is right."
+msgstr "これらの数字のある単語を入力してください。これはコピーが正しいことを示しています。"
+
+msgid "Unlock"
+msgstr "ロック解除"
+
+msgid "Unlocking…"
+msgstr "ロック解除中…"
+
+msgid "Usually not needed. Own nodes: servers of yours the wallet also asks. A point from another device: a starting point your wallet made there, so that this one starts shorter."
+msgstr "通常は必要ありません。 自分のノード: 自分のサーバもウォレットが問い合わせます。 他のデバイスからのポイント: あなたのウォレットがそこで作成した出発点です。このデバイスは短く始まります。"
+
+msgid "Usually not needed. Own nodes: servers of yours the wallet also asks. Own point: the place in the chain the wallet starts checking from."
+msgstr "通常は必要ありません。 自分のノード: 自分のサーバもウォレットが問い合わせます。 自分自身のポイント: チェーンの中でウォレットがチェックを開始する場所です。"
+
+#. runtime
+msgid "VERIFIED"
+msgstr "検証済み"
+
+msgid "Verification and recovery"
+msgstr "検証と回復"
+
+#. runtime
+msgid "Verified header work"
+msgstr "ヘッダ作業を確認"
+
+msgid "Verify and lock"
+msgstr "確認とロック"
+
+msgid "Verify from the first block myself"
+msgstr "最初のブロックから自分で確認"
+
+#. runtime
+msgid "Wait a few seconds. If it stays, lock the wallet and open it again."
+msgstr "数秒待ってください。それが止まらなければ、ウォレットをロックして再開してください。"
+
+msgid "Wait for Tor: send through Tor again"
+msgstr "Tor を待つ: もう一度 Tor を使って送信"
+
+msgid "Waiting for the wallet at this address to answer — this can take up to two minutes. The window to sign opens by itself."
+msgstr "このアドレスのウォレットからの応答を待っています。最長 2 分かかります。署名ウィンドウが自動的に開きます。"
+
+msgid "Waiting for you"
+msgstr "君を待ってる"
+
+#. runtime
+msgid "Wallet"
+msgstr "ウォレット"
+
+msgid "Wallet address"
+msgstr "ウォレットのアドレス"
+
+msgid "Wallet address (optional)"
+msgstr "ウォレットアドレス (オプション)"
+
+msgid "Wallet addresses (grin1…), optional"
+msgstr "ウォレットアドレス（grin1…、任意）"
+
+#. runtime
+msgid "Wallet created. Unlock it with the password."
+msgstr "ウォレットを作成しました。パスワードでロック解除しました。"
+
+#. runtime
+msgid "Wallet lock was not confirmed. Retry before opening."
+msgstr "ウォレットのロックを確認できませんでした。開く前にもう一度ロックしてください。"
+
+#. runtime
+msgid "Wallet network unavailable"
+msgstr "ウォレットネットワークが利用できません"
+
+#. runtime
+msgid "Wallet restored. Unlock it with the password — it then finds its money in the chain."
+msgstr "ウォレットが復元されました。パスワードでロック解除します。チェーンの中にお金が見つかります。"
+
+#. runtime
+msgid "Wallet service is unavailable."
+msgstr "ウォレットサービスは利用できません。"
+
+#. runtime
+msgid "What answered at this address is not a Grin wallet's reply"
+msgstr "このアドレスに返信したのは Grin wallet の返信ではありません"
+
+msgid "What is this?"
+msgstr "これは何だ？"
+
+msgid "What the program reports"
+msgstr "プログラムの報告内容"
+
+#. runtime
+msgid "What to do"
+msgstr "どうすれば"
+
+msgid "When a transferable point is ready, look in this network’s chain folder under history-exports/<network>-<height>-<hash>/ for checkpoint.json and history.proof."
+msgstr "転送可能な点が用意されたら、このネットワークのチェーンフォルダの history-exports/<network>-<height>-<hash>/ で checkpoint.json と history.proof を検索します。"
+
+msgid "Where Tor is blocked it can be reached through bridges: relays that are not in the public list, with the traffic disguised. The choice holds for everything the wallet does through Tor: messages, payments to an address, sending transactions."
+msgstr "Tor がブロックされている場所では、ブリッジを介してアクセスできます。ブリッジは公開リストにないリレーで、トラフィックは偽装されています。メッセージ、アドレスへの支払い、トランザクションの送信など、Tor を通じてウォレットが行うすべてのことに対して、この選択は有効です。"
+
+msgid "Where the wallet's files are"
+msgstr "ウォレットのファイルの場所"
+
+msgid "Which characters a password may have"
+msgstr "パスワードの文字数"
+
+msgid "Who"
+msgstr "相手"
+
+msgid "Who gets it and how — choose one"
+msgstr "誰が受け取るか どうやって受け取るのか ― どちらかを選ぶ"
+
+msgid "With bridges chosen the wallet reaches Tor through them only. If they do not answer, Tor does not connect; it is never reached directly instead."
+msgstr "ブリッジが選択されている場合、ウォレットはそのブリッジを通じてのみ Tor に接続します。ブリッジが応答しない場合、Tor は接続しません。直接接続することはありません。"
+
+msgid "Word No. "
+msgstr "単語番号 "
+
+#. runtime
+msgid "Word No. {} does not match. Check your copy or look at the words again."
+msgstr "単語 No. {} は一致しません。コピーを確認したり、単語をもう一度見てみてください。"
+
+msgid "Word number "
+msgstr "単語番号 "
+
+msgid "Write the words on paper in order and keep them "
+msgstr "紙に順番に単語を書き、そのままにする。 "
+
+msgid "Write them on paper in order. Close this window when done."
+msgstr "順番に紙に書き込んでください。終わったらこのウィンドウを閉じてください。"
+
+#. runtime
+msgid "Wrong password"
+msgstr "パスワードが違います"
+
+#. runtime
+msgid "Yesterday"
+msgstr "昨日"
+
+#. runtime
+msgid "You agreed that this payment goes directly when Tor fails to send it. The wallet remembers this for this payment."
+msgstr "Tor が送信に失敗した場合、この支払いは直接行われると同意しました。ウォレットはこの支払いのためにこれを記憶します。"
+
+msgid "You chose an output you marked “not to be spent”. It is spent only if you say so here, for this payment."
+msgstr "あなたは「使わない」にマークした出力を選択しました。この支払いに対して、ここで指定した場合にのみ使用されます。"
+
+msgid "You pass the text on yourself and paste the reply. An invoice is paid from “Receive”: paste its text there."
+msgstr "テキストを自分自身に渡し、返事を貼り付けます。請求書は「受け取る」から支払われます。そのテキストはそこに貼り付かれます。"
+
+msgid "You receive"
+msgstr "受取額"
+
+#. runtime
+msgid "You sent {} GRIN"
+msgstr "あなたが送った {} GRIN"
+
+msgid "Your 24 words"
+msgstr "あなたの24の言葉"
+
+msgid "Your address. A payment sent to it over Tor arrives by itself while the wallet is open; a sender can also name it for a payment proof."
+msgstr "あなたのアドレスです。Tor を通して送られた支払いは、ウォレットが開いている間は自動的に到着します。送信者は支払い証明としてこのアドレスを指定することもできます。"
+
+msgid "Your address. A sender can name it so the payment has a payment proof."
+msgstr "あなたの住所 送信者が名前を付けられる 支払い証明がある"
+
+#. runtime
+msgid "Your address: does not work without Tor — payments to an address go by hand"
+msgstr "あなたのアドレス: Tor なしでは動作しません - アドレスへの支払いは手動で行います"
+
+msgid "Your contacts"
+msgstr "自分の連絡先"
+
+#. runtime
+msgid "Your earlier choice of bridges could not be written back: the way that was tried is still the choice. Set it under “Tor bridges”."
+msgstr "以前に選択したブリッジを書き戻すことができませんでした。試みた方法はまだ選択されています。Tor ブリッジの下に設定してください。"
+
+msgid "Your money is kept in outputs: one for every payment you got and for the change of every payment you made. An output you mark “not to be spent” stays yours, but the wallet passes it by when it pays, and “Available” is shown without it. You take the mark off here whenever you like."
+msgstr "あなたのお金は出力に保存されます。受け取った支払いごとに一つ、支払いの変更ごとにも一つです。「使わない」とマークした出力はあなたのものになりますが、支払いが行われたときにウォレットはそれを通過し、「利用可能」はそのまま表示されます。ここでマークを外すことは自由です。"
+
+msgid "Your money is kept in outputs: one for every payment you got and for the change of every payment you made. By itself the wallet takes the largest first. Here you can name the outputs yourself: the payment is paid with exactly those, all of them, and the change comes back as one new output."
+msgstr "お金は出力に保存されます。受け取った支払いごとに一つ、支払いを変更したときにも一つ。ウォレットは自動的に最大の出力を先に取ります。ここでは出力の名前を指定できます。支払いはすべての出力で行われ、変更は新しい出力として返されます。"
+
+msgid "Your own public nodes: one https:// address a line, up to 4. They are asked like the listed ones and get your transactions first, but they never count as an independent voice."
+msgstr "自分の公開ノードは1行に1つの https:// アドレスを最大4件指定できます。一覧のノードと同様に照会され、取引の送信先として優先されますが、独立した票には数えられません。"
+
+#. runtime
+msgid "Your own starting point is made: block {}. The wallet starts from it at the next unlock."
+msgstr "ブロック {} を自分で作成します。次のロック解除時にウォレットはそれから始まります。"
+
+msgid "Your point carries the proof of the built-in one: up to the built-in point the history stays proved, and from it to your point this wallet vouches. A point is made only from a chain that keeps that proof. Money, keys and history are not touched."
+msgstr "あなたのポイントは内蔵ポイントの証明を持っています: 内蔵ポイントまでの履歴は証明されています, そしてそれからあなたの点までこのウォレットは保証します. ポイントはその証明を保持するチェーンからのみ作成されます. お金, 鍵, 履歴は触れません."
+
+#. runtime
+msgid "Your wallet is ready to use. Public nodes verified the tip at block {}."
+msgstr "ウォレットを使用できます。公開ノードがブロック {} をチェーンの先端として確認しました。"
+
+#. runtime
+msgid "a block reward"
+msgstr "ブロックの報酬"
+
+#. runtime
+msgid "a block reward that cannot be spent yet"
+msgstr "まだ使えないブロックの報酬"
+
+#. runtime
+msgid "a payment to your address — the sender's wallet waits about 40 seconds: look and accept?"
+msgstr "送金者の財布は40秒ほど待ちます 見て受け取ってください"
+
+#. runtime
+msgid "a public node names more work than is verified here"
+msgstr "パブリック・ノードは ここで確認されたよりも 多くの仕事を名付けます"
+
+#. runtime
+msgid "abandoned"
+msgstr "放棄済み"
+
+#. runtime
+msgid "accepted for delivery"
+msgstr "配送受付済み"
+
+#. runtime
+msgid "address unavailable"
+msgstr "アドレス利用不可"
+
+#. runtime
+msgid "address with a mistake"
+msgstr "間違った住所だ"
+
+#. runtime
+msgid "after {} blocks"
+msgstr "{}ブロック後"
+
+msgid "amount to ask for, GRIN"
+msgstr "金額を求めて GRIN"
+
+#. runtime
+msgid "and {} earlier"
+msgstr "先ほどの{}"
+
+#. runtime
+msgid "asking public nodes about the tip"
+msgstr "公共のノードにチップを尋ねると"
+
+#. runtime
+msgid "at the tip, block {}"
+msgstr "{}ブロックの先端に"
+
+#. runtime
+msgid "auto-receive status unavailable"
+msgstr "自動受取の状態を確認できません。"
+
+msgid "away from the computer"
+msgstr "コンピュータから離れて"
+
+msgid "away from the phone"
+msgstr "電話から離れて"
+
+#. runtime
+msgid "being taken back — one of the two will be in a block"
+msgstr "1つはブロックに入ります"
+
+msgid "block "
+msgstr "ブロック "
+
+#. runtime
+msgid "block {}"
+msgstr "ブロック {}"
+
+#. runtime
+msgid "block {} of {} · {} left"
+msgstr "ブロック {} あなたは {} あなたは {} 左"
+
+#. runtime
+msgid "block {} · waiting for the chain"
+msgstr "ブロック{} チェーン待ち"
+
+#. runtime
+msgid "can be spent · in reserve {} · in all {}"
+msgstr "使用可能 · 予約済み {} · 合計 {}"
+
+#. runtime
+msgid "cancelled"
+msgstr "取消済み"
+
+#. runtime
+msgid "cannot be spent now"
+msgstr "今は使えないから"
+
+msgid "check code compared"
+msgstr "チェックコードを比較"
+
+msgid "check code compared · you have paid them"
+msgstr "コードをチェックして 比較して 支払い済みだと"
+
+msgid "check code not compared"
+msgstr "チェックコードが比較されていません"
+
+#. runtime
+msgid "checked by sampling its work up to the program's point; from there checked by the wallet that made your point"
+msgstr "プログラムのポイントまでの作業をサンプリングして確認し あなたのポイントを作ったウォレットで確認します"
+
+#. runtime
+msgid "checking the stored ones"
+msgstr "保存されているものをチェックして"
+
+#. runtime
+msgid "collected and checked"
+msgstr "集めて検査した結果"
+
+msgid "confirmations"
+msgstr "承認数"
+
+#. runtime
+msgid "confirmed by public nodes"
+msgstr "公開ノードで確認されました"
+
+#. runtime
+msgid "confirmed by public nodes, {}"
+msgstr "公開ノードで確認 {}"
+
+#. runtime
+msgid "confirmed, with a caveat: a claim of more work went unsettled not long ago"
+msgstr "確認しましたが 注意事項があります 仕事の増加を求める主張は 少し前に解決されませんでした"
+
+#. runtime
+msgid "contested — check it"
+msgstr "争われました"
+
+#. runtime
+msgid "create a message key first (My details)"
+msgstr "まずメッセージキーを作成します (私の詳細)"
+
+#. runtime
+msgid "cut short"
+msgstr "切り詰め済み"
+
+#. runtime
+msgid "did not work: the payment reached a block first"
+msgstr "支払いがブロックに到達する前に"
+
+#. runtime
+msgid "directly"
+msgstr "直接"
+
+#. runtime
+msgid "does not answer"
+msgstr "答えない"
+
+#. runtime
+msgid "failed"
+msgstr "失敗"
+
+#. runtime
+msgid "finished · found {} · spent {}"
+msgstr "終わった 見つかった {} 消費した {}"
+
+msgid "for example 1.5"
+msgstr "例えば1.5です"
+
+#. runtime
+msgid "found by the search for old money · in the chain by block {}"
+msgstr "古銭の捜索で発見された ブロック{}のチェーンで"
+
+#. runtime
+msgid "from before the restore — cannot be signed, the money is reserved"
+msgstr "復元前に準備された支払いです。署名はできず、資金の予約は維持されます。"
+
+#. runtime
+msgid "from opening to the tip: {}"
+msgstr "開口部から先端までの長さは {}です"
+
+msgid "grin1… — for a payment proof"
+msgstr "grin1… — 支払い証明用"
+
+msgid "grin1… — the wallet there must be open"
+msgstr "grin1… — 受取人のウォレットを開いておく必要があります"
+
+#. runtime
+msgid "handed to the wallet"
+msgstr "財布に手を出すと"
+
+#. runtime
+msgid "has not replied to the payment of {} GRIN yet — the money is reserved"
+msgstr "支払いに 応じてくれなかった {} GRIN しかし 資金は予約されています"
+
+#. runtime
+msgid "held by a payment under way"
+msgstr "支払いが進行中で"
+
+#. runtime
+msgid "in a block"
+msgstr "ブロックの中で"
+
+#. runtime
+msgid "in a block · confirmations: 10"
+msgstr "ブロック内で 確認:10"
+
+#. runtime
+msgid "in a block · confirmations: {}"
+msgstr "ブロック内で 確認:{}"
+
+#. runtime
+msgid "in a block · confirmations: {} of {}"
+msgstr "ブロックの中で 確認: {} あなたは {}"
+
+#. runtime
+msgid "in a block · confirmations: {} of {} · {}"
+msgstr "ブロックの中で 確認: {} あなたは {} あなたは {}"
+
+#. runtime
+msgid "in a block · the wallet is catching up with the tip"
+msgstr "ブロックの中で 財布がチップに追いついてる"
+
+#. runtime
+msgid "in a block · the wallet is catching up with the tip · {}"
+msgstr "ブロックの中で チップに追いついてる財布 {}"
+
+#. runtime
+msgid "in a block · {}"
+msgstr "ブロックの中で {}"
+
+#. runtime
+msgid "in block 4 118 590"
+msgstr "ブロック4 118 590に収録"
+
+#. runtime
+msgid "in block 4 118 590 · proof"
+msgstr "ブロック4 118 590に収録 · 証明"
+
+#. runtime
+msgid "in the network, waiting for a block"
+msgstr "ネットワーク上でブロックを待つと"
+
+#. runtime
+msgid "invoice paid"
+msgstr "請求書支払い済み"
+
+#. runtime
+msgid "invoice paid · in block 4 118 402"
+msgstr "請求書支払い ブロック4 118 402"
+
+#. runtime
+msgid "is {} blocks below the checked chain — with a new one the wallet opens faster next time"
+msgstr "チェックされたチェーンの{}ブロック下です 新しいチェーンを使うと 次回は財布が早く開きます"
+
+#. runtime
+msgid "just now"
+msgstr "たった今"
+
+#. runtime
+msgid "left without the wallet's answer"
+msgstr "財布の答えがないまま"
+
+#. runtime
+msgid "look-alike letters in the name"
+msgstr "名前に似た文字が"
+
+#. runtime
+msgid "malformed"
+msgstr "形式が正しくありません"
+
+msgid "marked “not to be spent”"
+msgstr "「使わない」とマークされています"
+
+#. runtime
+msgid "name changed: it had hidden characters"
+msgstr "名前が変わり 隠し文字が入りました"
+
+#. runtime
+msgid "no address stored"
+msgstr "住所は保存されていません"
+
+#. runtime
+msgid "no node address is known: the names of the network's nodes did not resolve"
+msgstr "ノードアドレスが知られていません: ネットワークのノードの名前が解決されませんでした"
+
+#. runtime
+msgid "no node is connected"
+msgstr "ノードが接続されていません"
+
+#. runtime
+msgid "no node is connected yet"
+msgstr "まだノードが接続されていません"
+
+#. runtime
+msgid "no payment record"
+msgstr "支払い記録なし"
+
+#. runtime
+msgid "no public nodes are listed for this network: no tip is confirmed"
+msgstr "このネットワークの公開ノードがリストされていません: ヒントは確認されていません"
+
+#. runtime
+msgid "no secure channel to public nodes: no tip is confirmed"
+msgstr "パブリックノードへのセキュリティチャネルがありません: ヒントが確認されません"
+
+#. runtime
+msgid "not a wallet's request"
+msgstr "財布の頼みじゃない"
+
+#. runtime
+msgid "not applied yet"
+msgstr "まだ適用されていません"
+
+#. runtime
+msgid "not at the tip yet"
+msgstr "まだ先端にはいません"
+
+#. runtime
+msgid "not checked: the proof in the program did not pass"
+msgstr "チェックされていません プログラムの証明は通りません"
+
+#. runtime
+msgid "not checked: the proof in the program is for another starting point"
+msgstr "チェックされていない: プログラムの証明は別の出発点に関するものです"
+
+#. runtime
+msgid "not chosen yet: headers are being checked"
+msgstr "まだ選択されていません: ヘッダをチェック中"
+
+#. runtime
+msgid "not confirmed yet"
+msgstr "未確認"
+
+#. runtime
+msgid "not in a block yet"
+msgstr "まだブロックに入ってない"
+
+#. runtime
+msgid "not made"
+msgstr "未作成"
+
+#. runtime
+msgid "not needed"
+msgstr "不要"
+
+#. runtime
+msgid "not sent: the delivery window closed"
+msgstr "送信されませんでした: 送信ウィンドウが閉じました"
+
+#. runtime
+msgid "not set"
+msgstr "未設定"
+
+#. runtime
+msgid "not started"
+msgstr "未開始"
+
+#. runtime
+msgid "of {} GRIN is signed, but Tor did not come up and it has not gone to the network — choose what to do"
+msgstr "{} GRIN が署名されていますが Tor が表示されず ネットワークに移行していません どうするか選択してください"
+
+#. runtime
+msgid "of {} GRIN was prepared before the wallet was restored from an older copy — it cannot be signed, the money is reserved"
+msgstr "あなたは {} GRIN 古いコピーから財布を復元する前に作成された 署名はできない 金は預かってる"
+
+#. runtime
+msgid "off: you accept each payment"
+msgstr "オフ：入金ごとに自分で受け付けます。"
+
+msgid "on this computer"
+msgstr "このコンピュータで"
+
+msgid "on this phone"
+msgstr "この電話で"
+
+#. runtime
+msgid "part {} of {}"
+msgstr "パート {} あなたは {}"
+
+#. runtime
+msgid "part {} of {} · found {}"
+msgstr "パート {} あなたは {} 見つかった {}"
+
+msgid "paste the BEGINSLATEPACK… ENDSLATEPACK. text here"
+msgstr "ここに BEGINSLATEPACK… ENDSLATEPACK. のテキストを貼り付けてください"
+
+msgid "paste the BEGINSLATEPACK… ENDSLATEPACK. text you were sent"
+msgstr "受け取った BEGINSLATEPACK… ENDSLATEPACK. のテキストを貼り付けてください"
+
+#. runtime
+msgid "Verified Nostr contacts are accepted automatically. Direct Tor payments require your approval."
+msgstr "認証済みの Nostr 連絡先からの支払いは自動で受け取ります。Tor 経由で直接届く支払いには承認が必要です。"
+
+#. runtime
+msgid "preliminary"
+msgstr "暫定"
+
+#. runtime
+msgid "prepared, waiting for the reply"
+msgstr "答えを待つ準備をして"
+
+#. runtime
+msgid "public nodes did not confirm the tip"
+msgstr "公開ノードは ヒントを確認しませんでした"
+
+#. runtime
+msgid "public nodes did not confirm the tip ({} answered, {} needed, {} named it)"
+msgstr "公開ノードは ヒントを確認しませんでした{} 答えは {} 必要だったのです {} 名付けた)"
+
+#. runtime
+msgid "public nodes have not been asked yet"
+msgstr "まだ公開ノードに 問い合わせはありません"
+
+#. runtime
+msgid "public nodes name a time before one confirmed earlier"
+msgstr "公開ノードの名前は 前に確認されたものより 時間が早い"
+
+#. runtime
+msgid "received"
+msgstr "受取済み"
+
+#. runtime
+msgid "received · confirmations: {}"
+msgstr "受信確認:{}"
+
+#. runtime
+msgid "received · confirmations: {} · {}"
+msgstr "受け取った 確認: {} あなたは {}"
+
+#. runtime
+msgid "replied to the payment of {} GRIN — your signature is needed"
+msgstr "支払いに応じた {} GRIN 署名が必要です"
+
+#. runtime
+msgid "reserve released manually; a prior signature is still possible"
+msgstr "予約は手動で解除されました。取引はすでに署名されている可能性があります。"
+
+#. runtime
+msgid "saving…"
+msgstr "保存中…"
+
+#. runtime
+msgid "sent a payment — look and accept?"
+msgstr "支払いを送ったら 見て受け取った?"
+
+#. runtime
+msgid "signed — whoever issued the invoice sends it to the network"
+msgstr "請求書を発行した者が ネットワークに送信します"
+
+#. runtime
+msgid "signed, going to the network"
+msgstr "サインして ネットワークに行き"
+
+#. runtime
+msgid "silent"
+msgstr "応答なし"
+
+#. runtime
+msgid "since opening: {}"
+msgstr "開店以来:{}"
+
+msgid "soon"
+msgstr "近日公開"
+
+#. runtime
+msgid "spendable · reserved {} · maturing {}"
+msgstr "使用可能 · 予約済み {} · 成熟待ち {}"
+
+#. runtime
+msgid "starting"
+msgstr "起動中"
+
+#. runtime
+msgid "state unknown"
+msgstr "状態不明"
+
+#. runtime
+msgid "stopped"
+msgstr "停止済み"
+
+#. runtime
+msgid "taken back — the money is yours again"
+msgstr "返却される あなたの金は またあなたのものになる"
+
+#. runtime
+msgid "test"
+msgstr "テスト"
+
+#. runtime
+msgid "the built-in obfs4 bridges"
+msgstr "組み込まれた obfs4 ブリッジ"
+
+#. runtime
+msgid "the chain is checked to block {} · your old money is still being looked for: the amount can grow, sending opens when the search ends"
+msgstr "チェーンがブロックにチェックされる {} あなたの古いお金は まだ捜索中です 金額は増えます 捜索が終わったら 送金オープン"
+
+#. runtime
+msgid "the chain is still being checked"
+msgstr "チェーンはまだチェック中です"
+
+#. runtime
+msgid "the list of public nodes is too small to confirm a tip"
+msgstr "公開ノードのリストが小さすぎて ヒントを確認できません"
+
+#. runtime
+msgid "the numbers for asking public nodes ran out: no tip is confirmed"
+msgstr "公共のノードに問い合わせる数は尽きました ヒントは確認できません"
+
+#. runtime
+msgid "the part that checks the network is missing: nothing is known about the chain"
+msgstr "ネットワークをチェックする部分が欠けています チェーンについて何も知られていません"
+
+#. runtime
+msgid "the time is not confirmed yet"
+msgstr "時刻はまだ確認できていません。"
+
+#. runtime
+msgid "the time is not confirmed: public nodes disagree about it"
+msgstr "時刻は未確認です。公開ノードが報告した時刻が一致しません。"
+
+#. runtime
+msgid "the time is not confirmed: too few public nodes answered"
+msgstr "時刻は未確認です。応答した公開ノードの数が足りません。"
+
+#. runtime
+msgid "the wallet is at block {} of {} · {} to go. Sending opens at the tip"
+msgstr "財布はブロックにある {} あなたは {} あなたは {} 送信は先端で開きます"
+
+#. runtime
+msgid "the wallet is at block {} · the tip is not chosen yet: waiting for the network check and public nodes. Sending opens at the tip"
+msgstr "ウォレットはブロック {} にあり、チップはまだ選択されていません。ネットワークチェックと公開ノードを待っています。チップで送信を開始します。"
+
+#. runtime
+msgid "the wallet said nothing about the chain"
+msgstr "財布には チェーンのことは書いてなかった"
+
+msgid "this computer"
+msgstr "このコンピューター"
+
+#. runtime
+msgid "this computer's clock is far from the time of public nodes: check the clock"
+msgstr "このコンピュータの時計は 公共のノードの時間とは遠い 時計を確認してください"
+
+msgid "this phone"
+msgstr "このスマートフォン"
+
+#. runtime
+msgid "time is not confirmed"
+msgstr "時刻未確認"
+
+#. runtime
+msgid "to the tip, 4 118 626 · confirmed by Grincoin.org and Grin.money"
+msgstr "4118626ドルです Grincoin.orgによって確認されました Grinマネー"
+
+#. runtime
+msgid "to the tip, {}"
+msgstr "{}の先端に"
+
+#. runtime
+msgid "to {}"
+msgstr "宛先：{}"
+
+#. runtime
+msgid "too large"
+msgstr "大きすぎます"
+
+#. runtime
+msgid "too many unsettled claims of more work: no tip is confirmed"
+msgstr "多くの未解決の 仕事の要求がある チップは確認されてない"
+
+#. runtime
+msgid "verified to {}"
+msgstr "{}に確認"
+
+#. runtime
+msgid "waiting for a signature"
+msgstr "署名を待ってる"
+
+#. runtime
+msgid "waiting for public nodes to confirm the tip"
+msgstr "公開ノードの確認を待つ"
+
+#. runtime
+msgid "waiting for the chain"
+msgstr "チェーンを待ってる"
+
+#. runtime
+msgid "waiting for your signature"
+msgstr "サインを待ってる"
+
+#. runtime
+msgid "waiting to be delivered"
+msgstr "配達を待ってる"
+
+#. runtime
+msgid "wallet"
+msgstr "ウォレット"
+
+msgid "what you call them"
+msgstr "あなたが何と呼んでいるか"
+
+msgid "word"
+msgstr "単語"
+
+#. runtime
+msgid "working"
+msgstr "稼働中"
+
+msgid "you have paid them · check code not compared"
+msgstr "あなたが支払ってるんですよ。 チェックコードは 比較されてないんです。"
+
+msgid "you have paid them: a payment is in a block"
+msgstr "支払いはブロックで行われ"
+
+#. runtime
+msgid "your own bridges"
+msgstr "自分の橋を作り"
+
+#. runtime
+msgid "{} GRIN from grin18z5…9h2ykv — accept?"
+msgstr "grin18z5…9h2ykvからの{} GRINを受け取りますか？"
+
+#. runtime
+msgid "{} GRIN held by a payment under way"
+msgstr "{} GRIN 支払いが進行中"
+
+#. runtime
+msgid "{} GRIN marked “not to be spent”"
+msgstr "{} GRIN 消費しない"
+
+#. runtime
+msgid "{} GRIN maturing"
+msgstr "{} GRIN 成熟"
+
+#. runtime
+msgid "{} GRIN waits for the recipient's reply"
+msgstr "{} GRIN 受信者の返信を待つ"
+
+#. runtime
+msgid "{} h ago"
+msgstr "{}時間前"
+
+#. runtime
+msgid "{} h {} min"
+msgstr "{}時間{}分"
+
+#. runtime
+msgid "{} messages"
+msgstr "メッセージ{}件"
+
+#. runtime
+msgid "{} min ago"
+msgstr "{}分前"
+
+#. runtime
+msgid "{} min {} s"
+msgstr "{}分{}秒"
+
+#. runtime
+msgid "{} of about {}"
+msgstr "{} 約1000万人が {}"
+
+#. runtime
+msgid "{} of {} · {} left"
+msgstr "{} あなたは {} あなたは {} 左"
+
+#. runtime
+msgid "{} s"
+msgstr "{}秒"
+
+#. runtime
+msgid "{} set · they get transactions first; from the next unlock"
+msgstr "{} セット 彼らは最初にトランザクションを得る 次のロック解除から"
+
+#. runtime
+msgid "{} · gone"
+msgstr "{} いなくなった"
+
+#. runtime
+msgid "{} · started {} times"
+msgstr "{} 始まりました {} タイムズ"
+
+#. runtime
+msgid "{}. A payment signed now may wait until Tor works again. You can sign and wait; sign and let this one payment go directly — the node then sees the address of your device; switch Tor off for all payments; or not sign yet."
+msgstr "{}. 今署名された支払いは Tor が再び動作するまで待つことになります。署名して待つか、署名して一つの支払いを直接送信するか、すべての支払に対して Tor をオフにするか、またはまだ署名しないかを選択できます。"
+
+#. runtime
+msgid "“Coffee shop”"
+msgstr "「カフェ」"
+
+msgid "✓ Checked: you compared the check code with this contact"
+msgstr "✓ チェック済み: チェックコードをこの連絡先と比較しました"
+
+msgid "✓ Not to be spent"
+msgstr "○消費しない"
+
+msgid "✓ Small ones go along with payments"
+msgstr "小さなものは支払いに伴う"
+
+msgid "✓ Spend it in this payment"
+msgstr "この支払いで使う"
+
+msgid "✓ checked: the check code was compared"
+msgstr "✓チェック: チェックコードを比較しました"

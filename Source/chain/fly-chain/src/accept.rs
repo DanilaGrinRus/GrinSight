@@ -98,6 +98,7 @@ pub const ASK_GAP: Duration = Duration::from_secs(if cfg!(feature = "test-net") 
 pub const ASK_GAP_MAX: Duration = Duration::from_secs(if cfg!(feature = "test-net") { 4 } else { 600 });
 
 /// What the asking is set up with.
+#[derive(Clone)]
 pub struct Setup {
     /// Whom to ask.
     pub sources: Vec<Source>,
@@ -383,6 +384,11 @@ impl Accept {
         self.selected
     }
 
+    /// Current survey generation; selection is unavailable with damaged memory.
+    pub(crate) fn generation(&self) -> u64 {
+        self.memory.as_ref().map_or(0, Memory::generation)
+    }
+
     /// The interval a reader can independently recheck before showing a selected tip.
     pub(crate) fn clock_evidence(&self) -> Option<Time> {
         self.time
@@ -543,6 +549,9 @@ impl Accept {
             self.pace.within(),
             self.setup.least_groups,
         );
+        // A mandatory new survey supersedes the old quorum. Intermediate
+        // time evidence from this round cannot revive an earlier selection.
+        self.confirmed = None;
         self.round = Some(Round {
             id,
             tip: tip.said,

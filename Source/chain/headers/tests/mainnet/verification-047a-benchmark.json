@@ -1,0 +1,81 @@
+{
+  "file_bytes": 1648750,
+  "file_sha256": "a418ba7e3957906c4e6e462f55f39ae2412db21100c3f6c8ae5fcd0835a6581c",
+  "network_bytes": 0,
+  "old_sha256": "537ec3dbe89e6a1378f1a5ecd8b64ad131766cb07815556112d95edd48df5640",
+  "new_sha256": "adbe373301f8cedb893791664a9081f1e157c444045643880e160e31ba8d8a08",
+  "tip": [
+    "headers: 4100 (heights 0..4099)",
+    "last hash: 00000bdd4f352364b619f095770a097e019fd76dc5380ee46821bc3c220ef144",
+    "total difficulty at the end: 2339123102244",
+    "header tree: 4100 leaves, 2 peaks"
+  ],
+  "measurements": {
+    "old": [
+      {
+        "elapsed_ms": 164.114,
+        "cpu_ms": 140.625,
+        "peak_working_set_bytes": 6008832
+      },
+      {
+        "elapsed_ms": 157.511,
+        "cpu_ms": 140.625,
+        "peak_working_set_bytes": 6012928
+      },
+      {
+        "elapsed_ms": 149.32,
+        "cpu_ms": 125.0,
+        "peak_working_set_bytes": 6008832
+      },
+      {
+        "elapsed_ms": 160.466,
+        "cpu_ms": 140.625,
+        "peak_working_set_bytes": 5976064
+      },
+      {
+        "elapsed_ms": 137.24,
+        "cpu_ms": 125.0,
+        "peak_working_set_bytes": 6008832
+      }
+    ],
+    "new": [
+      {
+        "elapsed_ms": 161.814,
+        "cpu_ms": 140.625,
+        "peak_working_set_bytes": 5545984
+      },
+      {
+        "elapsed_ms": 160.1,
+        "cpu_ms": 171.875,
+        "peak_working_set_bytes": 5554176
+      },
+      {
+        "elapsed_ms": 154.392,
+        "cpu_ms": 156.25,
+        "peak_working_set_bytes": 5636096
+      },
+      {
+        "elapsed_ms": 154.842,
+        "cpu_ms": 140.625,
+        "peak_working_set_bytes": 5640192
+      },
+      {
+        "elapsed_ms": 129.642,
+        "cpu_ms": 109.375,
+        "peak_working_set_bytes": 5636096
+      }
+    ]
+  },
+  "median": {
+    "old": {
+      "elapsed_ms": 157.511,
+      "cpu_ms": 140.625,
+      "peak_working_set_bytes": 6008832
+    },
+    "new": {
+      "elapsed_ms": 154.842,
+      "cpu_ms": 140.625,
+      "peak_working_set_bytes": 5636096
+    }
+  }
+}

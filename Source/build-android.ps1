@@ -1,15 +1,22 @@
-﻿# GrinSight for Android (arm64 phones and the x86_64 emulator, one APK): builds the wallet's programs and
+# GrinSight for Android (arm64 phones and the x86_64 emulator, one APK): builds the wallet's programs and
 # the interface, packs them into one APK, installs it on the emulator, starts it
 # and saves a screenshot, the process list and the error log into
 # C:\DHW\ui-probe\out\android-fly-<time>\.
 # The programs are packed as lib*.so: the app's native library folder is the
 # one place Android lets an app start programs from.
 # Run: powershell -ExecutionPolicy Bypass -File C:\DHW\ui-probe\scripts\build-android.ps1
-param([switch]$NoBuild)
+param([switch]$NoBuild, [switch]$CoreOnly, [switch]$PackageOnly,
+      [string]$SigningPasswordFile)
+# Preserve callers using environment credentials, without passing them to the build tools.
+$inheritedStorePass = $env:GRINSIGHT_ANDROID_STORE_PASS
+$inheritedKeyPass = $env:GRINSIGHT_ANDROID_KEY_PASS
+try {
+$env:GRINSIGHT_ANDROID_STORE_PASS = $null
+$env:GRINSIGHT_ANDROID_KEY_PASS = $null
 $ErrorActionPreference = 'Continue'
-$core = 'C:\DHW\GrinFlySight\core-v0.2'
+$core = $PSScriptRoot
 $root = 'C:\DHW\ui-probe'
-$stamp = Get-Date -Format 'yyyyMMdd-HHmm'
+$stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $out = Join-Path $root "out\android-fly-$stamp"
 New-Item -ItemType Directory -Force -Path $out | Out-Null
 $log = Join-Path $out 'build.log'
@@ -66,12 +73,13 @@ if (-not $NoBuild) {
             $started = Get-Date
             $part = Join-Path $out "build-$name-$triple.log"
             Push-Location $dir
-            cmd /c "cargo build --release --target $triple $extra 2>&1" | Out-File -FilePath $part -Encoding utf8
+            cmd /c "cargo build --release --locked --offline --target $triple $extra 2>&1" | Out-File -FilePath $part -Encoding utf8
             $code = $LASTEXITCODE
             Pop-Location
             Say "$name $triple build exit=$code seconds=$([int]((Get-Date) - $started).TotalSeconds)"
             if ($code -ne 0) { Select-String -Path $part -Pattern 'error' | Select-Object -First 15 | ForEach-Object { Say ("   " + $_.Line) }; exit 1 }
         }
+        if ($CoreOnly) { continue }
         # The interface: offline from ui\vendor-crates when that set is there,
         # otherwise from the drive root with crates.io.
         $env:CARGO_TARGET_DIR = $uiTarget
@@ -79,10 +87,10 @@ if (-not $NoBuild) {
         $part = Join-Path $out "build-ui-$triple.log"
         if (Test-Path "$core\ui\vendor-crates") {
             Push-Location "$core\ui\app"
-            cmd /c "cargo build --release --offline --lib --target $triple 2>&1" | Out-File -FilePath $part -Encoding utf8
+            cmd /c "cargo build --release --locked --offline --lib --target $triple 2>&1" | Out-File -FilePath $part -Encoding utf8
         } else {
             Push-Location 'C:\'
-            cmd /c "cargo build --release --lib --target $triple --manifest-path `"$core\ui\app\Cargo.toml`" 2>&1" | Out-File -FilePath $part -Encoding utf8
+            cmd /c "cargo build --release --locked --lib --target $triple --manifest-path `"$core\ui\app\Cargo.toml`" 2>&1" | Out-File -FilePath $part -Encoding utf8
         }
         $code = $LASTEXITCODE
         Pop-Location
@@ -92,6 +100,7 @@ if (-not $NoBuild) {
 }
 
 # ---- APK
+if ($CoreOnly) { Say 'core phase complete'; exit 0 }
 $libs = @()
 foreach ($t in $targets) {
     $triple = $t.triple; $abi = $t.abi
@@ -103,7 +112,7 @@ foreach ($t in $targets) {
     # The program for Tor bridges is not built here: it is the lyrebird of the official Tor
     # Expert Bundle for this ABI, fetched and checked by get-tor-bridge-programs.ps1.
     $ptPlatform = if ($abi -eq 'arm64-v8a') { 'android-aarch64' } else { 'android-x86_64' }
-    powershell -NoProfile -ExecutionPolicy Bypass -File 'C:\DHW\GrinFlySight\core-v0.2\get-tor-bridge-programs.ps1' -Platform $ptPlatform 2>&1 | ForEach-Object { Say "$_" }
+    powershell -NoProfile -ExecutionPolicy Bypass -File "$core\get-tor-bridge-programs.ps1" -Platform $ptPlatform 2>&1 | ForEach-Object { Say "$_" }
     if ($LASTEXITCODE -ne 0) { Say "the Tor Expert Bundle for $ptPlatform was not accepted"; exit 1 }
     $pt = Get-ChildItem -LiteralPath "C:\DHW\dist\tor-expert-bundle\16.0.1\$ptPlatform\files" -Recurse -File | Where-Object { $_.Name -match '^(lib)?lyrebird(\.so)?$' } | Select-Object -First 1
     if (-not $pt) { Say "no lyrebird in the bundle for $ptPlatform"; exit 1 }
@@ -139,10 +148,10 @@ $c = Tool (Join-Path $bt36 'd8.bat') (@('--release', '--min-api', "$api", '--lib
 if ($c -ne 0) { Say "d8 failed"; exit 1 }
 $manifest = Join-Path $out 'AndroidManifest.xml'
 # the version is the window's own: one line of ui\app\src\lib.rs
-$vm = [regex]::Match((Get-Content -LiteralPath (Join-Path $core 'ui\app\src\lib.rs') -Raw), '(?m)^pub const APP_VERSION: &str = "(\d+)\.(\d+)\.(\d+)";')
+$vm = [regex]::Match((Get-Content -LiteralPath (Join-Path $core 'ui\app\src\lib.rs') -Raw), '(?m)^pub const APP_VERSION: &str = "((\d+)\.(\d+)\.(\d+)A?)";')
 if (-not $vm.Success) { Say "no APP_VERSION in ui\app\src\lib.rs"; exit 1 }
-$version = '{0}.{1}.{2}' -f $vm.Groups[1].Value, $vm.Groups[2].Value, $vm.Groups[3].Value
-$versionCode = [int]$vm.Groups[1].Value * 10000 + [int]$vm.Groups[2].Value * 100 + [int]$vm.Groups[3].Value
+$version = $vm.Groups[1].Value
+$versionCode = [int]$vm.Groups[2].Value * 10000 + [int]$vm.Groups[3].Value * 100 + [int]$vm.Groups[4].Value
 Say "version: $version (code $versionCode)"
 @'
 <?xml version="1.0" encoding="utf-8"?>
@@ -188,9 +197,16 @@ $c = Tool (Join-Path $bt 'aapt2.exe') @('compile', '--dir', $res, '-o', $flat)
 $base = Join-Path $out 'base.apk'; $aligned = Join-Path $out 'aligned.apk'; $apk = Join-Path $out 'grinsight-light.apk'
 $c = Tool (Join-Path $bt 'aapt2.exe') @('link', '-o', $base, '--manifest', $manifest, '-I', $jar, '--min-sdk-version', "$api", '--target-sdk-version', '36', $flat)
 if ($c -ne 0) { Say "aapt2 link failed"; exit 1 }
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$noticeZip = [System.IO.Compression.ZipFile]::Open($base, 'Update')
+try {
+    [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile($noticeZip, "$core\dist-files\LICENSE-GPL-3.0.txt", 'assets/licenses/LICENSE-GPL-3.0.txt')
+    foreach ($font in 'Inter','DejaVu','WalletCJK') {
+        [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile($noticeZip, "$core\ui\app\fonts\LICENSE-$font.txt", "assets/licenses/LICENSE-$font.txt")
+    }
+} finally { $noticeZip.Dispose() }
 $bare = Join-Path $out 'bare.apk'
 Copy-Item $base $bare -Force
-Add-Type -AssemblyName System.IO.Compression.FileSystem
 $zip = [System.IO.Compression.ZipFile]::Open($base, 'Update')
 try {
     [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Join-Path $dex 'classes.dex'), 'classes.dex') | Out-Null
@@ -200,11 +216,44 @@ try {
 } finally { $zip.Dispose() }
 $c = Tool (Join-Path $bt 'zipalign.exe') @('-P', '16', '-f', '4', $base, $aligned)
 $ks = Join-Path $root 'probe-debug.keystore'
-if (-not (Test-Path $ks)) {
-    $c = Tool 'keytool' @('-genkeypair', '-keystore', $ks, '-alias', 'probe', '-keyalg', 'RSA', '-keysize', '2048', '-validity', '10000', '-storepass', 'android', '-keypass', 'android', '-dname', 'CN=GrinSight Probe')
+if (-not (Test-Path -LiteralPath $ks -PathType Leaf)) { throw 'Missing existing signing key; a replacement cannot update the prior APK.' }
+function Sign-ReleaseApk([string]$unsigned, [string]$signedPath) {
+    $signer = Join-Path $bt 'apksigner.bat'
+    $secure = $null
+    $bstr = [IntPtr]::Zero
+    try {
+        if ($SigningPasswordFile) {
+            # DPAPI CurrentUser, written by ConvertFrom-SecureString with no explicit key.
+            try {
+                $encrypted = (Get-Content -LiteralPath $SigningPasswordFile -Raw -ErrorAction Stop).Trim()
+                $secure = ConvertTo-SecureString -String $encrypted -ErrorAction Stop
+                $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+                $env:GRINSIGHT_ANDROID_STORE_PASS = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+                $env:GRINSIGHT_ANDROID_KEY_PASS = $env:GRINSIGHT_ANDROID_STORE_PASS
+            } catch { throw 'Could not unlock the APK signing password with the current Windows account.' }
+        } else {
+            $env:GRINSIGHT_ANDROID_STORE_PASS = $inheritedStorePass
+            $env:GRINSIGHT_ANDROID_KEY_PASS = $inheritedKeyPass
+        }
+        foreach ($name in 'GRINSIGHT_ANDROID_STORE_PASS', 'GRINSIGHT_ANDROID_KEY_PASS') {
+            if (!(Test-Path "Env:$name")) { throw "Missing protected signing environment variable $name." }
+        }
+        $result = Tool $signer @('sign', '--ks', $ks, '--ks-pass', 'env:GRINSIGHT_ANDROID_STORE_PASS',
+            '--ks-key-alias', 'probe', '--key-pass', 'env:GRINSIGHT_ANDROID_KEY_PASS', '--out', $signedPath, $unsigned)
+    } finally {
+        $env:GRINSIGHT_ANDROID_STORE_PASS = $null
+        $env:GRINSIGHT_ANDROID_KEY_PASS = $null
+        if ($bstr -ne [IntPtr]::Zero) { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
+        if ($secure) { $secure.Dispose() }
+    }
+    if ($result -ne 0 -or !(Test-Path -LiteralPath $signedPath -PathType Leaf)) { throw 'APK signing failed.' }
+    $certificate = & $signer verify --print-certs $signedPath
+    if ($LASTEXITCODE -ne 0 -or $certificate -notcontains 'Signer #1 certificate SHA-256 digest: 891600203fa03bc1d3f5e2a8e2c3b6bd60d73bd1246b368984d003d54f54ba0a') {
+        throw 'Android signing certificate differs from the published 0.4.6 APK.'
+    }
 }
-$c = Tool (Join-Path $bt 'apksigner.bat') @('sign', '--ks', $ks, '--ks-pass', 'pass:android', '--ks-key-alias', 'probe', '--key-pass', 'pass:android', '--out', $apk, $aligned)
-if (-not (Test-Path $apk)) { Say "signing failed"; exit 1 }
+if ($c -ne 0) { throw 'APK alignment failed.' }
+Sign-ReleaseApk $aligned $apk
 Say ("apk: {0} ({1:N0} KB)" -f $apk, ((Get-Item $apk).Length / 1KB))
 New-Item -ItemType Directory -Force -Path 'C:\DHW\dist' | Out-Null
 $distApk = "C:\DHW\dist\GrinSight-$stamp.apk"
@@ -223,82 +272,26 @@ try {
     }
 } finally { $zip.Dispose() }
 $c = Tool (Join-Path $bt 'zipalign.exe') @('-P', '16', '-f', '4', $armBase, $armAligned)
-$c = Tool (Join-Path $bt 'apksigner.bat') @('sign', '--ks', $ks, '--ks-pass', 'pass:android', '--ks-key-alias', 'probe', '--key-pass', 'pass:android', '--out', $armApk, $armAligned)
-if (-not (Test-Path $armApk)) { Say "signing the arm64 package failed"; exit 1 }
-$c = Tool (Join-Path $bt 'apksigner.bat') @('verify', $armApk)
-if ($c -ne 0) { Say "the arm64 package does not verify"; exit 1 }
+if ($c -ne 0) { throw 'Arm64 APK alignment failed.' }
+Sign-ReleaseApk $armAligned $armApk
+$packed = [IO.Compression.ZipFile]::OpenRead($armApk)
+try {
+    $expected = @($libs | Where-Object { $_.abi -eq 'arm64-v8a' } | ForEach-Object { 'lib/arm64-v8a/' + $_.name })
+    $actual = @($packed.Entries | Where-Object { $_.FullName.StartsWith('lib/') } | ForEach-Object FullName)
+    if (Compare-Object $expected $actual) { throw 'Unexpected native programs in arm64 APK.' }
+    foreach ($notice in 'GPL-3.0','Inter','DejaVu','WalletCJK') {
+        $entry = $packed.GetEntry("assets/licenses/LICENSE-$notice.txt")
+        if (!$entry -or !$entry.Length) { throw "Missing license: $notice" }
+    }
+} finally { $packed.Dispose() }
 $distArm = "C:\DHW\dist\GrinSight-$stamp-arm64.apk"
 Copy-Item $armApk $distArm
 Say ("dist: {0}  {1:N0} bytes  sha256 {2}" -f $distArm, (Get-Item $distArm).Length, (Get-FileHash $distArm -Algorithm SHA256).Hash.ToLower())
 
 # ---- emulator
-# An adb call with a time limit: a hung emulator must not hold the queue.
-function AdbTimed([string[]]$argv, [int]$seconds) {
-    $p = Start-Process -FilePath $adb -ArgumentList $argv -PassThru -NoNewWindow -RedirectStandardOutput "$out\adb-out.txt" -RedirectStandardError "$out\adb-err.txt"
-    $null = $p.Handle   # without this the exit code is not kept after the process ends
-    if (-not $p.WaitForExit($seconds * 1000)) { try { $p.Kill() } catch {}; return 124 }
-    $p.WaitForExit()
-    return [int]$p.ExitCode
+if ($PackageOnly) { exit 0 }
+& "$PSScriptRoot\test-android-apk.ps1" -Apk $apk -Sdk $sdk -Evidence $out
+} finally {
+    $env:GRINSIGHT_ANDROID_STORE_PASS = $inheritedStorePass
+    $env:GRINSIGHT_ANDROID_KEY_PASS = $inheritedKeyPass
 }
-function StartEmulator {
-    Start-Process -FilePath $emu -ArgumentList @('-avd', 'Pixel_6', '-no-boot-anim', '-no-snapshot-save') | Out-Null
-    & $adb wait-for-device | Out-Null
-    for ($i = 0; $i -lt 90; $i++) { if ((& $adb shell getprop sys.boot_completed 2>$null) -match '1') { break }; Start-Sleep 2 }
-}
-$devices = (& $adb devices) | Select-Object -Skip 1 | Where-Object { $_ -match '\tdevice$' }
-if (-not $devices) { StartEmulator }
-elseif ((AdbTimed @('shell', 'echo', 'ok') 30) -ne 0) {
-    Say "the emulator does not answer: restarting it"
-    AdbTimed @('emu', 'kill') 30 | Out-Null
-    Get-Process qemu-system-x86_64, emulator -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-    Start-Sleep 5
-    StartEmulator
-}
-Say "device ready"
-$c = AdbTimed @('install', '-r', $apk) 300
-if ($c -eq 124) {
-    Say "install timed out: restarting the emulator, one more try"
-    Get-Process qemu-system-x86_64, emulator -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-    Start-Sleep 5
-    StartEmulator
-    $c = AdbTimed @('install', '-r', $apk) 300
-}
-Say "install exit=$c"
-if ($c -ne 0) { Say "the APK is built (see dist above); the emulator checks are skipped: it did not install"; exit 1 }
-AdbTimed @('logcat', '-c') 30 | Out-Null
-$c = Tool $adb @('shell', 'am', 'start', '-n', 'org.grinsight.fly/.FlyActivity')
-Start-Sleep 10
-& $adb shell screencap -p /sdcard/fly.png | Out-Null
-& $adb pull /sdcard/fly.png (Join-Path $out 'screen-login.png') | Out-Null
-$ps = (& $adb shell ps -A) | Where-Object { $_ -match 'grinsight|fly' }
-$ps | ForEach-Object { Say "ps: $_" }
-# the window goes away; the service and the wallet process stay
-& $adb shell input keyevent 4 | Out-Null
-Start-Sleep 3
-(& $adb shell ps -A) | Where-Object { $_ -match 'grinsight|fly' } | ForEach-Object { Say "after the window closed: $_" }
-$c = Tool $adb @('shell', 'am', 'start', '-n', 'org.grinsight.fly/.FlyActivity')
-Start-Sleep 6
-& $adb shell screencap -p /sdcard/fly.png | Out-Null
-& $adb pull /sdcard/fly.png (Join-Path $out 'screen-reopened.png') | Out-Null
-# the device key of the rollback guard: stop everything, start again - the
-# service must open the key the Keystore kept, not make another. The log is
-# taken apart at the stop, so that the second start is read by itself.
-function GuardLines([string]$file) {
-    AdbTimed @('logcat', '-d') 60 | Out-Null
-    $logged = @(Get-Content "$out\adb-out.txt" -ErrorAction SilentlyContinue)
-    $logged | Where-Object { $_ -match ' [EF] |grinsight|fly_|slint|panick' } | Out-File -FilePath (Join-Path $out $file) -Encoding utf8
-    return @($logged | Where-Object { $_ -match 'guard: ' } | ForEach-Object { ($_ -replace '^.*guard: ', '') })
-}
-$first = GuardLines 'logcat.txt'
-$first | ForEach-Object { Say "device key at the first start: $_" }
-AdbTimed @('logcat', '-c') 30 | Out-Null
-AdbTimed @('shell', 'am', 'force-stop', 'org.grinsight.fly') 30 | Out-Null
-Start-Sleep 2
-$c = Tool $adb @('shell', 'am', 'start', '-n', 'org.grinsight.fly/.FlyActivity')
-Start-Sleep 8
-$guard = GuardLines 'logcat-restart.txt'
-$guard | ForEach-Object { Say "device key after the restart: $_" }
-$opened = ($first.Count -ge 1) -and ($guard.Count -ge 1) -and (@($guard | Where-Object { $_ -ne 'the device key is opened' }).Count -eq 0)
-Say ("device key after a restart: " + $(if ($opened) { 'opened by the Keystore - ok' } else { 'NOT CONFIRMED' }))
-(& $adb shell ps -A) | Where-Object { $_ -match 'grinsight|fly' } | ForEach-Object { Say "after the restart: $_" }
-Say "Folder: $out"

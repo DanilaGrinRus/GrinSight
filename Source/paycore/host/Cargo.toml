@@ -49,6 +49,11 @@ name = "host-chain-stub"
 path = "src/bin/host-chain-stub.rs"
 required-features = ["test-chain"]
 
+[[example]]
+name = "migration_chain_fixture"
+path = "../../tools-audit/migration_chain_fixture.rs"
+required-features = ["test-chain"]
+
 [dev-dependencies]
 serde_json = "1"
 getrandom = "0.2"

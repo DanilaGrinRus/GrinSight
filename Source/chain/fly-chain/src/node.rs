@@ -93,6 +93,7 @@ pub const TEST_SEEDS: &[&str] = &[
 ];
 
 /// What the node is started with.
+#[derive(Clone)]
 pub struct Settings {
     /// The network.
     pub net: Net,
@@ -165,6 +166,8 @@ pub struct View {
     /// confirmed, public nodes named this tip or one it is built on, and
     /// nothing stands against it.
     pub(crate) selected: bool,
+    /// The public survey generation used to evaluate this view.
+    pub(crate) generation: u64,
     /// Evidence for the time, to be rechecked when a reader uses this view.
     pub(crate) clock: Option<fly_chain_tips::time::Time>,
     /// A claim of more work went unsettled not long ago.
@@ -274,6 +277,58 @@ struct Candidate {
     dropped: bool,
 }
 
+/// DNS runs outside the chain thread. Keep its input until shutdown so a
+/// computer that started without a network can discover peers later.
+struct Names {
+    names: Vec<String>,
+    port: Option<u16>,
+    origin: Arc<()>,
+    pending: usize,
+    retry_at: Instant,
+    delay: Duration,
+}
+
+impl Names {
+    fn new(names: Vec<String>, port: Option<u16>, now: Instant) -> Self {
+        Self { names, port, origin: Arc::new(()), pending: 0, retry_at: now, delay: RETRY_FIRST }
+    }
+
+    fn lookup_if_needed(&mut self, now: Instant, connected: bool, start: impl FnOnce(Vec<String>, Option<u16>, Arc<()>) -> bool) {
+        if connected {
+            self.delay = RETRY_FIRST;
+            return;
+        }
+        if self.pending != 0 || self.names.is_empty() || now < self.retry_at {
+            return;
+        }
+        if start(self.names.clone(), self.port, self.origin.clone()) {
+            self.pending = self.names.len();
+        } else {
+            self.back_off(now);
+        }
+    }
+
+    fn answered(&mut self, origin: &Arc<()>, addrs: Vec<SocketAddr>, candidates: &mut Vec<Candidate>, now: Instant) {
+        if !Arc::ptr_eq(&self.origin, origin) {
+            return;
+        }
+        for addr in addrs {
+            if candidates.len() < MAX_CANDIDATES && !candidates.iter().any(|c| c.addr == addr) {
+                candidates.push(Candidate { addr, state: Try::Idle, next_try: now, wait: RETRY_FIRST, dropped: false });
+            }
+        }
+        self.pending = self.pending.saturating_sub(1);
+        if self.pending == 0 {
+            self.back_off(now);
+        }
+    }
+
+    fn back_off(&mut self, now: Instant) {
+        self.retry_at = later(now, self.delay);
+        self.delay = self.delay.saturating_mul(2).min(RETRY_MAX);
+    }
+}
+
 struct Link {
     addr: SocketAddr,
     peer: Arc<Peer>,
@@ -333,6 +388,8 @@ impl Pending {
 }
 
 struct Node {
+    recovery: Option<(SocketAddr, u64)>,
+    switched_from: Option<(SocketAddr, u64)>,
     chain: HeaderChain,
     point: crate::PointKind,
     /// What this build knows of the history before the starting point.
@@ -352,7 +409,7 @@ struct Node {
     candidates: Vec<Candidate>,
     links: Vec<Link>,
     asked: Option<Pending>,
-    names_left: usize,
+    discovery: Names,
     last_failure: Option<String>,
     remark: Option<(String, Instant)>,
     held: bool,
@@ -386,8 +443,6 @@ struct Node {
     accept: Accept,
     /// The last headers of the verified chain, for the asking.
     history: History,
-    /// The time in the header of the starting point.
-    start_time: u64,
 }
 
 /// The height of the header at which nodes give their state out when the
@@ -494,7 +549,15 @@ impl Node {
     }
 
     fn ask(&mut self, addr: SocketAddr) {
-        let locator: Vec<Hash> = self.chain.locator().iter().map(|h| Hash::from_vec(h)).collect();
+        let mut locator: Vec<Hash> = self.chain.locator().iter().map(|h| Hash::from_vec(h)).collect();
+        if self.point.autonomous() {
+            let genesis = Hash::from_vec(&self.chain.net().genesis_hash());
+            let cap = usize::try_from(grin_p2p::types::MAX_LOCATORS).unwrap_or(32);
+            if !locator.contains(&genesis) && cap > 0 {
+                locator.truncate(cap.saturating_sub(1));
+                locator.push(genesis);
+            }
+        }
         let sent = self
             .links
             .iter()
@@ -537,6 +600,7 @@ impl Node {
         if !self.links.iter().any(|l| l.addr == from) {
             return;
         }
+        let previous_work = self.our_work();
         let offered = match self.chain.offer(headers, unix_now()) {
             Ok(offered) => offered,
             Err(_) => {
@@ -553,6 +617,30 @@ impl Node {
             ));
             self.leave(from, true, "an invalid header");
             return;
+        }
+        // An unsupported deep reorg is never selected from a Pong or a
+        // standalone proof. Only a requested, nonempty branch reply bearing
+        // valid PoW from a peer claiming more can start a second verification.
+        // While it runs, the wallet sees unknown. The other journal can only
+        // become active after the *whole* branch is checked beyond our work.
+        if self.point.autonomous()
+            && matches!(offered.outcome, Outcome::TooDeep { .. } | Outcome::Detached)
+            && self.asked.is_some_and(|p| p.addr == from)
+            && self.links.iter().any(|l| l.addr == from && l.work > self.our_work())
+            && headers
+                .iter()
+                .find(|h| self.chain.hash_at(h.height) != Some(fly_chain_headers::hash_bytes(h)))
+                .is_some_and(|h| {
+                    !fly_chain_headers::rules::ahead_of(h, unix_now())
+                        && (h.pow.is_primary() || h.pow.is_secondary())
+                        && grin_core::pow::verify_size(h).is_ok()
+                })
+        {
+            self.recovery = Some((from, previous_work));
+            return;
+        }
+        if matches!(offered.outcome, Outcome::Switched { .. }) {
+            self.switched_from = Some((from, previous_work));
         }
         let detached = match offered.outcome {
             Outcome::Detached => true,
@@ -619,19 +707,8 @@ impl Node {
 
     fn handle(&mut self, event: Event) {
         match event {
-            Event::Resolved { text: _, addrs } => {
-                self.names_left = self.names_left.saturating_sub(1);
-                for addr in addrs {
-                    if self.candidates.len() < MAX_CANDIDATES && !self.candidates.iter().any(|c| c.addr == addr) {
-                        self.candidates.push(Candidate {
-                            addr,
-                            state: Try::Idle,
-                            next_try: Instant::now(),
-                            wait: RETRY_FIRST,
-                            dropped: false,
-                        });
-                    }
-                }
+            Event::Resolved { origin, addrs } => {
+                self.discovery.answered(&origin, addrs, &mut self.candidates, Instant::now());
             }
             Event::Connected { addr, peer } => {
                 let now = Instant::now();
@@ -718,11 +795,20 @@ impl Node {
                 self.tell_watch();
                 let _ = reply.try_send(true);
             }
-            Event::Point { reply } => {
+            Event::Point { expected, reply } => {
+                // Re-evaluate all prior events on the chain owner thread.
+                // The normal housekeeping pass may still be behind this batch.
+                self.tend_accept(Instant::now());
+                let current = self.current_view(0, 0);
                 let made = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .map_or(0, |d| d.as_secs());
-                let _ = reply.try_send(crate::point_from(&self.chain, made));
+                let result = current.check_point_request(expected).and_then(|()| {
+                    let record = crate::point_from(&self.chain, made)?;
+                    current.check_point_request(expected)?;
+                    Ok(record)
+                });
+                let _ = reply.try_send(result);
             }
             Event::Post { tx, direct, reply } => {
                 if self.follow.as_ref().is_some_and(|follow| !follow.on_chain(&self.chain)) {
@@ -1129,6 +1215,11 @@ impl Node {
             if let Ok(Some((height, _))) = Store::peek(&self.data_dir) {
                 if let Ok(Some(header)) = self.chain.header_at(height) {
                     self.open_state(header, false);
+                } else if self.point.autonomous() && height < self.chain.start().height() {
+                    self.state_note = Some(format!(
+                        "the saved archive at {height} is older than the local checkpoint at {}; waiting for a current archive",
+                        self.chain.start().height(),
+                    ));
                 }
             }
         }
@@ -1206,6 +1297,7 @@ impl Node {
         for addr in gone {
             self.leave(addr, false, "the connection ended");
         }
+        self.discover(now);
         // the request that is out: answered in full, or not at all
         if let Some(pending) = self.asked {
             match pending.verdict(now) {
@@ -1267,6 +1359,21 @@ impl Node {
         }
     }
 
+    fn discover(&mut self, now: Instant) {
+        let events = &self.events;
+        self.discovery.lookup_if_needed(now, !self.links.is_empty(), |names, port, origin| {
+            let events = events.clone();
+            thread::Builder::new().name("fly-chain-names".into()).spawn(move || {
+                for text in names {
+                    let addrs = resolve(&text, port);
+                    if events.send(Event::Resolved { origin: origin.clone(), addrs }).is_err() {
+                        return;
+                    }
+                }
+            }).is_ok()
+        });
+    }
+
     /// What the asking is told about this moment.
     fn refresh_history(&mut self) {
         let chain = &self.chain;
@@ -1288,13 +1395,18 @@ impl Node {
         );
     }
 
+    fn start_height_time(&self) -> (u64, u64) {
+        let anchor = &self.chain.start().anchor;
+        (anchor.height, u64::try_from(anchor.timestamp.timestamp()).unwrap_or(0))
+    }
+
     /// Whether the tip is called selected; starts an asking if one is due.
     fn tend_accept(&mut self, now: Instant) {
         self.refresh_history();
         let peers: Vec<std::net::IpAddr> = self.links.iter().map(|l| l.addr.ip()).collect();
         let facts = Facts {
             history: &self.history,
-            start: (self.chain.start().height(), self.start_time),
+            start: self.start_height_time(),
             caught_up: self.caught_up(),
             peers: &peers,
             now,
@@ -1320,7 +1432,7 @@ impl Node {
         let peers: Vec<std::net::IpAddr> = self.links.iter().map(|l| l.addr.ip()).collect();
         let facts = Facts {
             history: &self.history,
-            start: (self.chain.start().height(), self.start_time),
+            start: self.start_height_time(),
             caught_up: self.caught_up(),
             peers: &peers,
             now: Instant::now(),
@@ -1337,7 +1449,7 @@ impl Node {
             if let Some((remark, _)) = &self.remark {
                 return Some(format!("{remark}; no other node is connected"));
             }
-            if self.names_left > 0 && self.candidates.is_empty() {
+            if self.discovery.pending > 0 && self.candidates.is_empty() {
                 return Some("looking up nodes".to_string());
             }
             if self.candidates.is_empty() {
@@ -1418,10 +1530,10 @@ impl Node {
         })
     }
 
-    fn publish(&self, view: &SharedView, kept: u64, cut_bytes: u64) {
+    fn current_view(&self, kept: u64, cut_bytes: u64) -> View {
         let tip = self.chain.tip();
         let best = self.links.iter().map(|l| l.work).max();
-        let fresh = View {
+        View {
             ready: true,
             failed: None,
             start: self.chain.start().height(),
@@ -1441,6 +1553,7 @@ impl Node {
             state: self.state_view(),
             blocks: self.blocks_view(),
             selected: self.accept.selected().is_some_and(|said| said.height == tip.height && said.hash == tip.hash),
+            generation: self.accept.generation(),
             clock: self.accept.clock_evidence(),
             caveat: self.accept.caveat(),
             unselected: self.accept.note(),
@@ -1451,7 +1564,11 @@ impl Node {
                     if self.outbox.direct() { "" } else { ", never from this computer's address without your agreement" }
                 )
             }),
-        };
+        }
+    }
+
+    fn publish(&self, view: &SharedView, kept: u64, cut_bytes: u64) {
+        let fresh = self.current_view(kept, cut_bytes);
         match view.lock() {
             Ok(mut slot) => *slot = fresh,
             Err(poisoned) => *poisoned.into_inner() = fresh,
@@ -1498,9 +1615,118 @@ pub const HISTORY_REFUSED: &str = "history: the proof did not pass";
 ///
 /// `events` and `inbox` are the two ends of the queue this thread reads:
 /// the network code writes to it, and so does whoever answers the wallet.
-pub fn run(settings: Settings, view: SharedView, stop: Arc<AtomicBool>, events: SyncSender<Event>, inbox: Receiver<Event>) {
+pub fn run(
+    mut settings: Settings,
+    view: SharedView,
+    stop: Arc<AtomicBool>,
+    events: SyncSender<Event>,
+    inbox: Receiver<Event>,
+) {
+    while !stop.load(Ordering::Relaxed) {
+        let Some(peer) = run_generation(settings.clone(), view.clone(), stop.clone(), events.clone(), &inbox) else {
+            return;
+        };
+        let mut addrs = addresses(settings.net, &settings.peers);
+        addrs.retain(|s| *s != peer);
+        settings.peers = std::iter::once(peer).chain(addrs).map(|s| s.to_string()).collect();
+    }
+}
+
+fn run_generation(
+    mut settings: Settings,
+    view: SharedView,
+    stop: Arc<AtomicBool>,
+    events: SyncSender<Event>,
+    inbox: &Receiver<Event>,
+) -> Option<SocketAddr> {
     let net = settings.net;
-    let (chain, opened) = match HeaderChain::open(&settings.data_dir, net, &settings.record) {
+    let handoff = if settings.point.autonomous() {
+        let dir = settings.data_dir.clone();
+        let peers = settings.peers.clone();
+        let (worker_view, cancel) = (view.clone(), stop.clone());
+        let (result, completed) = std::sync::mpsc::sync_channel(1);
+        let worker = thread::Builder::new().name("fly-chain-genesis".into()).spawn(move || {
+            net.enter();
+            let _ = result.send(crate::bootstrap::prepare(net, &dir, &peers, &worker_view, &cancel));
+        });
+        let worker = match worker {
+            Ok(worker) => worker,
+            Err(err) => {
+                view.lock().unwrap_or_else(|p| p.into_inner()).failed =
+                    Some(format!("cannot start genesis bootstrap: {err}"));
+                return None;
+            }
+        };
+        loop {
+            if stop.load(Ordering::Relaxed) {
+                let _ = worker.join();
+                return None;
+            }
+            match completed.try_recv() {
+                Ok(Ok(done)) => {
+                    if let Err(e) = fly_paycore_chain_port::bootstrap::schedule(&settings.data_dir, net.tag()) {
+                        view.lock().unwrap_or_else(|p| p.into_inner()).failed =
+                            Some(format!("cannot preserve the local history choice: {e}"));
+                        return None;
+                    }
+                    settings.record = done.record.clone();
+                    if done.reopened_compact() {
+                        settings.point = crate::PointKind::LocalGenesis;
+                    }
+                    break Some(done);
+                }
+                Ok(Err(err)) => {
+                    view.lock().unwrap_or_else(|p| p.into_inner()).failed =
+                        Some(format!("autonomous bootstrap stopped: {err}"));
+                    return None;
+                }
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                    view.lock().unwrap_or_else(|p| p.into_inner()).failed =
+                        Some("autonomous bootstrap worker stopped".into());
+                    return None;
+                }
+                Err(std::sync::mpsc::TryRecvError::Empty) => {}
+            }
+            match inbox.recv_timeout(TICK) {
+                Ok(Event::Ask { reply, .. }) => {
+                    let _ = reply.try_send(Err(Unknown));
+                }
+                Ok(Event::AskOld { reply, .. }) => {
+                    let _ = reply.try_send(Err(Unknown));
+                }
+                Ok(Event::Point { reply, .. }) => {
+                    let _ = reply.try_send(Err("verifying headers from genesis".into()));
+                }
+                Ok(Event::Post { reply, .. }) => {
+                    let _ = reply.try_send(fly_paycore_chain_port::Posted::Unknown);
+                }
+                Ok(Event::Tor { off, reply }) => {
+                    settings.tor_off = off;
+                    let _ = reply.try_send(true);
+                }
+                Err(RecvTimeoutError::Disconnected) => {
+                    stop.store(true, Ordering::Relaxed);
+                    let _ = worker.join();
+                    return None;
+                }
+                _ => {}
+            }
+        }
+    } else {
+        None
+    };
+    // A previous run may already have cached headers, bodies and quorum
+    // observations for the release point. Keep both histories independent.
+    let cache = if settings.point == crate::PointKind::Imported {
+        crate::bootstrap::imported_cache(&settings.data_dir)
+    } else {
+        settings.data_dir.clone()
+    };
+    let opened_chain = match &handoff {
+        Some(local) => local.open_chain(net),
+        None => HeaderChain::open(&cache, net, &settings.record),
+    };
+    let (mut chain, opened) = match opened_chain {
         Ok(opened) => opened,
         Err(e) => {
             let failed = View {
@@ -1511,7 +1737,15 @@ pub fn run(settings: Settings, view: SharedView, stop: Arc<AtomicBool>, events: 
                 Ok(mut slot) => *slot = failed,
                 Err(poisoned) => *poisoned.into_inner() = failed,
             }
-            return;
+            return None;
+        }
+    };
+    let mut autonomous = match handoff.map(|h| h.install(&mut chain)).transpose() {
+        Ok(history) => history,
+        Err(e) => {
+            view.lock().unwrap_or_else(|p| p.into_inner()).failed =
+                Some(format!("could not install locally verified history: {e}"));
+            return None;
         }
     };
     let tip = Arc::new(OurTip::default());
@@ -1559,8 +1793,18 @@ pub fn run(settings: Settings, view: SharedView, stop: Arc<AtomicBool>, events: 
             events.clone(),
         )
     };
-    let past = past_words(&chain);
+    let past = if autonomous.is_some() {
+        Some(if settings.point == crate::PointKind::LocalGenesis {
+            "history: locally saved after sequential verification from genesis"
+        } else {
+            "history: sequentially verified from network genesis"
+        })
+    } else {
+        if settings.point == crate::PointKind::Imported { Some(HISTORY_SAMPLED) } else { past_words(&chain) }
+    };
     let mut node = Node {
+        recovery: None,
+        switched_from: None,
         chain,
         point: settings.point,
         past,
@@ -1573,12 +1817,12 @@ pub fn run(settings: Settings, view: SharedView, stop: Arc<AtomicBool>, events: 
         candidates: Vec::new(),
         links: Vec::new(),
         asked: None,
-        names_left: names.len(),
+        discovery: Names::new(names, default_port, Instant::now()),
         last_failure: None,
         remark: None,
         held: false,
         file_trouble: false,
-        data_dir: settings.data_dir.clone(),
+        data_dir: cache.clone(),
         fetch: None,
         file_tried: false,
         state_note: None,
@@ -1596,17 +1840,9 @@ pub fn run(settings: Settings, view: SharedView, stop: Arc<AtomicBool>, events: 
         watch,
         waiting_segments,
         events: events.clone(),
-        accept: Accept::open(settings.tips, &settings.data_dir),
+        accept: Accept::open(settings.tips, &cache),
         history: History::default(),
-        start_time: 0,
     };
-    node.start_time = node
-        .chain
-        .header_at(node.chain.start().height())
-        .ok()
-        .flatten()
-        .and_then(|header| u64::try_from(header.timestamp.timestamp()).ok())
-        .unwrap_or(0);
     node.publish(&view, opened.kept, opened.cut_bytes);
     // What earlier runs left - the state, the blocks - is taken up before
     // any node is looked for. Applying the blocks again can take a minute,
@@ -1616,16 +1852,7 @@ pub fn run(settings: Settings, view: SharedView, stop: Arc<AtomicBool>, events: 
     node.tend_state(now);
     node.tend_blocks(now);
     node.publish(&view, opened.kept, opened.cut_bytes);
-    // looking names up can take as long as it likes: not on this thread
-    let resolver = events;
-    let _ = thread::Builder::new().name("fly-chain-names".into()).spawn(move || {
-        for text in names {
-            let addrs = resolve(&text, default_port);
-            if resolver.send(Event::Resolved { text, addrs }).is_err() {
-                return;
-            }
-        }
-    });
+    node.discover(Instant::now());
     while !stop.load(Ordering::Relaxed) {
         match inbox.recv_timeout(TICK) {
             Ok(event) => node.handle(event),
@@ -1633,21 +1860,109 @@ pub fn run(settings: Settings, view: SharedView, stop: Arc<AtomicBool>, events: 
             Err(RecvTimeoutError::Disconnected) => break,
         }
         // whatever else is waiting, before the next round of housekeeping
-        for event in inbox.try_iter().take(64) {
+        for _ in 0..64 {
+            if node.recovery.is_some() || node.switched_from.is_some() {
+                break;
+            }
+            let Ok(event) = inbox.try_recv() else { break };
             node.handle(event);
         }
+        if let Some(store) = autonomous.as_ref() {
+            let switched = node.switched_from.take();
+            let challenge_source = if store.still_on(&node.chain) {
+                node.recovery
+            } else {
+                let source = switched.or_else(|| node.links.first().map(|l| (l.addr, node.our_work())));
+                if source.is_none() {
+                    *view.lock().unwrap_or_else(|p| p.into_inner()) = View {
+                        failed: Some("local checkpoint requires branch verification".into()),
+                        ..View::default()
+                    };
+                    break;
+                }
+                source
+            };
+            if let Some((from, previous_work)) = challenge_source {
+                *view.lock().unwrap_or_else(|p| p.into_inner()) = View {
+                    point: crate::PointKind::Genesis,
+                    problem: Some("checking a competing branch from genesis".into()),
+                    ..View::default()
+                };
+                let challenge = store.challenge(previous_work);
+                for link in &node.links {
+                    link.peer.stop("checking a competing branch");
+                }
+                return match challenge {
+                    Ok(()) => Some(from),
+                    Err(e) => {
+                        view.lock().unwrap_or_else(|p| p.into_inner()).failed =
+                            Some(format!("could not start branch verification: {e}"));
+                        None
+                    }
+                };
+            }
+        }
         node.keep_house();
+        if let Some(store) = autonomous.as_mut() {
+            if let Err(e) = store.advance(&mut node.chain) {
+                *view.lock().unwrap_or_else(|p| p.into_inner()) = View {
+                    failed: Some(format!("local checkpoint cannot be advanced: {e}")),
+                    ..View::default()
+                };
+                break;
+            }
+        }
         node.publish(&view, opened.kept, opened.cut_bytes);
     }
     for link in &node.links {
         link.peer.stop("shutting down");
     }
+    None
 }
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::arithmetic_side_effects)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn offline_discovery_retries_without_restarting_or_overlapping_lookups() {
+        let now = Instant::now();
+        let names = vec!["seed-a.example".to_owned(), "seed-b.example".to_owned()];
+        let mut discovery = Names::new(names.clone(), Some(3414), now);
+        let origin = discovery.origin.clone();
+        let mut candidates = Vec::new();
+        let addr = "127.0.0.1:3414".parse().unwrap();
+        discovery.lookup_if_needed(now, false, |batch, port, _| {
+            assert_eq!(batch, names);
+            assert_eq!(port, Some(3414));
+            true
+        });
+        // Neither name resolved. Even if the resolver runs slowly, it
+        // finishes the first batch before another is allowed to start.
+        discovery.answered(&origin, Vec::new(), &mut candidates, now);
+        let later = now + RETRY_MAX;
+        discovery.lookup_if_needed(later, false, |_, _, _| unreachable!());
+        discovery.answered(&origin, Vec::new(), &mut candidates, later);
+        assert!(candidates.is_empty());
+        discovery.lookup_if_needed(later, false, |_, _, _| unreachable!());
+        let retry = later + RETRY_FIRST;
+        discovery.lookup_if_needed(retry, false, |batch, _, _| {
+            assert_eq!(batch, names);
+            true
+        });
+        assert_eq!(discovery.pending, 2);
+        discovery.answered(&Arc::new(()), vec![addr], &mut candidates, retry);
+        assert!(candidates.is_empty(), "discard a late lookup from a previous chain generation");
+        assert_eq!(discovery.pending, 2);
+        discovery.answered(&origin, vec![addr], &mut candidates, retry);
+        discovery.answered(&origin, vec![addr], &mut candidates, retry);
+        assert!(matches!(candidates.as_slice(), [c] if c.addr == addr && c.state == Try::Idle && c.next_try == retry));
+        // The second batch produced a connection. Healthy sync does not
+        // poll DNS again after the retry interval.
+        discovery.lookup_if_needed(retry + RETRY_MAX, true, |_, _, _| unreachable!());
+        assert_eq!(discovery.pending, 0);
+    }
 
     #[test]
     fn a_published_views_clock_expires_even_if_the_worker_has_not_republished() {

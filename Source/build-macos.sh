@@ -14,8 +14,10 @@ TARGETS=${TARGETS:-"aarch64-apple-darwin x86_64-apple-darwin"}
 OUT="$ROOT/dist-macos"
 STAMP=$(date +%Y%m%d-%H%M)
 # the version is the window's own: one line of ui/app/src/lib.rs
-VER=$(sed -n 's/^pub const APP_VERSION: &str = "\([0-9]*\.[0-9]*\.[0-9]*\)";.*/\1/p' "$ROOT/ui/app/src/lib.rs")
+VER=$(sed -nE 's/^pub const APP_VERSION: \&str = "([0-9]+\.[0-9]+\.[0-9]+A?)";.*/\1/p' "$ROOT/ui/app/src/lib.rs")
 [ -n "$VER" ] || { echo "no APP_VERSION in ui/app/src/lib.rs"; exit 2; }
+[[ $(uname -s) == Darwin ]] || { echo "Requires macOS, Xcode command line tools, codesign and hdiutil."; exit 2; }
+numeric_version=${VER%A}
 say() { echo "$(date +%H:%M:%S) $*"; }
 
 rustup toolchain install "$TOOLCHAIN" --profile minimal >/dev/null
@@ -26,18 +28,25 @@ export RUSTUP_TOOLCHAIN=$TOOLCHAIN
 # set is missing (a checkout without the vendored crates) is moved aside for
 # this build only, and the crates come from crates.io at the versions of the
 # lock files.
+disabled_cfgs=()
+restore_configs() {
+  for cfg in "${disabled_cfgs[@]}"; do mv "$cfg.offline-set-missing" "$cfg"; done
+}
+trap restore_configs EXIT
 for cfg in .cargo/config.toml ui/.cargo/config.toml transport/*/.cargo/config.toml; do
   [ -f "$cfg" ] || continue
   dir=$(sed -n 's/^directory *= *"\(.*\)"/\1/p' "$cfg" | head -1)
   base=$(dirname "$(dirname "$cfg")")
   if [ -n "$dir" ] && [ ! -d "$base/$dir" ]; then
+    [ ! -e "$cfg.offline-set-missing" ] || { say "leftover backup at $cfg.offline-set-missing"; exit 1; }
     say "no $base/$dir: $cfg set aside for this build"
     mv "$cfg" "$cfg.offline-set-missing"
+    disabled_cfgs+=("$cfg")
   fi
 done
 
 export CARGO_TARGET_DIR="$ROOT/target-macos"
-build() { local what=$1 dir=$2 t=$3; shift 3; local s=$SECONDS; (cd "$dir" && cargo build --release -q --target "$t" "$@"); say "$what $t built in $((SECONDS - s)) s"; }
+build() { local what=$1 dir=$2 t=$3; shift 3; local s=$SECONDS; (cd "$dir" && cargo build --release --locked -q --target "$t" "$@"); say "$what $t built in $((SECONDS - s)) s"; }
 for t in $TARGETS; do
   build host paycore/host "$t" --bin fly-paycore-host
   build chain chain/fly-chain "$t"
@@ -76,8 +85,9 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleName</key><string>GrinSight</string>
   <key>CFBundleDisplayName</key><string>GrinSight</string>
   <key>CFBundleIdentifier</key><string>org.grinsight.fly</string>
-  <key>CFBundleVersion</key><string>${VER}.${STAMP//-/.}</string>
-  <key>CFBundleShortVersionString</key><string>${VER}</string>
+  <key>CFBundleVersion</key><string>${numeric_version}</string>
+  <key>CFBundleShortVersionString</key><string>${numeric_version}</string>
+  <key>GrinSightRelease</key><string>${VER}</string>
   <key>CFBundleExecutable</key><string>GrinSight</string>
   <key>CFBundleIconFile</key><string>GrinSight</string>
   <key>CFBundlePackageType</key><string>APPL</string>
@@ -86,7 +96,10 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </dict>
 </plist>
 PLIST
-cp "$ROOT/dist-files/LICENSE-GPL-3.0.txt" "$APP/Contents/Resources/" 2>/dev/null || true
+cp "$ROOT/dist-files/LICENSE-GPL-3.0.txt" "$APP/Contents/Resources/"
+for font in Inter DejaVu WalletCJK; do
+  cp "$ROOT/ui/app/fonts/LICENSE-$font.txt" "$APP/Contents/Resources/"
+done
 
 # ad-hoc signatures (no identity): macOS on Apple silicon runs nothing without one
 for b in "$APP/Contents/MacOS/bin/"* "$APP/Contents/MacOS/GrinSight"; do codesign --force -s - "$b"; done
@@ -103,7 +116,21 @@ fi
 cp "$T/out/scenario.log" "$OUT/scenario.log"
 rm -rf "$T"
 
-DMG="$OUT/GrinSight-$STAMP-macos.dmg"
-hdiutil create -quiet -volname GrinSight -srcfolder "$APP" -ov -format UDZO "$DMG"
+codesign --verify --deep --strict "$APP"
+for program in "$APP/Contents/MacOS/GrinSight" "$APP/Contents/MacOS/bin/"*; do
+  lipo "$program" -verify_arch arm64 x86_64
+done
+DMG="$OUT/GrinSight-$VER-macos-universal.dmg"
+mkdir "$OUT/image"
+ditto "$APP" "$OUT/image/GrinSight.app"
+hdiutil create -quiet -volname GrinSight -srcfolder "$OUT/image" -ov -format UDZO "$DMG"
+hdiutil verify "$DMG"
+mountpoint=$(mktemp -d)
+hdiutil attach "$DMG" -readonly -nobrowse -mountpoint "$mountpoint"
+if ! codesign --verify --deep --strict "$mountpoint/GrinSight.app" || ! diff -qr "$APP" "$mountpoint/GrinSight.app"; then
+  hdiutil detach "$mountpoint"; rmdir "$mountpoint"; exit 1
+fi
+hdiutil detach "$mountpoint"
+rmdir "$mountpoint"
 (cd "$OUT" && shasum -a 256 "$(basename "$DMG")" > SHA256SUMS.txt && cat SHA256SUMS.txt)
 say "done: $DMG"

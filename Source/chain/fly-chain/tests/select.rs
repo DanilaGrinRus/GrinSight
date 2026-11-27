@@ -595,3 +595,6 @@ fn the_users_own_node_is_asked_but_is_no_voice() {
     world.operators[0].say(&world.header(40));
     wait_for("the selected tip", || selected(&mut chain, world.tip(40)));
 }
+
+#[path = "kit/autonomous_wallet.rs"]
+mod autonomous_wallet;

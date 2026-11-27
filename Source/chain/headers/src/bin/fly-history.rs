@@ -1,188 +1,154 @@
-//! Reads a file of every header of a chain, as `dump_headers.py` writes it
-//! (for each header two bytes of length, then the header), and checks the
-//! whole of it the way a node would on the way from the first block:
-//! every header is the next height, names the hash of the one before,
-//! commits in `prev_root` to all headers before it, and carries a valid
-//! proof of work that meets the difficulty it claims, and the difficulty
-//! it claims is what the rule of its era gives: from the fourth hard fork
-//! on by this crate's own check of a header against the two before it,
-//! before that by the node's rule over the sixty headers before it, with
-//! the scaling of the secondary proof of work.
-//!
-//! Prints what it found, and how the work of the chain divides at the
-//! fourth hard fork. Changes nothing.
+//! Check a framed Grin header dump from the network's exact genesis.
+//! Format: u16 big-endian byte length followed by one full header.
+//! Stops on the first invalid header. Does not contact a node or wallet.
 #![forbid(unsafe_code)]
-use fly_chain_headers::peaks::Peaks;
-use fly_chain_headers::{hash_bytes, read_header, rules, Net};
-use grin_core::consensus::{self, HeaderDifficultyInfo};
-use grin_core::pow::Difficulty;
-use std::collections::VecDeque;
-use grin_core::core::block::HeaderVersion;
-use grin_core::core::hash::Hashed;
-use grin_core::core::BlockHeader;
-use grin_core::pow;
-use std::io::Read;
+use fly_chain_headers::{genesis::GenesisVerifier, hash_bytes, read_header, Net, MAX_HEADER_LEN};
+use std::fs::{File, OpenOptions};
+use std::io::{self, BufReader, Read, Write};
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
+use std::time::{SystemTime, UNIX_EPOCH};
 
-/// The first problems are named; the rest are counted.
-const NAMED: usize = 20;
-
-#[derive(Default)]
-struct Found {
-    headers: u64,
-    /// Headers of each version, 1 to 5.
-    by_version: [u64; 6],
-    bad_pow: u64,
-    bad_work: u64,
-    bad_step: u64,
-    steps: u64,
-    /// The rule of the eras before version 5: checked, failed.
-    old_steps: u64,
-    bad_old_step: u64,
-    problems: Vec<String>,
-    /// Total difficulty of the last header before version 5.
-    before_five: Option<(u64, u64)>,
-    first_five: Option<u64>,
+fn next_record(input: &mut impl Read) -> io::Result<Option<Vec<u8>>> {
+    let mut size = [0; 2];
+    loop {
+        match input.read(&mut size[..1]) {
+            Ok(0) => return Ok(None),
+            Ok(_) => break,
+            Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
+            Err(e) => return Err(e),
+        }
+    }
+    input.read_exact(&mut size[1..])?;
+    let len = usize::from(u16::from_be_bytes(size));
+    if len == 0 || len > MAX_HEADER_LEN {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "invalid Grin header frame length",
+        ));
+    }
+    let mut bytes = vec![0; len];
+    input.read_exact(&mut bytes)?;
+    Ok(Some(bytes))
 }
 
-impl Found {
-    fn problem(&mut self, text: String) {
-        if self.problems.len() < NAMED {
-            self.problems.push(text);
+fn run(path: &Path, net: Net, point: Option<&Path>) -> Result<(), String> {
+    let mut input = BufReader::new(File::open(path).map_err(|e| e.to_string())?);
+    let as_io = |e: io::Error| e.to_string();
+    let mut verified = GenesisVerifier::new(net).map_err(|e| format!("{e:?}"))?;
+    let first = next_record(&mut input)
+        .map_err(as_io)?
+        .ok_or("empty header file")?;
+    verified
+        .check_genesis(&read_header(&first).ok_or("invalid genesis encoding")?)
+        .map_err(|e| format!("height 0: {e:?}"))?;
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_secs();
+    let mut by_version = [0u64; 6];
+    while let Some(raw) = next_record(&mut input).map_err(as_io)? {
+        let h = read_header(&raw).ok_or("invalid header encoding")?;
+        verified
+            .push(&h, now)
+            .map_err(|e| format!("after verified height {}: {e:?}", verified.tip().height))?;
+        if let Some(n) = by_version.get_mut(usize::from(h.version.0)) {
+            *n += 1;
+        }
+        if h.height % 500_000 == 0 {
+            eprintln!("verified height {}", h.height);
         }
     }
-}
-
-fn next_record(file: &mut impl Read) -> Result<Option<Vec<u8>>, String> {
-    let mut size = [0u8; 2];
-    match file.read(&mut size).map_err(|e| e.to_string())? {
-        0 => return Ok(None),
-        2 => {}
-        1 => file.read_exact(size.get_mut(1..).ok_or("size")?).map_err(|e| e.to_string())?,
-        _ => return Err("a read past the buffer".into()),
+    let tip = verified.tip();
+    println!("headers: {} (heights 0..{})", tip.height + 1, tip.height);
+    println!(
+        "last hash: {}",
+        hash_bytes(tip)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<String>()
+    );
+    println!(
+        "by version 1..5 (excluding genesis): {:?}",
+        &by_version[1..]
+    );
+    println!(
+        "total difficulty at the end: {}",
+        tip.total_difficulty().to_num()
+    );
+    println!(
+        "header tree: {} leaves, {} peaks",
+        verified.peaks().leaves(),
+        verified.peaks().hashes().len()
+    );
+    if let Some(file) = point {
+        let bytes = verified
+            .record(now)
+            .ok_or("a checkpoint requires three post-HF4 headers")?;
+        // Never overwrite a previous record or wallet state. A truncated export
+        // fails the normal record reader; installation uses the runtime journal.
+        let mut output = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(file)
+            .map_err(as_io)?;
+        output.write_all(&bytes).map_err(as_io)?;
+        output.sync_all().map_err(as_io)?;
     }
-    let mut raw = vec![0u8; usize::from(u16::from_be_bytes(size))];
-    file.read_exact(&mut raw).map_err(|e| format!("the file ends inside a header: {e}"))?;
-    Ok(Some(raw))
-}
-
-fn run(path: &str) -> Result<Found, String> {
-    Net::Main.enter();
-    let file = std::fs::File::open(path).map_err(|e| format!("{path}: {e}"))?;
-    let mut file = std::io::BufReader::with_capacity(1 << 20, file);
-    let mut found = Found::default();
-    let mut peaks = Peaks::empty();
-    let mut prev: Option<BlockHeader> = None;
-    let mut older: Option<BlockHeader> = None;
-    // what the rule of the early eras reads of the headers before, newest first
-    let mut window: VecDeque<HeaderDifficultyInfo> = VecDeque::new();
-    let keep = usize::try_from(consensus::DMA_WINDOW).map_err(|_| "window")?.saturating_add(1);
-    while let Some(raw) = next_record(&mut file)? {
-        let height = found.headers;
-        let header = read_header(&raw).ok_or_else(|| format!("height {height}: not a header"))?;
-        if header.height != height {
-            return Err(format!("height {} where {height} was expected", header.height));
-        }
-        if let Some(prev) = &prev {
-            if header.prev_hash != prev.hash() {
-                return Err(format!("height {height} does not name the hash of the header before it"));
-            }
-        }
-        if header.prev_root != peaks.root() && height > 0 {
-            return Err(format!("height {height}: prev_root is not the root of the headers before it"));
-        }
-        let version = consensus::header_version(height);
-        if let Some(count) = found.by_version.get_mut(usize::from(version.0)) {
-            *count = count.saturating_add(1);
-        }
-        if height > 0 {
-            if pow::verify_size(&header).is_err() {
-                found.bad_pow = found.bad_pow.saturating_add(1);
-                found.problem(format!("height {height}: the proof of work is not valid"));
-            }
-            let before = prev.as_ref().map_or(0, |p| p.total_difficulty().to_num());
-            match header.total_difficulty().to_num().checked_sub(before).filter(|w| *w > 0) {
-                Some(work) if header.pow.to_difficulty(height).to_num() >= work => {}
-                _ => {
-                    found.bad_work = found.bad_work.saturating_add(1);
-                    found.problem(format!("height {height}: the proof of work does not meet the difficulty claimed"));
-                }
-            }
-        }
-        if version < HeaderVersion(5) && height > 0 {
-            // as the node does on its way from the first block
-            let next = consensus::next_difficulty(height, window.iter().cloned());
-            let before = prev.as_ref().map_or(0, |p| p.total_difficulty().to_num());
-            let claimed = header.total_difficulty().to_num().checked_sub(before);
-            found.old_steps = found.old_steps.saturating_add(1);
-            let scaling = header.pow.secondary_scaling == next.secondary_scaling;
-            if claimed != Some(next.difficulty.to_num()) || !scaling {
-                found.bad_old_step = found.bad_old_step.saturating_add(1);
-                found.problem(format!("height {height}: the difficulty is not what the rule of its era gives"));
-            }
-        }
-        if version >= HeaderVersion(5) {
-            if found.first_five.is_none() {
-                found.first_five = Some(height);
-                found.before_five = prev.as_ref().map(|p| (p.height, p.total_difficulty().to_num()));
-            }
-            // the rule reads the two headers before; both must be of version 5 for it to be the rule of this era
-            if let (Some(older), Some(prev)) = (&older, &prev) {
-                if consensus::header_version(older.height) >= HeaderVersion(5) {
-                    found.steps = found.steps.saturating_add(1);
-                    if let Err(why) = rules::check_step(older, prev, &header) {
-                        found.bad_step = found.bad_step.saturating_add(1);
-                        found.problem(format!("height {height}: {why:?}"));
-                    }
-                }
-            }
-        }
-        let work = header.total_difficulty().to_num().saturating_sub(prev.as_ref().map_or(0, |p| p.total_difficulty().to_num()));
-        let seconds = u64::try_from(header.timestamp.timestamp()).map_err(|_| format!("height {height}: a time before 1970"))?;
-        window.push_front(HeaderDifficultyInfo::new(None, seconds, Difficulty::from_num(work), header.pow.secondary_scaling, header.pow.is_secondary()));
-        window.truncate(keep);
-        peaks.append(&header).map_err(|_| format!("height {height}: the header tree cannot take it"))?;
-        found.headers = found.headers.saturating_add(1);
-        older = prev.take();
-        prev = Some(header);
-        if found.headers % 500_000 == 0 {
-            eprintln!("  {} headers", found.headers);
-        }
-    }
-    let Some(last) = prev else { return Err("the file has no headers".into()) };
-    let total = last.total_difficulty().to_num();
-    let hex: String = hash_bytes(&last).iter().map(|b| format!("{b:02x}")).collect();
-    println!("headers: {} (heights 0..{})", found.headers, last.height);
-    println!("last hash: {hex}");
-    println!("by version 1..5: {:?}", found.by_version.get(1..).unwrap_or(&[]));
-    println!("every header: next height, hash of the one before, prev_root against the tree of all before - held for all, or the run would have stopped");
-    println!("proof of work not valid: {}; not meeting the difficulty claimed: {}", found.bad_pow, found.bad_work);
-    println!("difficulty rule (version 5): {} checked, {} failed", found.steps, found.bad_step);
-    println!("difficulty rule (versions 1 to 4, the node's rule over sixty headers): {} checked, {} failed", found.old_steps, found.bad_old_step);
-    println!("total difficulty at the end: {total}");
-    if let (Some(first), Some((at, before))) = (found.first_five, found.before_five) {
-        let share = u128::from(before).saturating_mul(1_000_000).checked_div(u128::from(total)).unwrap_or(0);
-        println!("version 5 begins at height {first}; total difficulty at height {at}: {before}");
-        println!("work before version 5, parts in a million of all work: {share}");
-    }
-    println!("header tree: {} leaves, {} peaks", peaks.leaves(), peaks.hashes().len());
-    for line in &found.problems {
-        println!("problem: {line}");
-    }
-    Ok(found)
+    Ok(())
 }
 
 fn main() -> ExitCode {
-    let Some(path) = std::env::args().nth(1) else {
-        eprintln!("usage: fly-history <file of headers>");
+    let mut args = std::env::args_os().skip(1);
+    let usage = "usage: fly-history <header-file> [--network main|test] [--checkpoint <new-file>]";
+    let Some(path) = args.next() else {
+        eprintln!("{usage}");
         return ExitCode::from(2);
     };
-    match run(&path) {
-        Ok(found) if found.bad_pow == 0 && found.bad_work == 0 && found.bad_step == 0 && found.bad_old_step == 0 => ExitCode::SUCCESS,
-        Ok(_) => ExitCode::from(1),
+    let mut net = Net::Main;
+    let mut point: Option<PathBuf> = None;
+    while let Some(arg) = args.next() {
+        match (arg.to_str(), args.next()) {
+            (Some("--network"), Some(network)) if network == "main" => net = Net::Main,
+            (Some("--network"), Some(network)) if network == "test" => net = Net::Test,
+            (Some("--checkpoint"), Some(file)) if point.is_none() => point = Some(file.into()),
+            _ => {
+                eprintln!("{usage}");
+                return ExitCode::from(2);
+            }
+        }
+    }
+    match run(Path::new(&path), net, point.as_deref()) {
+        Ok(()) => ExitCode::SUCCESS,
         Err(why) => {
             eprintln!("fly-history: {why}");
-            ExitCode::from(1)
+            ExitCode::FAILURE
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::next_record;
+    use fly_chain_headers::MAX_HEADER_LEN;
+    use std::io::ErrorKind;
+
+    #[test]
+    fn distinguishes_boundary_eof_and_incomplete_records() {
+        let mut empty: &[u8] = &[];
+        assert_eq!(next_record(&mut empty).unwrap(), None);
+        for bytes in [&[0u8][..], &[0, 2, 42][..]] {
+            assert_eq!(
+                next_record(&mut &*bytes).unwrap_err().kind(),
+                ErrorKind::UnexpectedEof
+            );
+        }
+        let too_long = u16::try_from(MAX_HEADER_LEN + 1).unwrap().to_be_bytes();
+        for size in [[0, 0], too_long] {
+            assert_eq!(
+                next_record(&mut &size[..]).unwrap_err().kind(),
+                ErrorKind::InvalidData
+            );
         }
     }
 }

@@ -1,0 +1,3325 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: zh\n"
+
+msgid " · nodes will see the IP of "
+msgstr " IP地址是什么? "
+
+#. runtime
+msgid " · the search for your money is still running"
+msgstr " · 寻找你的钱仍在运行"
+
+msgid ". If you forget it, only the 24 words shown next will bring the wallet back."
+msgstr "。如果忘记密码，只能用接下来显示的 24 个恢复词找回钱包。"
+
+msgid ". Whoever knows these words controls the money. We show them once and never keep them in plain form."
+msgstr "。任何知道这些词的人都能动用钱包里的资金。钱包只显示一次，不会以明文保存。"
+
+#. runtime
+msgid "1 h ago"
+msgstr "1 小时前"
+
+#. runtime
+msgid "2 h ago"
+msgstr "2 小时前"
+
+#. runtime
+msgid "24 words (or 12) separated by spaces are needed"
+msgstr "请输入 24 个或 12 个恢复词，用空格分隔。"
+
+msgid "24 words, separated by spaces"
+msgstr "24 个恢复词，用空格分隔"
+
+#. runtime
+msgid "A"
+msgstr "A"
+
+msgid "A faint ring: not begun. A ring: under way. A filled mark: done. The warning colour: needs your attention."
+msgstr "一个暗淡的环:没有开始。 一个环:正在进行。 一个填充的标记:完成。 警告颜色:需要您的注意。"
+
+#. runtime
+msgid "A message is at most 2000 bytes"
+msgstr "一条消息最多是2000字节"
+
+#. runtime
+msgid "A message key starts with npub1"
+msgstr "消息密钥以 npub1 开始"
+
+#. runtime
+msgid "A new point would be too close to the one the wallet started from. Try again in about half a day. Nothing was changed."
+msgstr "新的点会太接近钱包的起始点。 半天后再试一次,没有发生任何变化。"
+
+#. runtime
+msgid "A part of the program is missing, so the balance cannot be checked. Start the program from its own folder or install it again."
+msgstr "程序的一部分缺失,因此无法检查余额。 请从自己的文件夹启动程序或重新安装。"
+
+#. runtime
+msgid "A part of the program is missing. Install it again."
+msgstr "程序的一部分缺失,请重新安装。"
+
+#. runtime
+msgid "A payment did not reach the address over Tor"
+msgstr "付款未通过 Tor 到达地址"
+
+msgid "A payment gets its first confirmation with the block it is in, and one more with every block after it. Here you choose how many make an incoming payment “received”: one at least. It is a word about the status only — it does not change what can be spent."
+msgstr "付款在其所在的区块获得第一个确认,并在其后的每个区块获取另一个确认。 在这里,您可以选择有多少人“收到”进入的付款:至少一个。 这只是关于状态的一个词 — — 它不会改变可以花费的金额。"
+
+#. runtime
+msgid "A payment of 0.50 GRIN was prepared before this wallet was restored from an older copy. The wallet no longer knows whether it was signed after that copy was taken, so it will not sign it and keeps the money in reserve."
+msgstr "在这个钱包从旧副本恢复之前,已经准备了 0.50 GRIN 的付款。 钱包不再知道在该副本被取出后是否签名,因此它不会签名,并将钱放在储备中。"
+
+#. runtime
+msgid "A payment of {} GRIN was prepared before this wallet was restored from an older copy. The wallet no longer knows whether it was signed after that copy was taken, so it will not sign it and keeps the money in reserve."
+msgstr "付款 {} GRIN 这个钱包在从旧副本恢复之前就已经准备好了。 钱包不再知道在复制之后是否签名了,所以它不会签名,而是将钱保存在储备中。"
+
+msgid "A payment that has change now also spends up to eight of the smallest outputs, and they come back inside the change. The amount paid is the same; the fee is a little higher; the outputs spent together are seen to have one owner. Marked outputs are not touched."
+msgstr "一个有变动的付款现在也会花费最多八个最小的输出,并且它们会在变动中返回。 支付的金额是相同的;费用略高一些;一起花费的输出看起来有一个所有者。 标记的输出不会受到影响。"
+
+#. runtime
+msgid "A point can be made once the wallet stands at the confirmed tip. Wait until synchronisation is over. Nothing was changed."
+msgstr "一旦钱包处于确认的顶点,就可以做出点数。 等到同步结束,没有任何变化。"
+
+#. runtime
+msgid "A recipient without an address"
+msgstr "没有地址的收件人"
+
+msgid "A short password. Whoever gets the wallet file can try short passwords one after another; twelve characters or more are advised."
+msgstr "密码较短。拿到钱包文件的人可以逐一尝试短密码。建议至少使用 12 个字符。"
+
+msgid "A starting point your wallet made on another device of yours (Details → Make my own starting point) can be pasted here whole, so that this wallet starts shorter. It keeps the proof of the built-in point. Leave empty for the built-in point."
+msgstr "您的钱包在另一台设备上创建的起始点(详细信息 → 创建自己的起始点)可以整个粘贴到这里,这样这个钱包的起始时间就会缩短。 它保留了内置点的证明,内置点留空。"
+
+#. runtime
+msgid "A transaction is not sent yet"
+msgstr "交易尚未发送"
+
+#. runtime
+msgid "Accept"
+msgstr "接受"
+
+msgid "Accept the Slatepack"
+msgstr "接受 Slatepack"
+
+msgid "Accepting…"
+msgstr "正在接受…"
+
+msgid "Actions on the contact"
+msgstr "关于联系人的行动"
+
+msgid "Add"
+msgstr "添加"
+
+msgid "Add a contact"
+msgstr "添加联系人"
+
+msgid "Add a contact by their message key (npub1…): you can write to them and pay them by name. Messages travel over Tor."
+msgstr "通过消息密钥(npub1 …) 添加联系人:您可以写信给他们并按姓名付款。 消息传输 Tor1998年12月1日至1999年6月30日"
+
+msgid "Add a contact to write to them and to pay them by name."
+msgstr "添加一个联系人写信给他们,并按姓名支付他们。"
+
+msgid "Add a list"
+msgstr "添加列表"
+
+msgid "Add a node you run to the sources this wallet asks."
+msgstr "将运行的节点添加到该钱包请求的源。"
+
+msgid "Add these contacts"
+msgstr "添加这些联系人"
+
+#. runtime
+msgid "Added: {}"
+msgstr "已添加：{}"
+
+msgid "Address copied"
+msgstr "地址已复制"
+
+#. runtime
+msgid "Address declared in the payment"
+msgstr "付款时申报的地址"
+
+#. runtime
+msgid "Address unavailable until network is known"
+msgstr "地址不可用,直到网络已知"
+
+msgid "After unlocking, the wallet finds its money in the chain by itself — this can take a while."
+msgstr "解锁后,钱包会自动在链中找到它的钱 — — 这可能需要一段时间。"
+
+msgid "All"
+msgstr "全部"
+
+msgid "All contacts"
+msgstr "所有联系人"
+
+msgid "All payments"
+msgstr "所有付款"
+
+msgid "Amount, GRIN"
+msgstr "金额（GRIN）"
+
+#. runtime
+msgid "An address of the other network"
+msgstr "另一个网络的地址"
+
+#. runtime
+msgid "An address that is not in your contacts"
+msgstr "不在联系人中的地址"
+
+#. runtime
+msgid "An earlier payment could not be sent through Tor and is still waiting"
+msgstr "较早的付款无法通过 Tor 发送,仍在等待"
+
+#. runtime
+msgid "An earlier payment is contested: decide about it under “Waiting for you” first."
+msgstr "较早的付款有争议:首先在“等待您”下决定。"
+
+msgid "An invoice does not say who issued it. Pay only an invoice you were expecting."
+msgstr "发票上不会说明是谁开具的。 只需支付您预期的发票。"
+
+msgid "An invoice is paid from “Receive”: paste its text there."
+msgstr "发票是从“收到”支付:粘贴它的文本在那里。"
+
+#. runtime
+msgid "Anna"
+msgstr "安娜"
+
+#. runtime
+msgid "Another GrinSight process holds the files of the network check"
+msgstr "另一个 GrinSight 进程持有网络检查文件"
+
+#. runtime
+msgid "Another reply was already chosen for this payment"
+msgstr "已为此付款选择了另一个答案"
+
+msgid "Any characters will do: letters of any language, digits, signs and spaces. Capital and small letters differ."
+msgstr "任何字符都可以:任何语言的字母、数字、符号和空格。 大小写字母不同。"
+
+msgid "Any password is accepted. Twelve characters or more are advised: the password is all that protects the wallet file on this device."
+msgstr "任何密码都可接受,建议使用十二个或更多字符:密码是保护此设备上的钱包文件的唯一方法。"
+
+msgid "Any program on this computer can read the clipboard. In a minute the wallet empties it if the words are still there; the clipboard history of Windows (Win+V) it cannot empty."
+msgstr "本机上的任何程序都可以读取剪贴板。一分钟后，如果恢复词仍在剪贴板中，钱包会将其清空。钱包无法清除 Windows 剪贴板历史记录（Win+V）。"
+
+msgid "Ask for GRIN"
+msgstr "请求 GRIN"
+
+#. runtime
+msgid "At most 200 contacts at once"
+msgstr "一次最多200个联系人"
+
+#. runtime
+msgid "At most 4 nodes"
+msgstr "最多4个节点"
+
+msgid "Auto-receive"
+msgstr "自动收款"
+
+#. runtime
+msgid "Auto-receive is off"
+msgstr "自动接收已关闭"
+
+msgid "Available"
+msgstr "可用余额"
+
+msgid "Available "
+msgstr "可用余额 "
+
+msgid "B/W"
+msgstr "黑白"
+
+msgid "Back"
+msgstr "返回"
+
+#. runtime
+msgid "Balance unavailable"
+msgstr "余额暂不可用"
+
+msgid "Bear crafts"
+msgstr "熊工坊"
+
+msgid "Block"
+msgstr "区块"
+
+#. runtime
+msgid "Block headers"
+msgstr "区块头"
+
+#. runtime
+msgid "Blocks"
+msgstr "区块"
+
+msgid "Both wallets show the same six words when each has the other's message key and address right. Compare them with the contact over another channel — a call, another messenger, in person. They are not the words of your wallet and are no secret. The same words mean nobody swapped a key or an address between you; they do not prove who the person is."
+msgstr "当两个钱包都拥有对方的密钥和地址时,它们显示的六个字是相同的。 将它们与另一个渠道的联系人进行比较 — — 电话、另一个信使、面对面。 它们不是你的钱包中的字,也不是秘密。 同样的字意味着没有人在你们之间交换密钥或地址;它们不能证明这个人是谁。"
+
+msgid "Bridges"
+msgstr "网桥"
+
+msgid "Bridges, for where Tor is blocked"
+msgstr "桥梁，用于哪里 Tor 被封锁"
+
+#. runtime
+msgid "Broken address"
+msgstr "无效地址"
+
+#. runtime
+msgid "Broken address: check all of it"
+msgstr "破碎的地址:检查它的所有"
+
+#. runtime
+msgid "Broken message key"
+msgstr "断开的消息密钥"
+
+msgid "By contact"
+msgstr "按联系人"
+
+msgid "By hand"
+msgstr "手动"
+
+msgid "By hand — I pass the Slatepack text on myself"
+msgstr "用手 — 我通过 Slatepack 关于我自己"
+
+msgid "By hand — Slatepack text"
+msgstr "手工 — Slatepack 文本"
+
+msgid "By hand: every payment is a text you pass on yourself."
+msgstr "通过手工:每次付款是您自己传递的文本。"
+
+msgid "By hand: the wallet makes a Slatepack text, you pass it on to the recipient."
+msgstr "用手:钱包做了一个 Slatepack 文本,你把它传递给收件人。"
+
+#. runtime
+msgid "C"
+msgstr "C"
+
+#. runtime
+msgid "C:\\Users\\you\\AppData\\Local\\GrinSightLight\\data"
+msgstr "C:\\Users\\you\\AppData\\Local\\GrinSightLight\\data"
+
+#. runtime
+msgid "C:\\Users\\you\\AppData\\Local\\GrinSightLight\\guard"
+msgstr "C:\\Users\\you\\AppData\\Local\\GrinSightLight\\guard"
+
+#. runtime
+msgid "CATCHING UP"
+msgstr "正在同步"
+
+#. runtime
+msgid "CHECKING"
+msgstr "正在验证"
+
+#. runtime
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Cancel payment"
+msgstr "取消付款"
+
+#. runtime
+msgid "Cancel the payment"
+msgstr "取消付款"
+
+#. runtime
+msgid "Cannot verify signing details"
+msgstr "无法验证签名详细信息"
+
+#. runtime
+msgid "Cannot verify the invoice's details"
+msgstr "无法验证发票的详细信息"
+
+#. runtime
+msgid "Careful: the payment names another address than the one you checked with this contact"
+msgstr "小心:付款名称不同于您与此联系人检查的地址"
+
+#. runtime
+msgid "Chain options could not be applied"
+msgstr "链选项无法应用"
+
+msgid "Chain starting point"
+msgstr "链开始点"
+
+msgid "Change the contact"
+msgstr "更改联系人"
+
+msgid "Change the contact's details"
+msgstr "更改联系人的详细信息"
+
+msgid "Change the password"
+msgstr "更改密码"
+
+msgid "Change the password, see the 24 words again, delete the wallet from this computer"
+msgstr "更改密码,再次查看24个字,从此计算机中删除钱包"
+
+msgid "Check"
+msgstr "验证"
+
+msgid "Check all headers from genesis and build your own checkpoint. On Mainnet the first pass can download about 1.7 GB and take tens of minutes. It locks the wallet; unlock it to begin. Progress is in Details."
+msgstr "检查 genesis 中的所有头文件,并建立自己的检查点。 在 Mainnet 上,第一次通过可以下载大约 1.7 GB,需要几十分钟。 它会锁定钱包;解锁以开始。"
+
+#. runtime
+msgid "Check the address with the recipient another way."
+msgstr "与收件人检查地址的另一种方式。"
+
+#. runtime
+msgid "Check the address with the sender some other way."
+msgstr "请以其他方式与发件人核对地址。"
+
+#. runtime
+msgid "Check the operation before paying again. A signature may already exist."
+msgstr "再次付款前请先检查该笔操作。交易可能已经签名。"
+
+#. runtime
+msgid "Check this invoice. Its signing result is unknown."
+msgstr "检查这张发票，签字结果不明。"
+
+msgid "Check this network’s headers from its first block? A first Mainnet check can download about 1.7 GB. The wallet will lock. Unlock it to start or resume the check."
+msgstr "从第一个区块开始验证此网络的区块头吗？首次验证 Mainnet 可能会下载约 1.7 GB。钱包将锁定。请解锁钱包以开始或继续验证。"
+
+#. runtime
+msgid "Check this payment. Signing may have completed."
+msgstr "检查此付款,签名可能已经完成。"
+
+msgid "Checking…"
+msgstr "正在验证…"
+
+#. runtime
+msgid "Checkpoint for block {} saved."
+msgstr "已保存块{}的检查点。"
+
+#. runtime
+msgid "Checkpoint saved at block {}. GSHP1 samples verified: {}. Unlock to continue."
+msgstr "检查点保存在块 {}1998年12月1日至1999年6月30日 GSHP1 核实的样品： {}解锁以继续。"
+
+msgid "Choose a .gshp file from another wallet, or checkpoint.json with history.proof in the same folder. GSHP1 is checked locally. The next sync downloads blocks after the point. Import locks the wallet and ends unfinished signing sessions."
+msgstr "从另一个钱包中选择一个 .gshp 文件,或者在同一文件夹中选择 checkpoint.json 和 history.proof 文件。 GSHP1 在本地检查。 下一次同步将下载点后的块。 导入锁定钱包并结束未完成的签名会话。"
+
+msgid "Choose a contact"
+msgstr "选择联系人"
+
+msgid "Choose a contact on the left to see the conversation."
+msgstr "选择左侧的联系人以查看对话。"
+
+msgid "Choose a contact on the right to see the conversation."
+msgstr "选择右侧的联系人以查看对话。"
+
+msgid "Choose a password"
+msgstr "选择一个密码"
+
+msgid "Choose checkpoint file…"
+msgstr "选择检查点文件"
+
+msgid "Choose the outputs to pay with"
+msgstr "选择要支付的输出"
+
+#. runtime
+msgid "Chosen tip"
+msgstr "选定的链尖"
+
+msgid "Chosen: "
+msgstr "已选择："
+
+msgid "Close"
+msgstr "关闭"
+
+msgid "Close the list"
+msgstr "关闭列表"
+
+msgid "Close the list to add"
+msgstr "关闭要添加的列表"
+
+msgid "Collect"
+msgstr "归集"
+
+msgid "Collect into one"
+msgstr "收集到一个"
+
+#. runtime
+msgid "Collect {} outputs into one of {} GRIN? The fee is {} GRIN. It is one transaction: whoever looks at the chain sees that these outputs had one owner, and that cannot be taken back. Marked outputs are left alone."
+msgstr "收集 {} 其中一项 {} GRIN费用是多少? {} GRIN. 这是一个交易:任何人看链条都会看到这些输出有一个所有者,这是不可逆转的。 标记的输出被单独留下。"
+
+#. runtime
+msgid "Coming in: {} GRIN · waiting for a block"
+msgstr "即将进入: {} GRIN · 等待封锁"
+
+msgid "Compare the check code"
+msgstr "比较检查代码"
+
+#. runtime
+msgid "Confirmation"
+msgstr "确认"
+
+msgid "Connection"
+msgstr "连接"
+
+msgid "Connection and synchronisation"
+msgstr "连接和同步"
+
+#. runtime
+msgid "Contact {}"
+msgstr "联系人 {}"
+
+#. runtime
+msgid "Contact {} of the list: {} Added before it: {}"
+msgstr "联系人 {} 清单的内容: {} 在该段之前增加： {}"
+
+msgid "Contacts"
+msgstr "联系人"
+
+msgid "Conversation"
+msgstr "对话"
+
+msgid "Copied"
+msgstr "已复制"
+
+msgid "Copy"
+msgstr "复制"
+
+msgid "Copy the address"
+msgstr "复制地址"
+
+msgid "Copy the key"
+msgstr "复制密钥"
+
+msgid "Copy the words"
+msgstr "复制文字"
+
+#. runtime
+msgid "Could not be sent now. The wallet keeps trying."
+msgstr "现在无法发送,钱包不断尝试。"
+
+#. runtime
+msgid "Could not confirm the export. Check the chosen folder."
+msgstr "无法确认导出,请检查所选文件夹。"
+
+#. runtime
+msgid "Could not confirm the startup choice. Try again after the wallet service is ready."
+msgstr "无法确认启动选项。 在钱包服务准备就绪后重试。"
+
+#. runtime
+msgid "Could not create the file. Choose a new filename in a writable folder."
+msgstr "无法创建文件。 在可写文件夹中选择新文件名。"
+
+msgid "Create a message key"
+msgstr "创建消息密钥"
+
+msgid "Create a wallet"
+msgstr "创建钱包"
+
+msgid "Creating…"
+msgstr "正在创建…"
+
+msgid "Current password"
+msgstr "当前密码"
+
+#. runtime
+msgid "Decline"
+msgstr "拒绝"
+
+#. runtime
+msgid "Default: the release starting point. Choose verification from the first block in Details after unlocking."
+msgstr "默认:发布起始点。 解锁后,在详细信息 中从第一个块选择验证。"
+
+msgid "Delete"
+msgstr "删除"
+
+msgid "Delete all"
+msgstr "全部删除"
+
+msgid "Delete every contact and conversation"
+msgstr "删除每个联系人和对话"
+
+msgid "Delete the contact"
+msgstr "删除联系人"
+
+msgid "Delete the contact “{}”?"
+msgstr "删除联系人“{} ” ?"
+
+msgid "Delete the contact…"
+msgstr "删除联系人"
+
+msgid "Delete the wallet"
+msgstr "删除钱包"
+
+msgid "Delete the wallet for good"
+msgstr "永久删除钱包"
+
+msgid "Delete this contact and its conversation?"
+msgstr "删除此联系人及其对话?"
+
+msgid "Delete with the conversation"
+msgstr "与对话一起删除"
+
+msgid "Delivery is set to “By hand” on the main screen: contacts and Tor are not offered here."
+msgstr "交付设置为“手动”在主屏幕上:联系人和 Tor 这里没有提供。"
+
+msgid "Delivery is set to “By hand” on the main screen: contacts are not offered here."
+msgstr "交付设置为“手动”在主屏幕上:联系人不提供这里。"
+
+#. runtime
+msgid "Delivery over Tor is not set up — send by hand"
+msgstr "未设置通过 Tor 传递 — — 手动发送"
+
+msgid "Details"
+msgstr "详情"
+
+#. runtime
+msgid "Directly · bridges are for where Tor is blocked"
+msgstr "直接 · 桥梁是为哪里 Tor 被封锁"
+
+msgid "Directly — the ordinary way"
+msgstr "直接—普通的方式"
+
+msgid "Do not pay"
+msgstr "不付费"
+
+msgid "Do not spend"
+msgstr "不要花费"
+
+msgid "Do not work without Tor"
+msgstr "不要工作没有 Tor"
+
+msgid "Done"
+msgstr "完成"
+
+#. runtime
+msgid "Each line is one address starting with https://"
+msgstr "每一行是以 https : / / 开头的地址"
+
+msgid "Each of the two can be switched off, in case you need to. Off means its program does not run. Tor is switched at once and the wallet stays open; for Nostr the wallet locks and asks for the password again."
+msgstr "两者都可以关闭,如果你需要的话。 关闭意味着它的程序不会运行。 Tor 然后,钱包就会自动关闭。 Nostr 钱包会锁定并再次询问密码。"
+
+msgid "Each of the two can be switched off, in case you need to. Off means its program is not started at all. Switching takes effect at once: the wallet locks and asks for the password again."
+msgstr "两者都可以关闭,如果您需要的话。 关闭意味着它的程序根本不会启动。 切换立即生效:钱包锁定并再次询问密码。"
+
+msgid "Emerald"
+msgstr "翡翠"
+
+#. runtime
+msgid "Enter a password"
+msgstr "请输入密码"
+
+msgid "Enter your 24 recovery words in their original order, with one space between words. For example: apple river stone …"
+msgstr "按原顺序输入 24 个恢复词，词与词之间留一个空格。例如：apple river stone …"
+
+msgid "Every output a payment spends adds to its fee, and a wallet restored from the words shows each as a line of its own in other programs. You can make one output of many: the wallet pays itself, for a fee. It is one transaction in the chain, and whoever looks at the chain sees from it that these outputs had one owner."
+msgstr "付款所花费的每个输出都会增加其费用,并且从文字中恢复的钱包在其他程序中将每个输入作为独立的行显示。 你可以在多个输出中创建一个输出:钱包自己支付费用,这是链中的一个交易,任何人看链都可以从中看到这些输出有一个所有者。"
+
+msgid "Everything is hidden"
+msgstr "一切都是隐藏的"
+
+msgid "Everything this wallet keeps on this computer is in the first folder. The 24 words are not there as text: without the password the files are of no use. The second folder holds a small file that guards against a wallet rolled back to an old copy."
+msgstr "第一个文件夹中包含了钱包在计算机上保存的所有信息,这24个字并不是文本:没有密码,文件是无用的。 第二个文件包含了一个小文件,用于防止钱包回滚到旧版本。"
+
+msgid "Find a contact"
+msgstr "查找联系人"
+
+msgid "Find by name"
+msgstr "按名称查找"
+
+msgid "Font license"
+msgstr "字体许可证"
+
+msgid "For a new wallet"
+msgstr "一个新的钱包"
+
+msgid "From"
+msgstr "来自"
+
+msgid "From a file"
+msgstr "从文件"
+
+#. runtime
+msgid "Full output scan requested."
+msgstr "请求全输出扫描。"
+
+msgid "GlauxMail: soon"
+msgstr "GlauxMail：即将推出"
+
+msgid "Got it"
+msgstr "知道了"
+
+#. runtime
+msgid "Got it, thanks 🙂"
+msgstr "没想到,"
+
+#. runtime
+msgid "Great"
+msgstr "好"
+
+#. runtime
+msgid "GrinSight {} · a wallet for people"
+msgstr "GrinSight {} · 一个钱包的人"
+
+#. runtime
+msgid "Hand it to the recipient"
+msgstr "把它交给收件人"
+
+#. runtime
+msgid "Handed over with your agreement to send it directly. If Tor does not send it, it goes straight to the network."
+msgstr "交付与您的同意,直接发送它。 如果 Tor 没有发送它,它直接进入网络。"
+
+#. runtime
+msgid "Handed over; the answer is not known yet. The wallet keeps trying."
+msgstr "交付;答案还不清楚。 钱包不断尝试。"
+
+#. runtime
+msgid "Headers checked from genesis. Historical transactions were not replayed."
+msgstr "从 genesis 检查头。 历史交易不会重播。"
+
+#. runtime
+msgid "Hi! Can you send 0.5 for lunch?\nhttps://example.com — a link is shown as text only"
+msgstr "你能给我送0.5的午餐吗？\nhttps://example.com — 链接仅显示为文本"
+
+msgid "Hidden in this window:"
+msgstr "隐藏在此窗口中:"
+
+msgid "Hide"
+msgstr "隐藏"
+
+msgid "Hide details"
+msgstr "隐藏详情"
+
+msgid "Hide every payment that has ended by now from the lists of this window? Nothing is deleted: the records stay in the wallet's encrypted file, which needs them — for payments under way and so that no payment is answered twice. Payments still under way and new ones stay visible. You can show the hidden ones again."
+msgstr "从窗口列表中隐藏所有已经结束的付款? 没有任何内容会被删除:记录会保留在钱包的加密文件中,因为钱包需要这些记录 — — 用于正在进行的付款,以便不会对付款做出两次回复。 仍在进行的和新的付款仍然可见,您可以再次显示隐藏的付款。"
+
+msgid "Hide options"
+msgstr "隐藏选项"
+
+msgid "Hide the QR code"
+msgstr "隐藏 QR 代码"
+
+msgid "Hide the history"
+msgstr "隐藏历史"
+
+msgid "Hide the numbers"
+msgstr "隐藏数字"
+
+msgid "Hide what the program reports"
+msgstr "隐藏程序报告的内容"
+
+#. runtime
+msgid "History before the starting point"
+msgstr "起点之前的历史"
+
+msgid "Honey"
+msgstr "蜂蜜"
+
+msgid "How Tor is reached"
+msgstr "如何 Tor 达到"
+
+msgid "How far the wallet has checked the network, and what its programs say"
+msgstr "钱包检查网络的程度,以及它的程序说了什么"
+
+msgid "How it gets there"
+msgstr "如何到达那里"
+
+msgid "I wrote down all 24 words"
+msgstr "我把所有24个词都写下来"
+
+msgid "I wrote the words down"
+msgstr "我写下了这些话"
+
+msgid "Ice"
+msgstr "冰蓝"
+
+msgid "If you release the reserve and the payment was signed, whoever has it can still send it to the network, and the money leaves anyway. Release it only if you know the payment was never signed, or after asking the recipient."
+msgstr "如果付款已签名，解除预留后，持有签名交易的人仍可将其提交至网络，资金仍会转出。只有在确定从未签名，或已与收款人核实后，才应解除预留。"
+
+msgid "Import a checkpoint"
+msgstr "导入检查点"
+
+msgid "Import locks the wallet. Any pending Slatepack that still needs your signature will need a new exchange. Unlock after import to sync from the saved point."
+msgstr "导入会锁定钱包。仍在等待您签名的 Slatepack 需要重新交换。导入后请解锁钱包，从已保存的检查点同步。"
+
+#. runtime
+msgid "Import outcome unknown. Unlock and check the starting point in Details."
+msgstr "导入结果未知。 解锁并检查详细信息中的起点。"
+
+#. runtime
+msgid "Import refused. Check the checkpoint file and the open profile."
+msgstr "检查检查点文件和打开的配置文件。"
+
+#. runtime
+msgid "Import refused. Check the checkpoint file, wallet network and current starting point, then unlock to try again."
+msgstr "检查检查点文件、钱包网络和当前起始点,然后解锁并重试。"
+
+#. runtime
+msgid "Imported checkpoint at block {}. Its GSHP1 history sample was verified on this device."
+msgstr "进口的检查点 {}它的 GSHP1 历史样本已在此设备上验证。"
+
+msgid "Importing checkpoint…"
+msgstr "正在导入检查点…"
+
+#. runtime
+msgid "Incoming"
+msgstr "收款"
+
+msgid "Incoming only"
+msgstr "仅显示收款"
+
+msgid "Incoming payment"
+msgstr "收到的付款"
+
+#. runtime
+msgid "Invoice payment"
+msgstr "账单付款"
+
+#. runtime
+msgid "Reply ready — send it to the invoice issuer"
+msgstr "回复已准备好，请发送给账单发起方"
+
+#. runtime
+msgid "Invoice session ended. Check the payment before issuing a new invoice."
+msgstr "发票会话结束。 在签发新发票之前检查付款。"
+
+#. runtime
+msgid "Invoice to pass on"
+msgstr "待转发票"
+
+msgid "Is it really them?"
+msgstr "真的是他们吗？"
+
+#. runtime
+msgid "It cannot be paid to."
+msgstr "它不能付款给。"
+
+#. runtime
+msgid "It is sent again by itself. Check the connection. Open the payment in Recent payments: there you can send it to the network again now. If Tor is closed on this network: try Tor bridges, allow direct sending in the options of the first screen, or switch Tor off — the node then sees your address."
+msgstr "它会自动再次发送。 检查连接。 在最近的付款中打开付款:在那里您可以现在再次将其发送到网络。 Tor 此网络已关闭: 尝试 Tor 在第一个屏幕的选项中允许直接发送,或者切换 Tor off — 节点会看到你的地址。"
+
+msgid "Keep it reserved"
+msgstr "保持预留"
+
+msgid "Keep the wallet unlocked until this payment is signed. Closing or locking it ends the signing session."
+msgstr "在签署付款之前,请保持钱包未锁定。 关闭或锁定钱包将结束签署会话。"
+
+msgid "Key copied"
+msgstr "密钥已复制"
+
+msgid "Language"
+msgstr "语言"
+
+msgid "Later starts use the compact point saved by this wallet. Your keys and payments stay in this profile."
+msgstr "您的密钥和付款将保留在此配置文件中,并且您可以将它们转移到另一个钱包。"
+
+msgid "Let the wallet choose the outputs"
+msgstr "让钱包选择输出"
+
+msgid "Let's check the words are written down"
+msgstr "让我们检查词是写下来的"
+
+#. runtime
+msgid "Line {} is not a bridge line: it should read like obfs4 203.0.113.7:443 <40 hex digits> cert=…"
+msgstr "行 {} 不是桥接行:它应该读作 obfs4 203.0.113.7:443 <40 hex digits> cert= . ."
+
+#. runtime
+msgid "Line {} is too long for a bridge line"
+msgstr "{}线太长,不适合桥梁线"
+
+#. runtime
+msgid "Line {}: a message key starts with npub1"
+msgstr "行 {}: 消息键以 npub1 开始"
+
+#. runtime
+msgid "Line {}: the address is broken or of the other network"
+msgstr "{}行:地址已破坏或其他网络"
+
+#. runtime
+msgid "Local checkpoint"
+msgstr "本地检查点"
+
+msgid "Lock"
+msgstr "锁定"
+
+#. runtime
+msgid "Look"
+msgstr "外观"
+
+#. runtime
+msgid "Look-alike letters"
+msgstr "形似字符"
+
+msgid "Mainnet is real GRIN. Testnet is practice coins that are worth nothing."
+msgstr "Mainnet 是真的 GRIN1998年12月1日至1999年6月30日 Testnet 是实践硬币,没有任何价值。"
+
+msgid "Mainnet. "
+msgstr "Mainnet。"
+
+#. runtime
+msgid "Make a new point"
+msgstr "创建新点"
+
+msgid "Make an invoice"
+msgstr "制作发票"
+
+#. runtime
+msgid "Make my own starting point"
+msgstr "做我自己的起点"
+
+msgid "Make sure nobody sees the screen. Whoever knows the words controls the money."
+msgstr "确保没有人看到屏幕 谁知道字句控制着钱"
+
+msgid "Make the Slatepack text"
+msgstr "做出 Slatepack 案文"
+
+msgid "Making the point…"
+msgstr "要点:"
+
+msgid "Many small outputs"
+msgstr "许多小产出"
+
+msgid "Message"
+msgstr "消息"
+
+#. runtime
+msgid "Message delivery"
+msgstr "消息投递"
+
+#. runtime
+msgid "Message delivery does not work — see the log"
+msgstr "消息传递不工作 — 查看日志"
+
+#. runtime
+msgid "Message delivery is hindered"
+msgstr "消息传递受阻"
+
+#. runtime
+msgid "Message delivery is not set up — payments go by hand (Slatepack)"
+msgstr "未设置消息传递 — 付款手动完成(Slatepack)"
+
+#. runtime
+msgid "Message delivery is starting"
+msgstr "消息传递正在开始"
+
+#. runtime
+msgid "Message delivery stopped"
+msgstr "消息传递停止"
+
+#. runtime
+msgid "Message key"
+msgstr "消息密钥"
+
+msgid "Message keys (npub1…)"
+msgstr "消息键(npub1 . . )"
+
+msgid "Message keys one a line; wallet addresses one a line, each on the line of its key (a line may be left empty). The contacts get the names “Contact 1”, “Contact 2”…"
+msgstr "每行输入一个消息密钥。钱包地址也按行输入，行号需与对应密钥相同（地址行可以留空）。联系人将命名为“联系人 1”“联系人 2”等。"
+
+msgid "Messages (Nostr)"
+msgstr "消息（Nostr）"
+
+#. runtime
+msgid "Messages (Nostr): do not work without Tor — payments go by hand"
+msgstr "致辞(Nostr) : 无法工作 Tor — 付款是手工进行的"
+
+#. runtime
+msgid "Messages (Nostr): switched off — payments to contacts go by hand"
+msgstr "消息(Nostr ) : 关闭 — 付款给联系人去手工"
+
+msgid "Messages and payments to saved contacts travel through Nostr servers, over Tor. Off: the program for them is not started; payments go by hand or to an address."
+msgstr "向保存的联系人发送的消息和付款 Nostr 服务器，超过 Tor关闭:他们的程序没有启动;付款手工或到地址。"
+
+#. runtime
+msgid "Messages go over Tor"
+msgstr "消息过去了 Tor"
+
+msgid "More"
+msgstr "更多"
+
+msgid "My bridges"
+msgstr "我的网桥"
+
+msgid "My details"
+msgstr "我的收款信息"
+
+#. runtime
+msgid "NETWORK UNKNOWN"
+msgstr "网络状态未知"
+
+#. runtime
+msgid "NO CHAIN"
+msgstr "无可用链"
+
+#. runtime
+msgid "NO DATA"
+msgstr "暂无数据"
+
+msgid "Name"
+msgstr "名称"
+
+msgid "Network"
+msgstr "网络"
+
+#. runtime
+msgid "Network check"
+msgstr "网络检查"
+
+msgid "Network fee"
+msgstr "网络手续费"
+
+#. runtime
+msgid "Network state"
+msgstr "网络状态"
+
+msgid "New contact"
+msgstr "新建联系人"
+
+msgid "New password"
+msgstr "新密码"
+
+msgid "New wallet"
+msgstr "新建钱包"
+
+msgid "Next"
+msgstr "下一步"
+
+msgid "No"
+msgstr "否"
+
+#. runtime
+msgid "No bridge lines: paste at least one"
+msgstr "没有桥梁线:至少粘贴一个"
+
+#. runtime
+msgid "No connection to the chain"
+msgstr "无需连接链条"
+
+msgid "No contacts yet"
+msgstr "没有联系人"
+
+msgid "No contacts yet."
+msgstr "还没有联系人。"
+
+msgid "No files yet. Put a .txt or .slatepack file into this folder: "
+msgstr "将一个 .txt 或 .slatepack 文件放入此文件夹: "
+
+msgid "No messages yet. Messages travel over Tor and wait on a delivery server until the contact comes online."
+msgstr "消息通过 Tor 传输,并在传输服务器上等待,直到联系人在线。"
+
+#. runtime
+msgid "No more than nine digits after the point"
+msgstr "点后不超过九位数字"
+
+#. runtime
+msgid "No payment this replies to"
+msgstr "没有付款,这回答"
+
+#. runtime
+msgid "No payment to send"
+msgstr "没有付款要发送"
+
+msgid "No payments yet"
+msgstr "尚未付款"
+
+#. runtime
+msgid "No point can be made now: the tip is confirmed only with a caveat. Try later. Nothing was changed."
+msgstr "现在无法做出任何结论:提示仅以警告形式确认。 稍后再试。 没有任何变化。"
+
+#. runtime
+msgid "No profile folder"
+msgstr "没有配置文件文件夹"
+
+#. runtime
+msgid "No such contact"
+msgstr "没有这种接触"
+
+#. runtime
+msgid "No such payment"
+msgstr "无此种付款"
+
+#. runtime
+msgid "Nodes"
+msgstr "节点"
+
+#. runtime
+msgid "None · up to 4, they get transactions first"
+msgstr "无 · 最多 4 个,他们首先获得交易"
+
+#. runtime
+msgid "Not an address of your contacts"
+msgstr "不是您联系人的地址"
+
+#. runtime
+msgid "Not enough money with the fee"
+msgstr "收费不够钱"
+
+#. runtime
+msgid "Not one of your contacts"
+msgstr "不是您的联系人之一"
+
+#. runtime
+msgid "Nothing was changed."
+msgstr "什么都没有改变。"
+
+msgid "Nothing went wrong since the wallet was opened."
+msgstr "自从钱包被打开以来,没有什么事情出了问题。"
+
+msgid "Off"
+msgstr "关"
+
+msgid "Off · nodes will see the IP of "
+msgstr "关闭 · 节点将看到IP的 "
+
+msgid "Off · payments to contacts go by hand"
+msgstr "关闭 · 付款给联系人去手工"
+
+msgid "On"
+msgstr "开"
+
+msgid "On: if Tor does not work, a payment goes out without it and the node sees your address. Off: the wallet waits for Tor."
+msgstr "关闭：如果 Tor 当您的钱包不工作时,支付会在没有它的情况下发出,并且节点会看到您的地址。 Tor1998年12月1日至1999年6月30日"
+
+msgid "Once more"
+msgstr "再输入一次"
+
+msgid "Once signed, the payment cannot be cancelled. You pass the reply to whoever issued the invoice; they complete the payment and send it to the network."
+msgstr "一旦签署,付款就无法取消。 您将回复发送给发票的发行人,他们完成付款并将其发送到网络。"
+
+msgid "One bridge a line, as Tor gives them. Fresh ones: bridges.torproject.org, or the Telegram bot @GetBridgesBot."
+msgstr "一条线,一座桥 Tor 新鲜的例子:bridges.torproject.org,或者电报机器人@GetBridgesBot。"
+
+#. runtime
+msgid "One of the chosen outputs cannot be spent now: it is held by another payment or is not mature yet"
+msgstr "选定的产出之一目前无法支出：由另一笔付款支付或尚未到期"
+
+#. runtime
+msgid "One of the chosen outputs is marked “not to be spent”"
+msgstr "选定的产出之一标有 &quot; 不用 &quot;"
+
+#. runtime
+msgid "One of the chosen outputs is marked “not to be spent”: confirm below that it is spent in this payment, or take it out of the choice"
+msgstr "选择的产出之一被标记为“不用 ” : 下面确认它在这笔付款中用完,或将其从选择中删除"
+
+#. runtime
+msgid "One of the chosen outputs is no longer in the wallet: open the list again"
+msgstr "选择的输出之一不再在钱包中:重新打开列表"
+
+#. runtime
+msgid "Only digits and one point or comma in an amount"
+msgstr "数额中仅含数字和一个分号或逗号"
+
+msgid "Open the conversation in a window of its own"
+msgstr "在自己的窗口中打开对话"
+
+msgid "Open the conversation on a page of its own"
+msgstr "在自己的页面上打开对话"
+
+msgid "Options"
+msgstr "选项"
+
+msgid "Or a Slatepack you were sent: a payment or an invoice"
+msgstr "或者 Slatepack 您收到的:付款或发票"
+
+msgid "Or a Slatepack you were sent: a payment, an invoice, or the answer to your invoice"
+msgstr "或者 Slatepack 向您发送的:付款、发票或发票回复"
+
+msgid "Outgoing only"
+msgstr "仅显示付款"
+
+msgid "Outputs"
+msgstr "输出"
+
+msgid "Over Tor — to a grin1 address"
+msgstr "通过 Tor 发送到 grin1 地址"
+
+#. runtime
+msgid "Over Tor, sender unverified"
+msgstr "通过 Tor, 发件人未经验证"
+
+msgid "Own nodes"
+msgstr "自己的节点"
+
+msgid "Own nodes and a point from another device"
+msgstr "自己的节点和来自另一台设备的点"
+
+msgid "Own nodes and own point"
+msgstr "自己的节点和自己的点"
+
+msgid "Own point"
+msgstr "自己的检查点"
+
+msgid "Own starting point: an open wallet makes it under Connection → Details. A point made on another computer of yours can be pasted here whole. Leave empty for the built-in point."
+msgstr "自己的起始点: 一个开放的钱包在连接 → 详细信息 下创建起始点。 在另一台计算机上创建的起始点可以整个粘贴到这里。"
+
+#. runtime
+msgid "P"
+msgstr "P"
+
+msgid "Pass on this text"
+msgstr "传递这个文本"
+
+#. runtime
+msgid "Pass on to the recipient"
+msgstr "传递给收件人"
+
+#. runtime
+msgid "Pass this text to the sender. The money arrives when they sign the payment and the transaction is in a block."
+msgstr "将这条信息传递给发件人。 当他们签署付款并且交易在块中时,钱就会到达。"
+
+#. runtime
+msgid "Pass this text to whoever pays you. Paste their answer below: the wallet checks it against this invoice and signs its part. The money is yours when the payment is in a block."
+msgstr "把这个文本传递给付款给你的人,在下面粘贴他们的答案:钱包会根据这张发票检查它,并签署它的部分。 当付款在块中时,钱是你的。"
+
+msgid "Password"
+msgstr "密码"
+
+msgid "Password and words"
+msgstr "密码和词语"
+
+msgid "Password for "
+msgstr "密码："
+
+msgid "Paste"
+msgstr "粘贴"
+
+#. runtime
+msgid "Paste the payer's answer"
+msgstr "粘贴付款人的答案"
+
+#. runtime
+msgid "Paste the recipient's reply"
+msgstr "粘贴收件人的回复"
+
+#. runtime
+msgid "Paste the reply"
+msgstr "粘贴回复"
+
+#. runtime
+msgid "Paste the sender's text"
+msgstr "粘贴发件人的文本"
+
+#. runtime
+msgid "Paul"
+msgstr "保罗"
+
+msgid "Pay the invoice"
+msgstr "支付发票"
+
+#. runtime
+msgid "Payment"
+msgstr "付款"
+
+msgid "Payment delivery"
+msgstr "付款信息传递"
+
+msgid "Payment or invoice as text"
+msgstr "付款或发票作为文本"
+
+#. runtime
+msgid "Payment prepared"
+msgstr "付款已准备好"
+
+#. runtime
+msgid "Payment prepared — Tor did not take it"
+msgstr "准备付款 Tor 没有拿到"
+
+#. runtime
+msgid "Payment sent over Tor"
+msgstr "通过 Tor 发送付款"
+
+#. runtime
+msgid "Payments still go by hand (Slatepack). It is started again by itself; Tor may be blocked on this network."
+msgstr "支付仍然是手工(Slatepack它是由自己再次启动; Tor 可能在此网络上被阻止。"
+
+msgid "Phrase to find you in Nostr"
+msgstr "找到您的位置 Nostr"
+
+msgid "Point from another device"
+msgstr "从其他设备指向"
+
+msgid "Preparing…"
+msgstr "正在准备…"
+
+msgid "Problems"
+msgstr "问题"
+
+msgid "QR code"
+msgstr "二维码"
+
+msgid "QR code to a file"
+msgstr "QR 代码到文件"
+
+msgid "Read the text"
+msgstr "阅读文本"
+
+msgid "Reading…"
+msgstr "正在读取…"
+
+#. runtime
+msgid "Ready to use"
+msgstr "可以使用"
+
+msgid "Receive"
+msgstr "收款"
+
+msgid "Receive and copy the address"
+msgstr "接收并复制地址"
+
+msgid "Received after"
+msgstr "在此后收到"
+
+msgid "Recent payments"
+msgstr "最近的交易"
+
+msgid "Recheck headers from genesis"
+msgstr "从 genesis 重新检查标头"
+
+#. runtime
+msgid "Recipient"
+msgstr "收款人"
+
+msgid "Recipient's address"
+msgstr "收款人地址"
+
+msgid "Recipient's address (optional)"
+msgstr "收件人地址(可选)"
+
+#. runtime
+msgid "Release starting point. History up to it was checked by sampling its work."
+msgstr "发布起始点。 通过抽样检查其工作来检查其历史。"
+
+msgid "Release the reserve"
+msgstr "解除预留"
+
+msgid "Releasing…"
+msgstr "正在解除预留…"
+
+msgid "Repeat the password"
+msgstr "重复密码"
+
+#. runtime
+msgid "Reply to the sender"
+msgstr "回复发件人"
+
+msgid "Requesting the full output scan…"
+msgstr "请求完整的输出扫描 . ."
+
+msgid "Rescan old wallet outputs"
+msgstr "重新扫描旧钱包输出"
+
+msgid "Restart the wallet"
+msgstr "重新启动钱包"
+
+msgid "Restore"
+msgstr "恢复"
+
+msgid "Restore a wallet from words"
+msgstr "从文字恢复钱包"
+
+msgid "Restore from words"
+msgstr "使用助记词恢复"
+
+msgid "Restoring…"
+msgstr "正在恢复…"
+
+#. runtime
+msgid "Review payment"
+msgstr "核对付款"
+
+msgid "Review the payment reserve"
+msgstr "审查付款准备金"
+
+#. runtime
+msgid "SEARCHING"
+msgstr "正在查找"
+
+msgid "Safety"
+msgstr "安全"
+
+msgid "Save"
+msgstr "保存"
+
+msgid "Save a changed address first: the code is of the saved one, and the mark goes when the address changes."
+msgstr "首先保存更改的地址:代码是保存的地址的代码,当地址更改时,标记会消失。"
+
+#. runtime
+msgid "Save checkpoint to a new .gshp file"
+msgstr "将检查点保存到新的 .gshp 文件中"
+
+msgid "Save checkpoint to one file…"
+msgstr "将检查点保存到一个文件 . ."
+
+msgid "Save this wallet’s verified checkpoint and GSHP1 proof together. You can send the file to another device. This is a local copy without wallet keys or funds."
+msgstr "保存此钱包的验证检查点和 GSHP1 您可以将文件发送到另一台设备。 这是没有钱包密钥或资金的本地副本。"
+
+#. runtime
+msgid "Saved. It is used from the next unlock."
+msgstr "保存。 从下次解锁时开始使用。"
+
+#. runtime
+msgid "Saved. It takes effect at the next unlock."
+msgstr "已保存。 它在下次解锁时生效。"
+
+#. runtime
+msgid "Saved: {}"
+msgstr "已保存：{}"
+
+msgid "Saving checkpoint…"
+msgstr "正在保存检查点…"
+
+msgid "Saving your startup choice…"
+msgstr "保存您的创业选择"
+
+msgid "Saving…"
+msgstr "正在保存…"
+
+#. runtime
+msgid "Search for old money"
+msgstr "搜索旧货币"
+
+msgid "Search the archive for outputs belonging to this wallet, including older proof formats. It keeps the current chain checkpoint. The scan can download hundreds of MB or more. Keep the wallet unlocked and follow progress in Details."
+msgstr "搜索归档中属于该钱包的输出,包括旧的证明格式。 它保留当前链检查点。 扫描可以下载数百 MB 或更多。 保持钱包解锁并在详细信息中跟踪进度。"
+
+msgid "Search the whole archive for this wallet’s outputs, including older proof formats? This can download hundreds of MB or more. Keep the wallet open to follow progress above."
+msgstr "搜索整个存档以查找该钱包的输出,包括较旧的证明格式? 这可能会下载数百 MB 或更多。 保持钱包打开以跟踪上述进度。"
+
+msgid "Search the whole archive for this wallet’s outputs? This can download hundreds of MB or more. The wallet stays open."
+msgstr "搜索整个存档以获取钱包的输出? 这样可以下载数百MB或更多。 钱包保持打开。"
+
+#. runtime
+msgid "Select a .gshp file or checkpoint.json"
+msgstr "选择 .gshp 文件或 checkpoint.json"
+
+msgid "Send"
+msgstr "发送"
+
+msgid "Send GRIN"
+msgstr "发送 GRIN"
+
+msgid "Send GRIN to the contact"
+msgstr "发送 GRIN 返回顶部"
+
+msgid "Send directly"
+msgstr "直接发送"
+
+msgid "Send directly if Tor fails"
+msgstr "如果直接发送 Tor 失败"
+
+msgid "Send it directly"
+msgstr "直接发送"
+
+msgid "Send over Tor"
+msgstr "送过来 Tor"
+
+msgid "Send over Tor to the address"
+msgstr "将 Tor 发送到地址"
+
+msgid "Send this one payment without Tor? The node that takes it sees the address of your device. Other payments still go through Tor."
+msgstr "发送此一次性付款而不 Tor? 接受付款的节点可以看到您设备的地址。 其他付款仍然通过 Tor1998年12月1日至1999年6月30日"
+
+msgid "Send this payment directly"
+msgstr "直接发送此付款"
+
+#. runtime
+msgid "Send this text to the recipient any way you like. They paste it into their wallet and send a reply back — paste the reply below."
+msgstr "将此文本以任何方式发送给收件人,他们会将其粘贴到自己的钱包并回复 — — 粘贴下面的回复。"
+
+#. runtime
+msgid "Send this text to the recipient any way you like. They paste it into their wallet and send a reply — paste the reply below. The money is reserved until the payment is signed or cancelled."
+msgstr "通过任何方式将此文本发送给收件人,他们将其粘贴到钱包并发送回复 — — 粘贴下面的回复。 资金将被保留,直到付款被签署或取消。"
+
+#. runtime
+msgid "Send this text to whoever issued the invoice. They complete the payment and send it to the network; until then the money stays reserved. If the text is lost, read the same invoice again: the wallet gives this reply again and pays nothing twice."
+msgstr "将这条短信发送给发票的发行者,他们完成付款并将其发送到网络,在此之前,钱将被保留。 如果短信丢失了,请再次阅读同一张发票:钱包会再次回复这条短信息,并且不会两次支付任何费用。"
+
+msgid "Send to the contact"
+msgstr "发送到联系人"
+
+msgid "Send to the network again"
+msgstr "再次发送到网络"
+
+#. runtime
+msgid "Sender unverified"
+msgstr "发送方未经验证"
+
+#. runtime
+msgid "Sending…"
+msgstr "正在发送…"
+
+msgid "Set"
+msgstr "设置"
+
+msgid "Settings"
+msgstr "设置"
+
+msgid "Show the 24 words"
+msgstr "显示24个词"
+
+msgid "Show the Slatepack text"
+msgstr "显示 Slatepack 文本"
+
+msgid "Show the check code"
+msgstr "显示检查代码"
+
+msgid "Show the payment as it came"
+msgstr "显示付款,因为它来"
+
+msgid "Show the text"
+msgstr "显示文本"
+
+msgid "Show the words"
+msgstr "显示单词"
+
+msgid "Show the words again"
+msgstr "再次显示单词"
+
+msgid "Show them again"
+msgstr "再给他们看看"
+
+#. runtime
+msgid "Sign"
+msgstr "签名"
+
+msgid "Sign and send"
+msgstr "签署并发送"
+
+msgid "Sign and wait for Tor"
+msgstr "签名和等待 Tor"
+
+msgid "Sign the payment"
+msgstr "签署付款"
+
+msgid "Sign, and send this one directly"
+msgstr "签名，并直接发送这一个"
+
+#. runtime
+msgid "Signed payment"
+msgstr "已签名的付款"
+
+#. runtime
+msgid "Signed, not in a block yet. The wallet keeps sending it through Tor by itself. If Tor does not come up, choose below: wait for Tor and try again; send this one payment directly — the node then sees the address of your device; or switch Tor off for everything, so that you are not asked again. This text can be passed to the recipient as proof that you signed. A signed payment cannot be cancelled; while it is in no block you can try to take it back - below."
+msgstr "付款已签名，但尚未进入区块。钱包会继续通过 Tor 自动发送。如果 Tor 无法连接，可以等待 Tor 后重试，仅直接发送本次付款（节点将看到设备的网络地址），或关闭所有连接的 Tor，以后不再询问。可以将这段文本交给收款人，证明你已签名。已签名的付款无法取消。在它进入区块前，可以使用下方选项尝试取回资金。"
+
+#. runtime
+msgid "Signed. The outputs are held until the payment is in a block; it has its line in the payments."
+msgstr "签名。 输出被保留直到付款在块中;它在付款中有它的行。"
+
+#. runtime
+msgid "Signing session ended. Check this payment before starting a new Slatepack."
+msgstr "签名会话结束。 在开始新的 Slatepack 之前检查此付款。"
+
+#. runtime
+msgid "Signing…"
+msgstr "正在签名…"
+
+msgid "Spend it in this payment"
+msgstr "花在这个付款"
+
+msgid "Start a new check from genesis? The wallet will lock, ending pending signing sessions. Unlock to begin the download."
+msgstr "从 genesis 开始新的检查? 钱包将被锁定,结束待定的签名会话。 解锁以开始下载。"
+
+msgid "Start full output scan"
+msgstr "启动全输出扫描"
+
+#. runtime
+msgid "Started from this wallet’s compact point after its own header check from genesis."
+msgstr "从这个钱包的紧凑点后,从它自己的头检查从创世开始."
+
+#. runtime
+msgid "Starting point"
+msgstr "起始点"
+
+msgid "State"
+msgstr "状态"
+
+msgid "Stop trying the bridges"
+msgstr "停止尝试桥梁"
+
+#. runtime
+msgid "Sure, sending now"
+msgstr "是的，现在发送"
+
+msgid "Switch Nostr off? Without it there are no messages and no payments to saved contacts; everything else works. The wallet locks and asks for the password again."
+msgstr "交换机 Nostr 关闭? 没有它,就没有消息,也不会向保存的联系人付款;其他一切都正常工作。 钱包会锁定并再次要求输入密码。"
+
+msgid "Switch Nostr on? The wallet locks and asks for the password again."
+msgstr "交换机 Nostr 钱包会锁定并再次询问密码。"
+
+msgid "Switch Tor off for all payments"
+msgstr "关闭所有付款的 Tor"
+
+msgid "Switch Tor off? Without it there are no payments to an address and no messages, and a transaction goes to the network directly: the node sees the address of your device. It takes effect at once; the wallet stays open."
+msgstr "交换机 Tor 关闭? 没有它,就没有支付到地址和消息,交易直接发送到网络:节点看到你的设备的地址,它立即生效;钱包保持开放。"
+
+msgid "Switch Tor off? Without it there are no payments to an address and no messages, and a transaction goes to the network directly: the node sees the address of your device. The wallet locks and asks for the password again."
+msgstr "要关闭 Tor 吗？关闭后无法向地址付款或发送消息。交易将直接提交到网络，节点能看到您设备的 IP 地址。钱包将锁定，并要求重新输入密码。"
+
+msgid "Switch Tor on? It takes effect at once; Tor needs a little time to come up."
+msgstr "交换机 Tor 立即生效; Tor 还有点儿不对劲儿。"
+
+msgid "Switch Tor on? The wallet locks and asks for the password again."
+msgstr "打开 Tor? 钱包会锁定并再次询问密码。"
+
+msgid "Switch off"
+msgstr "关闭"
+
+msgid "Switch on"
+msgstr "开启"
+
+msgid "Switching Tor off locks the wallet and asks for the password again; after that payments go directly until you switch Tor back on."
+msgstr "关闭 Tor 会锁定钱包并再次询问密码;之后直接付款,直到您重新打开 Tor。"
+
+msgid "Synchronisation"
+msgstr "同步"
+
+msgid "Synchronisation numbers"
+msgstr "同步数据"
+
+msgid "Take it back"
+msgstr "把它拿回来"
+
+msgid "Take small ones along with payments"
+msgstr "随着付款采取小的"
+
+msgid "Take the mark off"
+msgstr "取消标记"
+
+msgid "Take this payment back"
+msgstr "收回这笔付款"
+
+#. runtime
+msgid "Take this payment back? The wallet signs a second payment of the same money - to itself: {} GRIN return to you, the fee is {} GRIN more. Only one of the two can be in a block, and it is not sure to be this one: if the first payment has reached the network, or the recipient sends it there, it may get into a block all the same - then the payment stands and only this try is lost. Without a connection it waits like any payment. Until one of them is in a block the payment is shown as “being taken back”, and the wallet stops sending the first one."
+msgstr "尝试取回这笔付款吗？钱包会用同一笔资金向自己签署第二笔付款：你将收回 {} GRIN，手续费比原来多 {} GRIN。两笔付款只能有一笔进入区块，取回不一定成功。如果第一笔已到达网络或被收款人提交，它仍可能先进入区块。此时原付款成立，取回尝试失败。没有网络连接时，新付款会等待发送。收到其中一笔入块的消息前，钱包会显示“正在尝试取回”，并停止发送第一笔付款。"
+
+msgid "Taken from the file "
+msgstr "从文件中摘取 "
+
+msgid "Testnet. "
+msgstr "Testnet。"
+
+#. runtime
+msgid "Text adjusted"
+msgstr "文本已调整"
+
+#. runtime
+msgid "Text adjusted · look-alike letters"
+msgstr "文本调整 · 相似字母"
+
+#. runtime
+msgid "Thanks, it arrived"
+msgstr "谢谢,它到达"
+
+#. runtime
+msgid "The Windows file dialog could not open. Try again."
+msgstr "Windows 文件对话框无法打开,请重试。"
+
+#. runtime
+msgid "The address of the payment is the one you checked with this contact"
+msgstr "付款地址是您与此联系人检查的那个"
+
+#. runtime
+msgid "The amount must be more than zero"
+msgstr "数额必须大于零"
+
+#. runtime
+msgid "The answer does not name its invoice"
+msgstr "答案没有指明其发票"
+
+#. runtime
+msgid "The choice of bridges could not be written down."
+msgstr "桥梁的选择不能写下来。"
+
+#. runtime
+msgid "The chosen outputs do not cover the amount and its fee: choose more, or let the wallet choose"
+msgstr "选择的输出不包括金额及其费用:选择更多,或让钱包选择"
+
+#. runtime
+msgid "The connection to the wallet at this address was lost"
+msgstr "连接到此地址的钱包已丢失"
+
+msgid "The contact finds their message key (npub1…) under “My details”. The address lets the signing window name them."
+msgstr "联系人在“我的详细信息”下找到他们的消息密钥(npub1 …) 。 地址让签名窗口给他们命名。"
+
+msgid "The conversation will be here"
+msgstr "会话将在这里"
+
+msgid "The conversation with them is deleted too. Payments stay in the list of payments."
+msgstr "与他们的对话也会被删除。 付款将保留在付款列表中。"
+
+#. runtime
+msgid "The delivery server or Tor does not answer. Sending is retried; a payment can go by hand meanwhile."
+msgstr "递送服务器或 Tor 没有响应,重新尝试发送;同时可以手动付款。"
+
+#. runtime
+msgid "The file could not be read"
+msgstr "无法找到该页面"
+
+#. runtime
+msgid "The file could not be written"
+msgstr "无法找到该页面"
+
+#. runtime
+msgid "The file is not text"
+msgstr "文件不存在"
+
+#. runtime
+msgid "The file is too large to be a Slatepack text"
+msgstr "文件太大,无法作为 Slatepack 文本"
+
+#. runtime
+msgid "The final text of this payment, with your signature."
+msgstr "这笔付款的最终文本,与您的签名。"
+
+#. runtime
+msgid "The folder for Slatepack files cannot be used"
+msgstr "Slatepack 文件的文件夹不能使用"
+
+msgid "The invoice asks for"
+msgstr "发票要求"
+
+#. runtime
+msgid "The invoice can be paid before block 4117000."
+msgstr "发票可以在4117000块之前支付。"
+
+#. runtime
+msgid "The invoice can be paid before block {}."
+msgstr "发票可以在{}之前支付。"
+
+#. runtime
+msgid "The invoice failed the check: it is damaged, of a kind this wallet does not pay, or its time has run out"
+msgstr "发票检查失败:它被损坏,这种钱包不付款,或其时间已用完"
+
+#. runtime
+msgid "Transaction signed. Track its submission and confirmations in Payments."
+msgstr "交易已签名。可在付款记录中查看广播和确认情况。"
+
+#. runtime
+msgid "The message could not be sealed for this contact: the message service is not running. Check “Problems”; if Nostr is switched off, switch it on and open the wallet again"
+msgstr "无法为此联系人密封消息:消息服务未运行。 检查“问题 ” ; 如果 Nostr 关闭,打开并再次打开钱包"
+
+#. runtime
+msgid "The message is empty or too long"
+msgstr "消息空白或过长"
+
+#. runtime
+msgid "The money stays reserved. Open “All payments”, show the payment's text and send it over Tor again or pass it by hand; or cancel the payment under “Waiting for you”."
+msgstr "打开“所有付款 ” , 显示付款文本并将其发送给您 Tor 或者在“等待您”下取消付款。"
+
+msgid "The name and the wallet address can be changed. The message key cannot: with another key it is another contact — add that one and delete this."
+msgstr "名称和钱包地址可以更改,但消息密钥不能更改:使用另一个密钥,它是另一个联系人 — — 添加该联系人并删除该联系人的信息。"
+
+#. runtime
+msgid "The network check is busy. Try again in a minute. Nothing was changed."
+msgstr "网络检查繁忙,请稍后再试,没有发生任何变化。"
+
+#. runtime
+msgid "The network check is missing"
+msgstr "缺少网络检查"
+
+msgid "The network check reports"
+msgstr "网络检查报告"
+
+#. runtime
+msgid "The network check stopped"
+msgstr "网络检查停止"
+
+#. runtime
+msgid "The network refused it. Look at the payment's state in the payments."
+msgstr "网络拒绝了它。 看看付款中的付款状态。"
+
+#. runtime
+msgid "The network took it. It will show as in a block once it is."
+msgstr "网络把它拿走了,一旦它是,它将显示为块。"
+
+msgid "The network was chosen when the wallet was made"
+msgstr "在创建钱包时选择的网络"
+
+#. runtime
+msgid "The password is changed."
+msgstr "密码已更改。"
+
+#. runtime
+msgid "The password is too long"
+msgstr "密码太长了"
+
+msgid "The password is twelve characters or longer."
+msgstr "密码为十二个字符或更长。"
+
+msgid "The password opens the wallet "
+msgstr "密码打开钱包 "
+
+#. runtime
+msgid "The passwords differ"
+msgstr "两次输入的密码不一致"
+
+#. runtime
+msgid "The payment as it came"
+msgstr "付款,因为它来了"
+
+#. runtime
+msgid "The payment did not get through Tor"
+msgstr "付款没有通过 Tor"
+
+msgid "The payment goes over Tor straight to the wallet at this address. You sign it when that wallet replies."
+msgstr "付款直接通过 Tor 传送到这个地址的钱包,当钱包回复时,你就签名了。"
+
+msgid "The payment goes to the contact over Tor. You sign it when the contact replies."
+msgstr "付款通过 Tor 传递给联系人,当联系人回复时,您签署。"
+
+#. runtime
+msgid "The payment goes to “{}” over Tor. When they reply it appears under “Waiting for you”, where you sign it. If Tor fails, this same text can be passed on by hand."
+msgstr "支付到“{}以上 Tor当他们回复时,它会出现在“等待您”下,您在那里签署它。 如果 Tor 这个文本可以通过手工传递。"
+
+msgid "The payment history records a manual release of the reserve."
+msgstr "付款历史记录手动释放储备金。"
+
+#. runtime
+msgid "The payment is prepared and the money reserved. Send it over Tor again with the button below, or pass this text to the recipient by hand and paste their reply."
+msgstr "付款准备就绪,资金保留。 发送 Tor 再次使用下面的按钮,或将此文本手动传递给收件人并粘贴他们的回复。"
+
+#. runtime
+msgid "The payment is still prepared and the money reserved. Send it over Tor again with the button below, pass this text on by hand and paste the reply, or cancel the payment under “Waiting for you”."
+msgstr "付款仍然准备好,并且资金已被保留。 Tor 再次与下面的按钮, 传递这一文本上手写和粘贴的答复, 或取消支付下 “等你 ” ."
+
+#. runtime
+msgid "The payment names another address than the one saved for this contact"
+msgstr "付款名称不同于为此联系人保存的地址"
+
+#. runtime
+msgid "The payment names no amount"
+msgstr "付款名称无金额"
+
+#. runtime
+msgid "The payment of an invoice is not taken back"
+msgstr "发票的付款不会被收回"
+
+#. runtime
+msgid "The payment text, if the recipient lost it. Paste their reply below."
+msgstr "付款文本,如果收件人丢失了它。 粘贴他们的回复下面。"
+
+#. runtime
+msgid "The payment went over Tor to the wallet at this address. When it answers — at once if it takes payments by itself, otherwise when its owner says yes — the payment appears under “Waiting for you”, where you sign it. If Tor does not reach it, you will see why under Problems; this same text can then be passed by hand."
+msgstr "付款通过 Tor 传送到位于此地址的钱包。 当它回复时 — — 如果它自己接受付款,则立即回复,否则,当其所有者说是的时候 — — 付款会出现在“等待您”下,您可以在那里签名。 如果 Tor 没有到达,您将在“问题”下看到原因;同样的文本可以手工传递。"
+
+#. runtime
+msgid "The payment will have no payment proof."
+msgstr "付款将没有付款证明。"
+
+#. runtime
+msgid "The point could not be made. Nothing was changed."
+msgstr "这一点无法说明，没有任何改变。"
+
+#. runtime
+msgid "The point could not be saved. Nothing was changed."
+msgstr "无法保存点,没有任何变化。"
+
+#. runtime
+msgid "The point is saved, but could not be handed to the network check. Open the wallet again."
+msgstr "点已保存,但无法移交给网络检查。 再次打开钱包。"
+
+#. runtime
+msgid "The point is too long"
+msgstr "点是太长"
+
+#. runtime
+msgid "The point made could not be read. Nothing was changed."
+msgstr "所提出的观点无法阅读，没有任何改动。"
+
+#. runtime
+msgid "The present point is {} blocks below the checked chain: a new one will make the next opening noticeably faster."
+msgstr "当前点位于检查链下方的{}块:新的链将使下一次开启显著更快。"
+
+#. runtime
+msgid "The present point is {} blocks below the checked chain: a new one would save almost nothing now. It pays off past 20 000 blocks."
+msgstr "当前检查点距离已验证的链尖有 {} 个区块。现在创建新检查点几乎没有收益，超过 20 000 个区块时才比较划算。"
+
+#. runtime
+msgid "The present point is {} blocks below the checked chain: a new one would save some time at the next opening."
+msgstr "目前的点是检查链下方的{}块:新的链可以在下一次开启时节省一些时间。"
+
+msgid "The recipient gets"
+msgstr "接受者得到"
+
+msgid "The recipient's reply"
+msgstr "收件人的答复"
+
+#. runtime
+msgid "The reply does not match this payment and was not taken"
+msgstr "答复不符合这笔付款,并没有采取"
+
+#. runtime
+msgid "The reply is already here — sign the payment under “Waiting for you”"
+msgstr "答案已经在这里 — 签署付款下“等待你”"
+
+#. runtime
+msgid "The reply you made to this payment, if the sender lost it."
+msgstr "您对此付款的回复,如果发件人丢失了它。"
+
+msgid "The rest are under “Contacts”."
+msgstr "其余的都在“联系人 ” 。"
+
+#. runtime
+msgid "The rollback guard does not match this wallet — it must not be opened here"
+msgstr "回滚保护不匹配这个钱包 — 它不能在这里打开"
+
+#. runtime
+msgid "The sender named no address."
+msgstr "发件人没有说明地址。"
+
+msgid "The sender pays the network fee."
+msgstr "发件人支付网络费用。"
+
+#. runtime
+msgid "The sender's text of this payment, as your wallet got it. It is kept with the payment."
+msgstr "发件人付款的短信,如您的钱包收到它,它与付款一起保留。"
+
+#. runtime
+msgid "The sender's wallet no longer waits for the answer. Nothing was signed; ask them to send again"
+msgstr "发件人的钱包不再等待回复。 没有签名;请他们再次发送"
+
+#. runtime
+msgid "The signature may have happened, there is no result. This payment is not signed again — follow it in the payments"
+msgstr "签名可能已经发生,没有结果。 这笔付款没有再次签名 — 跟随它在付款"
+
+#. runtime
+msgid "The signing session for {} GRIN ended. Review the payment before starting a new exchange."
+msgstr "{} GRIN 的签名会话已结束。 请在开始新交易之前检查付款。"
+
+#. runtime
+msgid "The taking back is signed and goes to the network. Follow both lines in the payments: one of the two will be in a block."
+msgstr "收回被签署,并被发送到网络。 按照支付的两条线:其中一条将在块中。"
+
+#. runtime
+msgid "The text failed the check: it is another payment or it is damaged"
+msgstr "文本检查失败:它是另一个付款或损坏"
+
+msgid "The wallet and everything it keeps are removed from this computer. After that only your 24 words bring the money back. To show that you have them, type the two words with these numbers."
+msgstr "钱包及其在本机保存的所有数据都将被删除。之后只能用 24 个恢复词找回资金。请输入指定位置的两个词，以确认您持有恢复词。"
+
+#. runtime
+msgid "The wallet at this address did not answer in time"
+msgstr "此地址的钱包没有及时回复"
+
+#. runtime
+msgid "The wallet at this address does not take payments this way"
+msgstr "该地址的钱包不接受这种方式的付款"
+
+#. runtime
+msgid "The wallet at this address refused: {}"
+msgstr "此地址的钱包被拒绝:{}"
+
+#. runtime
+msgid "The wallet closed before a signed result for {} GRIN was saved in this profile. This Slatepack can no longer be signed. Check the original payment and its reserve before starting another exchange."
+msgstr "钱包在签名结果之前关闭 {} GRIN 您在此配置文件中保存的信息。 Slatepack 在开始另一次交易之前,请检查原始付款及其储备金。"
+
+#. runtime
+msgid "The wallet did not answer in time"
+msgstr "钱包没有及时回复"
+
+#. runtime
+msgid "The wallet did not give the invoice's text"
+msgstr "钱包没有提供发票的文本"
+
+#. runtime
+msgid "The wallet did not give the payment's text"
+msgstr "钱包没有提供付款的文本"
+
+#. runtime
+msgid "The wallet did not start:"
+msgstr "钱包未启动:"
+
+#. runtime
+msgid "The wallet does not answer"
+msgstr "钱包没有响应"
+
+#. runtime
+msgid "The wallet gave no reply to pass on. Read the invoice again"
+msgstr "钱包没有回复,再次阅读发票"
+
+msgid "The wallet has no outputs yet"
+msgstr "该钱包还没有输出"
+
+#. runtime
+msgid "The wallet has not taken its first block yet. Wait until the main screen says “Verified”."
+msgstr "钱包尚未获得第一个区块,等到主屏幕显示“验证 ” 。"
+
+#. runtime
+msgid "The wallet is already open"
+msgstr "钱包已打开"
+
+#. runtime
+msgid "The wallet is busy, try again in a minute"
+msgstr "钱包已被占用,稍后再试"
+
+#. runtime
+msgid "The wallet is locked"
+msgstr "钱包被锁定"
+
+#. runtime
+msgid "The wallet is not running"
+msgstr "钱包不运行"
+
+#. runtime
+msgid "The wallet is still searching the chain for your old money (see Connection → Search for old money). Sending opens when the search is over: until then the balance is not final."
+msgstr "钱包仍在搜索链中您的旧钱(参见连接 → 搜索旧钱 ) 。 搜索结束后,发送会打开:直到那时,余额才是最终的。"
+
+#. runtime
+msgid "The wallet refused"
+msgstr "钱包拒绝"
+
+#. runtime
+msgid "The wallet sent no words"
+msgstr "钱包发送的没有话"
+
+#. runtime
+msgid "The wallet service did not confirm the scan request."
+msgstr "钱包服务未确认扫描请求。"
+
+#. runtime
+msgid "The wallet starts checking the network from a starting point built into the program. It can make one of its own from the chain it has checked itself — a block well below the tip."
+msgstr "钱包从程序内置的一个起点开始检查网络,它可以从它自己检查过的链中创建自己的链 — — 远低于提示的区块。"
+
+msgid "The wallet starts checking the network from a starting point built into the program. It can make one of its own from the chain it has checked itself — a block well below the tip. From the next unlock the wallet starts from that point, so the start is shorter. Only you vouch for your own point: it is as good as the check this wallet has done. Money, keys and history are not touched."
+msgstr "钱包从程序内置的一个起点开始检查网络,它可以从它自己检查过的链中创建一个自己的链 — — 远低于顶点的一个块。 从下一次解锁时开始,钱包从该点开始,所以开始时间更短。 只有你为自己的点担保:它与钱包所做的检查一样好。 钱、钥匙和历史记录不会被触及。"
+
+msgid "The wallet starts checking the network from a starting point built into the program. It can make one of its own from the chain it has checked itself; from the next unlock it then starts from that one."
+msgstr "钱包从程序内置的一个起点开始检查网络,它可以从它自己检查过的链中创建自己的链;从下一次解锁开始,它会从那个链开始。"
+
+msgid "The wallet starts from the point built into the program, and the history before that point is proved by sampling its work. The wallet can make a point of its own further up, from the chain it has checked itself since then. From the next unlock it starts from there, so the start is shorter."
+msgstr "钱包从程序内置的点开始,并通过采样其工作来证明该点之前的历史。 钱包可以从链中自我检查,从下一次解锁开始从那里开始,所以开始时间更短。"
+
+#. runtime
+msgid "The wallet starts it again by itself. If this repeats, check the internet connection and free disk space."
+msgstr "钱包会自动重新启动。 如果这种情况再次发生,请检查互联网连接和可用磁盘空间。"
+
+#. runtime
+msgid "The wallet starts it again by itself. Meanwhile payments to an address go by hand: the Slatepack text. Check the internet connection if this stays."
+msgstr "钱包会自动重新启动。 与此同时,向地址付款是手工完成的: Slatepack 如果这种情况仍然存在,请检查互联网连接。"
+
+msgid "The wallet tries the built-in obfs4 bridges, then Snowflake, up to three minutes each. Tor still hides your device."
+msgstr "钱包尝试内置的 obfs4 桥接,然后尝试 Snowflake,每次最多三分钟。 Tor 仍然隐藏您的设备。"
+
+#. runtime
+msgid "The wallet will not do this now: for example, the chain is not verified yet or the payment is closed"
+msgstr "钱包现在不会这样做:例如,链尚未验证或付款已关闭"
+
+#. runtime
+msgid "The wallet will not let this payment go: it is already signed, already cancelled, or locked after a restore. Look at it in the payments"
+msgstr "钱包将不会放弃这笔付款:它已经签署,已经取消,或者在恢复后锁定。 查看付款中的它"
+
+#. runtime
+msgid "The wallet will not pay now: the chain is not verified yet, a payment is contested, or the fee has changed. Read the invoice again"
+msgstr "钱包暂不能付款：区块链尚未验证、存在有争议的付款，或手续费已变化。请重新读取账单。"
+
+#. runtime
+msgid "The wallet's files are damaged"
+msgstr "钱包的文件已损坏"
+
+#. runtime
+msgid "The wallet's files are held by another GrinSight process: this wallet is open in another window, or a process of the last run has not ended. Close the other window, or end the processes fly-paycore-host and fly-chain, and open the wallet again."
+msgstr "该钱包的文件由另一个 GrinSight 进程保存:该钱包在另一个窗口中打开,或者上次运行的进程尚未结束。 关闭其他窗口,或结束 fly-paycore-host 和 fly-chain 进程,然后再次打开钱包。"
+
+#. runtime
+msgid "The wallet's files could not be read or written"
+msgstr "无法读取或写入钱包文件"
+
+#. runtime
+msgid "The wallet's folder is not known"
+msgstr "钱包文件夹未知"
+
+#. runtime
+msgid "The words do not match this wallet's. Nothing was deleted."
+msgstr "输入的恢复词与此钱包不符，未删除任何数据。"
+
+#. runtime
+msgid "The words failed the check: check each word and their order"
+msgstr "恢复词未通过校验。请检查每个词的拼写和顺序。"
+
+msgid "Theme"
+msgstr "主题"
+
+msgid "Theme: "
+msgstr "主题："
+
+#. runtime
+msgid "There is a wallet here already — a new one is not made over it"
+msgstr "这里已经有一个钱包 — — 没有在它上面创建一个新的钱包"
+
+#. runtime
+msgid "There is no QR code to save"
+msgstr "没有。 QR 要保存的代码"
+
+#. runtime
+msgid "There is no message key in the list"
+msgstr "列表中没有消息密钥"
+
+#. runtime
+msgid "There is no text to save"
+msgstr "没有文本可保存"
+
+#. runtime
+msgid "There is no wallet in this folder"
+msgstr "此文件夹中没有钱包"
+
+#. runtime
+msgid "There is no wallet on this computer yet."
+msgstr "这台电脑上还没有钱包。"
+
+#. runtime
+msgid "There is no wallet on this phone yet."
+msgstr "这款手机上还没有钱包。"
+
+#. runtime
+msgid "There is nothing to check yet: save the contact's wallet address first"
+msgstr "还没有什么要检查:首先保存联系人的钱包地址"
+
+#. runtime
+msgid "There is nothing to collect: fewer than two outputs can be spent now"
+msgstr "没有什么可收集的：现在可花费的产出少于两项"
+
+#. runtime
+msgid "These outputs hold less than the fee of collecting them"
+msgstr "这些输出所持有的少于收集它们的费用"
+
+msgid "They are the same"
+msgstr "他们是同样的"
+
+#. runtime
+msgid "This answers another invoice"
+msgstr "这是对另一张发票的回答"
+
+msgid "This build has no program for bridges (lyrebird) next to the wallet's programs: obfs4 and Snowflake will not connect."
+msgstr "此构建没有在钱包程序旁边的桥接程序(lyrebird ) : obfs4 和 Snowflake 不会连接。"
+
+#. runtime
+msgid "This contact is no longer in the list: add it again"
+msgstr "此联系人不再在列表中:重新添加它"
+
+msgid "This file could not be read as text"
+msgstr "无法找到该页面"
+
+#. runtime
+msgid "Saved reply — send it to the invoice issuer"
+msgstr "回复已保存，请发送给账单发起方"
+
+#. runtime
+msgid "This is a Mainnet address, the wallet is on Testnet"
+msgstr "这是个好主意。 Mainnet 地址,钱包是上 Testnet"
+
+#. runtime
+msgid "This is a Testnet address, the wallet is on Mainnet"
+msgstr "这是个好主意。 Testnet 地址,钱包是上 Mainnet"
+
+#. runtime
+msgid "This is a recipient's reply. It goes into the send window."
+msgstr "这是收件人的回复,它进入发送窗口。"
+
+#. runtime
+msgid "This is an invoice. It is paid by its text: “Receive”, then paste the text."
+msgstr "这是一张发票,它是通过其文本支付 : “ 收到 ” , 然后粘贴文本。"
+
+#. runtime
+msgid "This is not Slatepack text this wallet can read"
+msgstr "这是不对的。 Slatepack 这个钱包可以读取的文本"
+
+#. runtime
+msgid "This is not a Grin wallet address"
+msgstr "这是什么意思? Grin 钱包地址"
+
+#. runtime
+msgid "This is not a payer's answer to an invoice"
+msgstr "这不是付款人对发票的答复"
+
+#. runtime
+msgid "This is not a payment that can be accepted"
+msgstr "这不是可以接受的付款方式"
+
+#. runtime
+msgid "This is not a starting point: paste it whole, from { to }"
+msgstr "这不是一个起点:粘贴整个,从 { to }"
+
+#. runtime
+msgid "This is not the recipient's reply to a payment"
+msgstr "这不是收款人对付款的回复"
+
+msgid "This locks the wallet. Unlock to recheck the saved headers and continue from the network."
+msgstr "这将锁定钱包。 解锁以重新检查已保存的报头并从网络继续。"
+
+#. runtime
+msgid "This payment can no longer be taken back: it is in a block already, or it was never signed"
+msgstr "此付款不能再撤回:它已经在块中,或者它从未签署过"
+
+#. runtime
+msgid "This payment cannot be taken back: its money is spent already or does not cover the fee"
+msgstr "这笔付款不能取回:其钱已经花掉或不涵盖费用"
+
+#. runtime
+msgid "This payment is being taken back already: the wallet does not send it again"
+msgstr "这笔付款已经被收回:钱包不会再次发送"
+
+#. runtime
+msgid "This payment names no address: it goes by hand"
+msgstr "这种付款名称没有地址:它去手"
+
+#. runtime
+msgid "This profile has no checkpoint ready to export. Import one or finish a check from the first block."
+msgstr "此配置文件没有准备好导出的检查点。 导入一个检查点或从第一个块完成检查。"
+
+#. runtime
+msgid "This replies to another payment"
+msgstr "这是对另一笔付款的回应"
+
+#. runtime
+msgid "This signing session has ended. Check the original payment before starting a new Slatepack."
+msgstr "此签名会话已结束,请在开始新的 Slatepack 之前检查原始付款。"
+
+msgid "This text is too long for one QR code. Pass it on as text or as a file."
+msgstr "这个文本太长了 QR 代码。 以文本或文件的形式传递。"
+
+#. runtime
+msgid "This wallet already prepared a reply to a different invoice with this number"
+msgstr "钱包已为另一笔相同编号的账单准备了回复。"
+
+#. runtime
+msgid "This wallet has no message key yet: make it under “Message key” on the main page, then give it to your contact"
+msgstr "这个钱包还没有消息密钥:在主页的“消息密码”下创建它,然后将它交给你的联系人"
+
+#. runtime
+msgid "This wallet is open in another window, or a process of the last run has not ended yet — it happens when the wallet is opened again right after it was closed. Close the other window if there is one, then press “Restart the wallet”: its processes are started anew and the password is asked for again. One wallet is opened in one place at a time."
+msgstr "该钱包在另一个窗口中打开,或者上次运行的进程尚未结束 — — 当钱包在关闭后立即重新打开时会发生这种情况。 关闭其他窗口(如果有 ) , 然后按“重新启动钱包 ” : 其进程将重新启動并再次询问密码。 一次只打开一个钱包。"
+
+#. runtime
+msgid "This wallet made no such invoice"
+msgstr "这个钱包没有这样的发票"
+
+#. runtime
+msgid "This went out while the network was down"
+msgstr "当网络下线时,这就出现了"
+
+#. runtime
+msgid "Three conversations are open in windows already. Close one to open another."
+msgstr "三个对话已经在窗口中打开。 关闭一个以打开另一个。"
+
+#. runtime
+msgid "Through Snowflake"
+msgstr "通过 Snowflake"
+
+msgid "Through Snowflake — when obfs4 does not get through"
+msgstr "通过 Snowflake 何时 obfs4 没有通过"
+
+msgid "Through Tor everything goes slower. That is the price of privacy, not a fault."
+msgstr "通过 Tor 这是隐私的代价,而不是错误。"
+
+msgid "Through built-in obfs4 bridges — the first thing to try"
+msgstr "通过内置 obfs4 桥梁—第一件事是尝试"
+
+msgid "Through my own bridges"
+msgstr "通过我自己的桥梁"
+
+#. runtime
+msgid "Through your own bridges: {}"
+msgstr "通过自己的桥梁:{}"
+
+#. runtime
+msgid "Through {} built-in obfs4 bridges"
+msgstr "通过 {} 内置 obfs4 桥梁"
+
+#. runtime
+msgid "Time"
+msgstr "时间"
+
+#. runtime
+msgid "Tip"
+msgstr "链尖"
+
+msgid "To"
+msgstr "收款人"
+
+msgid "To a file"
+msgstr "到一个文件"
+
+msgid "To a grin1 address — the wallet sends it itself, over Tor"
+msgstr "发送到 grin1 地址，钱包会通过 Tor 自动投递。"
+
+msgid "To carry the point to another device of yours: on the login screen there, Options → Own nodes and a point from another device, paste it whole. To go back to the built-in point: clear that field and save."
+msgstr "要将点传输到您的另一台设备:在登录屏幕上,选项 → 自定义节点 ,并从另一台设备上粘贴一个点。 要返回到内置点:清除该字段并保存。"
+
+msgid "To go back: on the login screen, Options → Own nodes and own point, clear the Own point field and save. The wallet starts from the built-in point again. The same point can be pasted into that field on another computer of yours."
+msgstr "要返回:在登录屏幕上,选项 → 自己的节点和自己的点,清除自己的点字段并保存。 钱包将再次从内置点开始,同一点可以粘贴到您的另一台计算机的该字段。"
+
+msgid "To request GRIN, send the invoice to the payer. Keep the wallet unlocked until you paste their reply and finish the invoice."
+msgstr "请求 GRIN将发票发送给付款人。 保持钱包解锁,直到你粘贴他们的回复并完成发票。"
+
+msgid "To the contact: "
+msgstr "联系方式: "
+
+#. runtime
+msgid "To yourself: outputs collected"
+msgstr "给自己：收集的产出"
+
+#. runtime
+msgid "To yourself: taking a payment back"
+msgstr "对自己:收回付款"
+
+#. runtime
+msgid "Today"
+msgstr "今天"
+
+#. runtime
+msgid "Too large an amount"
+msgstr "数额太大"
+
+#. runtime
+msgid "Too many bridges: {} at most"
+msgstr "太多的桥梁:最多{}"
+
+#. runtime
+msgid "Too many messages to this contact are still waiting to be delivered: wait until they are"
+msgstr "给此联系人的消息太多,仍在等待传递:等到它们传递完毕后再继续。"
+
+msgid "Tor bridges"
+msgstr "Tor 网桥"
+
+#. runtime
+msgid "Tor did not come up through the built-in bridges. Your earlier choice is back: {}. Bridges of your own can be set under “Tor bridges”; the other ways out are below."
+msgstr "Tor 没有通过内置的桥接来上传。 您之前的选择回来了:{}。 您可以在“Tor 桥接”下设置自己的桥接;其他出路在下面。"
+
+#. runtime
+msgid "Tor did not reach the wallet at this address: it is closed, offline, or its Tor is not up yet"
+msgstr "Tor 未能访问此地址的钱包:它已关闭、脱机或其 Tor 尚未启动"
+
+#. runtime
+msgid "Tor for messages: connected"
+msgstr "Tor 消息: 连接"
+
+#. runtime
+msgid "Tor for messages: connected, but delivery is hindered — see Problems"
+msgstr "Tor for messages:已连接,但传输受阻 — 请参阅问题"
+
+#. runtime
+msgid "Tor for messages: connecting…"
+msgstr "Tor 消息:正在连接"
+
+#. runtime
+msgid "Tor for messages: not set up — payments go by hand"
+msgstr "Tor 对于消息:未设置 — 付款手工进行"
+
+#. runtime
+msgid "Tor for messages: not started — create a message key under My details"
+msgstr "Tor for messages:未启动 — 在我的详细信息下创建一个消息密钥"
+
+#. runtime
+msgid "Tor for messages: not working — see Problems"
+msgstr "Tor 对于消息:不工作 — 请参阅问题"
+
+#. runtime
+msgid "Tor for messages: unknown — the wallet does not answer"
+msgstr "Tor 对于消息:未知 — 钱包不响应"
+
+#. runtime
+msgid "Tor for payments to an address is not set up — pass the text by hand"
+msgstr "Tor 支付到地址没有设置 — 通过文本手工"
+
+#. runtime
+msgid "Tor for transactions: connects when you send; directly only if Tor fails — you allowed it"
+msgstr "Tor 用于交易:在您发送时连接;只有在 Tor 失败时才直接连接 — — 您允许它"
+
+#. runtime
+msgid "Tor for transactions: connects when you send; never directly"
+msgstr "交易通过 Tor：发送时连接，绝不直连"
+
+#. runtime
+msgid "Tor for transactions: the last sending failed, trying again — see Problems"
+msgstr "Tor 对于交易:最后一次发送失败,重试 — 请参阅问题"
+
+#. runtime
+msgid "Tor for transactions: the network check is missing"
+msgstr "Tor 对于交易:网络检查缺失"
+
+#. runtime
+msgid "Tor for your address does not work"
+msgstr "Tor 您的地址不存在"
+
+#. runtime
+msgid "Tor for your address: connected — sending works, your address is not reachable yet"
+msgstr "Tor 为您的地址: 连接 — 发送工作, 您的地址尚未到达"
+
+#. runtime
+msgid "Tor for your address: connected, your address is being announced…"
+msgstr "Tor for your address: 已连接,您的地址正在被公布 . ."
+
+#. runtime
+msgid "Tor for your address: connecting…"
+msgstr "Tor 为您的地址: 连接 . ."
+
+#. runtime
+msgid "Tor for your address: not set up — payments to an address go by hand"
+msgstr "Tor 对于您的地址:未设置 — 向地址付款是手动的"
+
+#. runtime
+msgid "Tor for your address: not working — see Problems"
+msgstr "Tor 为您的地址:不工作 — 见问题"
+
+#. runtime
+msgid "Tor for your address: on — payments can be sent to an address and arrive at yours"
+msgstr "Tor 对于您的地址: 上 — 付款可以发送到一个地址,并到达你的"
+
+#. runtime
+msgid "Tor for your address: unknown — the wallet does not answer"
+msgstr "Tor 为您的地址:未知 — 钱包不响应"
+
+#. runtime
+msgid "Tor gave no outcome: whether the wallet at this address got the payment is not known"
+msgstr "Tor 没有结果:该地址的钱包是否收到付款尚不清楚"
+
+msgid "Tor hides where you are on the network. Bridges are for places where Tor is blocked."
+msgstr "Tor 您在网络上所处的位置。 桥是指您在网 Tor 被封锁了。"
+
+msgid "Tor hides where you are on the network. Bridges are for places where Tor is blocked. Off: nothing of Tor is started — no payments to an address and no messages, and a transaction goes to the network directly, so the node sees your address."
+msgstr "Tor 您在网络上所处的位置。 桥是指您在网 Tor 关闭:没有任何内容 Tor 开始 — — 没有付款到一个地址和没有消息,交易直接进入网络,所以节点看到你的地址。"
+
+msgid "Tor is chosen, but delivery does not work now: payments go by hand."
+msgstr "Tor 选择了,但交付不工作现在:付款去手。"
+
+#. runtime
+msgid "Tor is connected · messages and transactions go through it"
+msgstr "Tor 消息和事务通过它传递"
+
+#. runtime
+msgid "Tor is not working on this device now"
+msgstr "Tor 目前在此设备上无法工作"
+
+#. runtime
+msgid "Tor is now reached through {}. Nothing in this wallet shows yet whether it works: sign the payment, and if it does not leave, try another way under “Tor bridges”."
+msgstr "Tor 现在通过 {} 访问。 在这个钱包中没有任何东西显示它是否工作:签署付款,如果它不离开,尝试另一种方式下 “Tor 桥 ” 。"
+
+#. runtime
+msgid "Tor is still connecting. Try again in a minute or pass the text by hand"
+msgstr "Tor 仍在连接。 稍后再试或手动传递文本"
+
+msgid "Tor is switched off at once, the wallet stays open; after that payments go directly until you switch Tor back on."
+msgstr "Tor 会立即关闭,钱包仍然开启;此后,付款直接进行,直到您重新打开 Tor。"
+
+msgid "Tor is switched off: every payment is a text you pass on yourself."
+msgstr "Tor 关闭:每次付款都是你自己传递的短信。"
+
+#. runtime
+msgid "Tor is switched off: transactions go to the network directly, the node sees your address"
+msgstr "Tor 关闭:交易直接进入网络,节点看到你的地址"
+
+#. runtime
+msgid "Tor works through {}. This way is saved as your choice; it can be changed under “Tor bridges”."
+msgstr "Tor 通过 {} 工作。 这种方式保存为您的选择;它可以在“Tor 桥梁”中更改。"
+
+msgid "Tor: a payment to a contact or to a grin1 address is delivered by itself."
+msgstr "Tor：钱包会自动向联系人或 grin1 地址投递付款信息。"
+
+msgid "Total to be spent"
+msgstr "待用总额"
+
+msgid "Try through Tor bridges"
+msgstr "试试 Tor 桥梁"
+
+#. runtime
+msgid "Trying to reach Tor through {}… This can take up to three minutes. You can wait here or do something else: the payment stays prepared."
+msgstr "试图达到 Tor 截至 {}这可能需要三分钟。 您可以在这里等待,或者做其他事情:付款仍然准备好。"
+
+#. runtime
+msgid "Type a name"
+msgstr "输入一个名称"
+
+#. runtime
+msgid "Type an amount"
+msgstr "输入一个金额"
+
+#. runtime
+msgid "Type one word in each of the two fields"
+msgstr "在两个字段中各键入一个字词"
+
+#. runtime
+msgid "Type the recipient's grin1… address"
+msgstr "请输入收款人的 grin1… 地址"
+
+msgid "Type the words with these numbers — this shows the copy is right."
+msgstr "键入带有这些数字的单词 — — 这表明复制是正确的。"
+
+msgid "Unlock"
+msgstr "解锁"
+
+msgid "Unlocking…"
+msgstr "正在解锁…"
+
+msgid "Usually not needed. Own nodes: servers of yours the wallet also asks. A point from another device: a starting point your wallet made there, so that this one starts shorter."
+msgstr "自己的节点:钱包也会询问您的服务器。 来自另一台设备的点:您的钱包在那里创建的一个起点,因此这一点开始的时间较短。"
+
+msgid "Usually not needed. Own nodes: servers of yours the wallet also asks. Own point: the place in the chain the wallet starts checking from."
+msgstr "通常不需要。 自己的节点:钱包也会询问你的服务器。 自己的点:钱袋在链中开始检查的位置。"
+
+#. runtime
+msgid "VERIFIED"
+msgstr "已验证"
+
+msgid "Verification and recovery"
+msgstr "核查和回收"
+
+#. runtime
+msgid "Verified header work"
+msgstr "经核实的头部工作"
+
+msgid "Verify and lock"
+msgstr "验证和锁定"
+
+msgid "Verify from the first block myself"
+msgstr "从第一块自己验证"
+
+#. runtime
+msgid "Wait a few seconds. If it stays, lock the wallet and open it again."
+msgstr "等待几秒钟,如果它仍然存在,请锁定钱包并重新打开。"
+
+msgid "Wait for Tor: send through Tor again"
+msgstr "等等 Tor: 通过发送 Tor 再来一次"
+
+msgid "Waiting for the wallet at this address to answer — this can take up to two minutes. The window to sign opens by itself."
+msgstr "等待钱包在这个地址的回应 — 这可能需要两分钟,窗口签署打开自己。"
+
+msgid "Waiting for you"
+msgstr "等你"
+
+#. runtime
+msgid "Wallet"
+msgstr "钱包"
+
+msgid "Wallet address"
+msgstr "钱包地址"
+
+msgid "Wallet address (optional)"
+msgstr "钱包地址(可选)"
+
+msgid "Wallet addresses (grin1…), optional"
+msgstr "钱包地址（grin1…），选填"
+
+#. runtime
+msgid "Wallet created. Unlock it with the password."
+msgstr "创建钱包,用密码解锁。"
+
+#. runtime
+msgid "Wallet lock was not confirmed. Retry before opening."
+msgstr "尚未确认钱包已锁定。请先重新锁定，再打开。"
+
+#. runtime
+msgid "Wallet network unavailable"
+msgstr "钱包网络不可用"
+
+#. runtime
+msgid "Wallet restored. Unlock it with the password — it then finds its money in the chain."
+msgstr "钱包恢复。 用密码解锁它 — — 然后在链中找到它的钱。"
+
+#. runtime
+msgid "Wallet service is unavailable."
+msgstr "钱包服务不可用。"
+
+#. runtime
+msgid "What answered at this address is not a Grin wallet's reply"
+msgstr "这个地址上回复的内容不是 Grin wallet 的回复"
+
+msgid "What is this?"
+msgstr "这是什么东西?"
+
+msgid "What the program reports"
+msgstr "程序报告的内容"
+
+#. runtime
+msgid "What to do"
+msgstr "做什么"
+
+msgid "When a transferable point is ready, look in this network’s chain folder under history-exports/<network>-<height>-<hash>/ for checkpoint.json and history.proof."
+msgstr "当一个可传输点准备就绪时,在这个网络的链文件夹中查找 history-exports / < network > - <height > - <hash > / 下的 checkpoint.json 和 history.proof。"
+
+msgid "Where Tor is blocked it can be reached through bridges: relays that are not in the public list, with the traffic disguised. The choice holds for everything the wallet does through Tor: messages, payments to an address, sending transactions."
+msgstr "哪里 Tor 当钱包被阻止时,它可以通过桥接来访问:不在公共列表中的中继器,其流量是伪装的。 这种选择适用于钱包通过公共列 Tor: 消息, 付款到地址, 发送交易."
+
+msgid "Where the wallet's files are"
+msgstr "钱包文件的位置"
+
+msgid "Which characters a password may have"
+msgstr "密码可以包含哪些字符"
+
+msgid "Who"
+msgstr "对象"
+
+msgid "Who gets it and how — choose one"
+msgstr "谁得到它和如何—选择一个"
+
+msgid "With bridges chosen the wallet reaches Tor through them only. If they do not answer, Tor does not connect; it is never reached directly instead."
+msgstr "随着桥梁选择的钱包达到 Tor 如果他们不回答,那么他们就不会回答。 Tor 没有连接;它从来不会直接到达。"
+
+msgid "Word No. "
+msgstr "单词编号 "
+
+#. runtime
+msgid "Word No. {} does not match. Check your copy or look at the words again."
+msgstr "字号{}不匹配。 检查您的副本或再次查看字词。"
+
+msgid "Word number "
+msgstr "单词编号 "
+
+msgid "Write the words on paper in order and keep them "
+msgstr "按顺序在纸上写单词,并保持它们 "
+
+msgid "Write them on paper in order. Close this window when done."
+msgstr "按顺序写在纸上,完成后关闭此窗口。"
+
+#. runtime
+msgid "Wrong password"
+msgstr "密码错误"
+
+#. runtime
+msgid "Yesterday"
+msgstr "昨天"
+
+#. runtime
+msgid "You agreed that this payment goes directly when Tor fails to send it. The wallet remembers this for this payment."
+msgstr "您同意在 Tor 无法发送时直接付款。 钱包会记住这一点。"
+
+msgid "You chose an output you marked “not to be spent”. It is spent only if you say so here, for this payment."
+msgstr "您选择了一个标记为“不用于”的输出,只有在您在这里说明的情况下,它才会用于此付款。"
+
+msgid "You pass the text on yourself and paste the reply. An invoice is paid from “Receive”: paste its text there."
+msgstr "发票是从“收款人”支付的:将其文本粘贴到那里。"
+
+msgid "You receive"
+msgstr "您将收到"
+
+#. runtime
+msgid "You sent {} GRIN"
+msgstr "您发送了{} GRIN"
+
+msgid "Your 24 words"
+msgstr "你的24个字"
+
+msgid "Your address. A payment sent to it over Tor arrives by itself while the wallet is open; a sender can also name it for a payment proof."
+msgstr "您的地址。 付款发送到它 Tor 在钱包打开时自动到达;发件人也可以指定它作为付款证明。"
+
+msgid "Your address. A sender can name it so the payment has a payment proof."
+msgstr "您的地址。 发件人可以给它命名,以便付款有付款证明。"
+
+#. runtime
+msgid "Your address: does not work without Tor — payments to an address go by hand"
+msgstr "您的地址: 无法工作 Tor — 付款到地址去手工"
+
+msgid "Your contacts"
+msgstr "您的联系人"
+
+#. runtime
+msgid "Your earlier choice of bridges could not be written back: the way that was tried is still the choice. Set it under “Tor bridges”."
+msgstr "您之前选择的桥梁无法被写回:尝试过的方式仍然是选择。 将其设置在“Tor 桥梁”下。"
+
+msgid "Your money is kept in outputs: one for every payment you got and for the change of every payment you made. An output you mark “not to be spent” stays yours, but the wallet passes it by when it pays, and “Available” is shown without it. You take the mark off here whenever you like."
+msgstr "你的钱被保存在输出中:一个用于你收到的每一笔付款,一个用于每一笔支付的变化。 你标记为“不用”的输出仍然是你的,但钱包在支付时会忽略它,并且“可用”显示时不会显示它。 你可以随时取消标记。"
+
+msgid "Your money is kept in outputs: one for every payment you got and for the change of every payment you made. By itself the wallet takes the largest first. Here you can name the outputs yourself: the payment is paid with exactly those, all of them, and the change comes back as one new output."
+msgstr "你的钱被存储在输出中:每次收到付款都有一个输出,每次付款的变化都有一个,钱包本身会先取最大的输出。 在这里你可以自己命名输出:付款是用所有的输出来支付的,变化作为一个新输出返回。"
+
+msgid "Your own public nodes: one https:// address a line, up to 4. They are asked like the listed ones and get your transactions first, but they never count as an independent voice."
+msgstr "自己的公共节点：每行一个 https:// 地址，最多四个。钱包会像查询列表中的节点一样查询它们，并优先向它们发送交易，但绝不会将它们计为独立的一票。"
+
+#. runtime
+msgid "Your own starting point is made: block {}. The wallet starts from it at the next unlock."
+msgstr "您自己的起始点已经建立:块{},钱包在下一次解锁时从它开始。"
+
+msgid "Your point carries the proof of the built-in one: up to the built-in point the history stays proved, and from it to your point this wallet vouches. A point is made only from a chain that keeps that proof. Money, keys and history are not touched."
+msgstr "你的点带有内置点的证明:直到内置点,历史保持被证明,从它到你的点,这个钱包保证。 点只由保持证明的链组成,钱,钥匙和历史不会被触摸。"
+
+#. runtime
+msgid "Your wallet is ready to use. Public nodes verified the tip at block {}."
+msgstr "钱包已可使用。公共节点已确认链顶区块 {}。"
+
+#. runtime
+msgid "a block reward"
+msgstr "一个块奖励"
+
+#. runtime
+msgid "a block reward that cannot be spent yet"
+msgstr "一个尚不能用的区块奖励"
+
+#. runtime
+msgid "a payment to your address — the sender's wallet waits about 40 seconds: look and accept?"
+msgstr "付款到你的地址—发件人的钱包等待约40秒:看和接受?"
+
+#. runtime
+msgid "a public node names more work than is verified here"
+msgstr "一个公共节点的名称比这里验证的工作更多"
+
+#. runtime
+msgid "abandoned"
+msgstr "已放弃"
+
+#. runtime
+msgid "accepted for delivery"
+msgstr "已接收，等待投递"
+
+#. runtime
+msgid "address unavailable"
+msgstr "地址不可用"
+
+#. runtime
+msgid "address with a mistake"
+msgstr "地址有错误"
+
+#. runtime
+msgid "after {} blocks"
+msgstr "在{}块之后"
+
+msgid "amount to ask for, GRIN"
+msgstr "请求数额，GRIN"
+
+#. runtime
+msgid "and {} earlier"
+msgstr "和以前第{}号决议"
+
+#. runtime
+msgid "asking public nodes about the tip"
+msgstr "询问公共节点关于提示"
+
+#. runtime
+msgid "at the tip, block {}"
+msgstr "在尖端,块{}"
+
+#. runtime
+msgid "auto-receive status unavailable"
+msgstr "无法获取自动收款状态"
+
+msgid "away from the computer"
+msgstr "远离计算机"
+
+msgid "away from the phone"
+msgstr "远离手机"
+
+#. runtime
+msgid "being taken back — one of the two will be in a block"
+msgstr "两个女人中,有一个是她的女朋友。"
+
+msgid "block "
+msgstr "区块 "
+
+#. runtime
+msgid "block {}"
+msgstr "区块 {}"
+
+#. runtime
+msgid "block {} of {} · {} left"
+msgstr "区块 {} 2006年12月31日终了年度的收入和支出及准备金和基金结余变动表 {} 2000年1月1日至12月31日 {} 剩余"
+
+#. runtime
+msgid "block {} · waiting for the chain"
+msgstr "区块 {} · 等待链条"
+
+#. runtime
+msgid "can be spent · in reserve {} · in all {}"
+msgstr "可用 · 已预留 {} · 合计 {}"
+
+#. runtime
+msgid "cancelled"
+msgstr "已取消"
+
+#. runtime
+msgid "cannot be spent now"
+msgstr "现在无法使用"
+
+msgid "check code compared"
+msgstr "检查代码比较"
+
+msgid "check code compared · you have paid them"
+msgstr "检查代码比较 · 你已经付了他们"
+
+msgid "check code not compared"
+msgstr "检查代码未比较"
+
+#. runtime
+msgid "checked by sampling its work up to the program's point; from there checked by the wallet that made your point"
+msgstr "通过取样工作检查到程序的点;从那里检查的钱包,使你的点"
+
+#. runtime
+msgid "checking the stored ones"
+msgstr "检查存储的数据"
+
+#. runtime
+msgid "collected and checked"
+msgstr "收集和检查"
+
+msgid "confirmations"
+msgstr "确认数"
+
+#. runtime
+msgid "confirmed by public nodes"
+msgstr "由公共节点确认"
+
+#. runtime
+msgid "confirmed by public nodes, {}"
+msgstr "由公共节点确认, {}"
+
+#. runtime
+msgid "confirmed, with a caveat: a claim of more work went unsettled not long ago"
+msgstr "确认,但有一个警告:不久前,一项关于更多工作的要求未能得到解决"
+
+#. runtime
+msgid "contested — check it"
+msgstr "检查它"
+
+#. runtime
+msgid "create a message key first (My details)"
+msgstr "首先创建消息密钥(我的详细信息)"
+
+#. runtime
+msgid "cut short"
+msgstr "已截断"
+
+#. runtime
+msgid "did not work: the payment reached a block first"
+msgstr "没有工作:付款首先到达一个块"
+
+#. runtime
+msgid "directly"
+msgstr "直接"
+
+#. runtime
+msgid "does not answer"
+msgstr "不回答"
+
+#. runtime
+msgid "failed"
+msgstr "失败"
+
+#. runtime
+msgid "finished · found {} · spent {}"
+msgstr "已完成 · 已找到 {} · 支出 {}"
+
+msgid "for example 1.5"
+msgstr "例如1.5"
+
+#. runtime
+msgid "found by the search for old money · in the chain by block {}"
+msgstr "由寻找旧钱发现 · 在链中由块 {}"
+
+#. runtime
+msgid "from before the restore — cannot be signed, the money is reserved"
+msgstr "恢复前已准备，无法签名，资金仍为预留状态"
+
+#. runtime
+msgid "from opening to the tip: {}"
+msgstr "从开口到尖端:{}"
+
+msgid "grin1… — for a payment proof"
+msgstr "grin1… — 用于付款证明"
+
+msgid "grin1… — the wallet there must be open"
+msgstr "grin1… — 对方的钱包必须处于打开状态"
+
+#. runtime
+msgid "handed to the wallet"
+msgstr "回到顶部"
+
+#. runtime
+msgid "has not replied to the payment of {} GRIN yet — the money is reserved"
+msgstr "尚未回复 {} GRIN 的付款 — 资金已被保留"
+
+#. runtime
+msgid "held by a payment under way"
+msgstr "由正在支付的款项持有"
+
+#. runtime
+msgid "in a block"
+msgstr "在一个块"
+
+#. runtime
+msgid "in a block · confirmations: 10"
+msgstr "在一个块 · 确认: 10"
+
+#. runtime
+msgid "in a block · confirmations: {}"
+msgstr "在一个块 · 确认: {}"
+
+#. runtime
+msgid "in a block · confirmations: {} of {}"
+msgstr "在一个块中 · 确认: {} 的 {}"
+
+#. runtime
+msgid "in a block · confirmations: {} of {} · {}"
+msgstr "在一个块中 · 确认: {} 2006年12月31日终了年度的收入和支出及准备金和基金结余变动表 {} 2000年1月1日至12月31日 {}"
+
+#. runtime
+msgid "in a block · the wallet is catching up with the tip"
+msgstr "在一个块 · 钱包正在赶上小费"
+
+#. runtime
+msgid "in a block · the wallet is catching up with the tip · {}"
+msgstr "在一个块 · 钱包正在赶上小费 · {}"
+
+#. runtime
+msgid "in a block · {}"
+msgstr "在一个块 · {}"
+
+#. runtime
+msgid "in block 4 118 590"
+msgstr "在区块 4 118 590 中"
+
+#. runtime
+msgid "in block 4 118 590 · proof"
+msgstr "在区块 4 118 590 中 · 证明"
+
+#. runtime
+msgid "in the network, waiting for a block"
+msgstr "在网络中,等待一个块"
+
+#. runtime
+msgid "invoice paid"
+msgstr "账单已支付"
+
+#. runtime
+msgid "invoice paid · in block 4 118 402"
+msgstr "发票付款 · 第4批 118 402"
+
+#. runtime
+msgid "is {} blocks below the checked chain — with a new one the wallet opens faster next time"
+msgstr "是检查链下方的{}块 — 下次使用新链,钱包打开速度会更快"
+
+#. runtime
+msgid "just now"
+msgstr "刚刚"
+
+#. runtime
+msgid "left without the wallet's answer"
+msgstr "没有钱包的答案"
+
+#. runtime
+msgid "look-alike letters in the name"
+msgstr "在名称中看起来相似的字母"
+
+#. runtime
+msgid "malformed"
+msgstr "格式错误"
+
+msgid "marked “not to be spent”"
+msgstr "标有 &quot; 不用 &quot; 字的款项"
+
+#. runtime
+msgid "name changed: it had hidden characters"
+msgstr "名称更改:它有隐藏的字符"
+
+#. runtime
+msgid "no address stored"
+msgstr "没有存储地址"
+
+#. runtime
+msgid "no node address is known: the names of the network's nodes did not resolve"
+msgstr "无节点地址已知:网络节点的名称未解析"
+
+#. runtime
+msgid "no node is connected"
+msgstr "没有节点连接"
+
+#. runtime
+msgid "no node is connected yet"
+msgstr "没有节点被连接"
+
+#. runtime
+msgid "no payment record"
+msgstr "没有付款记录"
+
+#. runtime
+msgid "no public nodes are listed for this network: no tip is confirmed"
+msgstr "此网络没有公共节点:没有提示被确认"
+
+#. runtime
+msgid "no secure channel to public nodes: no tip is confirmed"
+msgstr "没有安全通道到公共节点:没有提示被确认"
+
+#. runtime
+msgid "not a wallet's request"
+msgstr "不是钱包的请求"
+
+#. runtime
+msgid "not applied yet"
+msgstr "尚未执行"
+
+#. runtime
+msgid "not at the tip yet"
+msgstr "还没有在尖端"
+
+#. runtime
+msgid "not checked: the proof in the program did not pass"
+msgstr "不检查:程序中的证明未通过"
+
+#. runtime
+msgid "not checked: the proof in the program is for another starting point"
+msgstr "不选中:程序中的证明是为另一个起点"
+
+#. runtime
+msgid "not chosen yet: headers are being checked"
+msgstr "尚未选择:正在检查标题"
+
+#. runtime
+msgid "not confirmed yet"
+msgstr "尚未确认"
+
+#. runtime
+msgid "not in a block yet"
+msgstr "没有在一个块中"
+
+#. runtime
+msgid "not made"
+msgstr "尚未创建"
+
+#. runtime
+msgid "not needed"
+msgstr "无需"
+
+#. runtime
+msgid "not sent: the delivery window closed"
+msgstr "未发送:交付窗口关闭"
+
+#. runtime
+msgid "not set"
+msgstr "未设置"
+
+#. runtime
+msgid "not started"
+msgstr "尚未启动"
+
+#. runtime
+msgid "of {} GRIN is signed, but Tor did not come up and it has not gone to the network — choose what to do"
+msgstr "2006年12月31日终了年度的收入和支出及准备金和基金结余变动表 {} GRIN 是签署的，但 Tor 没有出现,它没有去网络—选择该怎么做"
+
+#. runtime
+msgid "of {} GRIN was prepared before the wallet was restored from an older copy — it cannot be signed, the money is reserved"
+msgstr "{} GRIN 是在钱包从旧副本恢复之前准备的 — — 无法签名,钱被保留"
+
+#. runtime
+msgid "off: you accept each payment"
+msgstr "已关闭：每笔收款都由您手动接受"
+
+msgid "on this computer"
+msgstr "在此计算机上"
+
+msgid "on this phone"
+msgstr "在此手机上"
+
+#. runtime
+msgid "part {} of {}"
+msgstr "部分 {} 2006年12月31日终了年度的收入和支出及准备金和基金结余变动表 {}"
+
+#. runtime
+msgid "part {} of {} · found {}"
+msgstr "部分 {} 2006年12月31日终了年度的收入和支出及准备金和基金结余变动表 {} 已找到 {}"
+
+msgid "paste the BEGINSLATEPACK… ENDSLATEPACK. text here"
+msgstr "在此粘贴 BEGINSLATEPACK… ENDSLATEPACK. 文本"
+
+msgid "paste the BEGINSLATEPACK… ENDSLATEPACK. text you were sent"
+msgstr "粘贴收到的 BEGINSLATEPACK… ENDSLATEPACK. 文本"
+
+#. runtime
+msgid "Verified Nostr contacts are accepted automatically. Direct Tor payments require your approval."
+msgstr "自动接受已验证 Nostr 联系人的付款。通过 Tor 直接收到的付款需要您批准。"
+
+#. runtime
+msgid "preliminary"
+msgstr "初步结果"
+
+#. runtime
+msgid "prepared, waiting for the reply"
+msgstr "准备好了,等待答复"
+
+#. runtime
+msgid "public nodes did not confirm the tip"
+msgstr "公共节点没有确认提示"
+
+#. runtime
+msgid "public nodes did not confirm the tip ({} answered, {} needed, {} named it)"
+msgstr "公共节点没有确认提示({} 回答说， {} 需要， {} 是的,我知道。"
+
+#. runtime
+msgid "public nodes have not been asked yet"
+msgstr "公共节点尚未被询问"
+
+#. runtime
+msgid "public nodes name a time before one confirmed earlier"
+msgstr "公共节点名称在一个早些时候提交之前的时间"
+
+#. runtime
+msgid "received"
+msgstr "已收到"
+
+#. runtime
+msgid "received · confirmations: {}"
+msgstr "已收到 · 确认: {}"
+
+#. runtime
+msgid "received · confirmations: {} · {}"
+msgstr "收到确认: {} 2000年1月1日至12月31日 {}"
+
+#. runtime
+msgid "replied to the payment of {} GRIN — your signature is needed"
+msgstr "答复支付{} GRIN — 需要您的签名"
+
+#. runtime
+msgid "reserve released manually; a prior signature is still possible"
+msgstr "已手动解除预留。交易此前可能已经签名。"
+
+#. runtime
+msgid "saving…"
+msgstr "正在保存…"
+
+#. runtime
+msgid "sent a payment — look and accept?"
+msgstr "发送付款 — 查看并接受?"
+
+#. runtime
+msgid "signed — whoever issued the invoice sends it to the network"
+msgstr "签名 — — 无论是谁签发发票,都会将其发送到网络"
+
+#. runtime
+msgid "signed, going to the network"
+msgstr "到网络上去"
+
+#. runtime
+msgid "silent"
+msgstr "无响应"
+
+#. runtime
+msgid "since opening: {}"
+msgstr "自开业以来: {}"
+
+msgid "soon"
+msgstr "即将推出"
+
+#. runtime
+msgid "spendable · reserved {} · maturing {}"
+msgstr "可花费 · 已预留 {} · 待成熟 {}"
+
+#. runtime
+msgid "starting"
+msgstr "正在启动"
+
+#. runtime
+msgid "state unknown"
+msgstr "状态未知"
+
+#. runtime
+msgid "stopped"
+msgstr "已停止"
+
+#. runtime
+msgid "taken back — the money is yours again"
+msgstr "收回 — — 钱是你的再次"
+
+#. runtime
+msgid "test"
+msgstr "测试"
+
+#. runtime
+msgid "the built-in obfs4 bridges"
+msgstr "内置 obfs4 桥梁"
+
+#. runtime
+msgid "the chain is checked to block {} · your old money is still being looked for: the amount can grow, sending opens when the search ends"
+msgstr "链条被检查以阻止 {} · 您的旧钱仍在寻找:金额可以增加,发送打开时,搜索结束"
+
+#. runtime
+msgid "the chain is still being checked"
+msgstr "链条仍在检查中"
+
+#. runtime
+msgid "the list of public nodes is too small to confirm a tip"
+msgstr "公共节点列表太小,无法确认提示"
+
+#. runtime
+msgid "the numbers for asking public nodes ran out: no tip is confirmed"
+msgstr "询问公共节点的数量已用尽:没有提示被确认"
+
+#. runtime
+msgid "the part that checks the network is missing: nothing is known about the chain"
+msgstr "缺少检查网络的部分:链条不为人所知"
+
+#. runtime
+msgid "the time is not confirmed yet"
+msgstr "时间尚未确认"
+
+#. runtime
+msgid "the time is not confirmed: public nodes disagree about it"
+msgstr "时间未确认：公共节点给出的时间不一致"
+
+#. runtime
+msgid "the time is not confirmed: too few public nodes answered"
+msgstr "时间未确认：响应的公共节点数量不足"
+
+#. runtime
+msgid "the wallet is at block {} of {} · {} to go. Sending opens at the tip"
+msgstr "钱包是在块 {} 2006年12月31日终了年度的收入和支出及准备金和基金结余变动表 {} 2000年1月1日至12月31日 {} 要去哪里?"
+
+#. runtime
+msgid "the wallet is at block {} · the tip is not chosen yet: waiting for the network check and public nodes. Sending opens at the tip"
+msgstr "钱包位于块 {} · 提示尚未选择:等待网络检查和公共节点。 发送在提示处打开"
+
+#. runtime
+msgid "the wallet said nothing about the chain"
+msgstr "钱包里没有说链子"
+
+msgid "this computer"
+msgstr "此计算机"
+
+#. runtime
+msgid "this computer's clock is far from the time of public nodes: check the clock"
+msgstr "这台计算机的时钟与公共节点的时间相距甚远:检查时钟"
+
+msgid "this phone"
+msgstr "此手机"
+
+#. runtime
+msgid "time is not confirmed"
+msgstr "时间未确认"
+
+#. runtime
+msgid "to the tip, 4 118 626 · confirmed by Grincoin.org and Grin.money"
+msgstr "到提示, 4 118 626 · 确认由Grincoin.org和 Grin.money域名"
+
+#. runtime
+msgid "to the tip, {}"
+msgstr "到顶端, {}"
+
+#. runtime
+msgid "to {}"
+msgstr "收款人：{}"
+
+#. runtime
+msgid "too large"
+msgstr "过大"
+
+#. runtime
+msgid "too many unsettled claims of more work: no tip is confirmed"
+msgstr "太多未解决的更多工作要求:没有小费被确认"
+
+#. runtime
+msgid "verified to {}"
+msgstr "核实为{}"
+
+#. runtime
+msgid "waiting for a signature"
+msgstr "等待签名"
+
+#. runtime
+msgid "waiting for public nodes to confirm the tip"
+msgstr "等待公共节点确认提示"
+
+#. runtime
+msgid "waiting for the chain"
+msgstr "等待链条"
+
+#. runtime
+msgid "waiting for your signature"
+msgstr "等待您的签名"
+
+#. runtime
+msgid "waiting to be delivered"
+msgstr "等待交付"
+
+#. runtime
+msgid "wallet"
+msgstr "钱包"
+
+msgid "what you call them"
+msgstr "你叫什么名字"
+
+msgid "word"
+msgstr "单词"
+
+#. runtime
+msgid "working"
+msgstr "运行中"
+
+msgid "you have paid them · check code not compared"
+msgstr "检查代码没有比较"
+
+msgid "you have paid them: a payment is in a block"
+msgstr "您已付款给他们:付款是在块中"
+
+#. runtime
+msgid "your own bridges"
+msgstr "您自己的桥梁"
+
+#. runtime
+msgid "{} GRIN from grin18z5…9h2ykv — accept?"
+msgstr "收到来自 grin18z5…9h2ykv 的 {} GRIN，接受吗？"
+
+#. runtime
+msgid "{} GRIN held by a payment under way"
+msgstr "{} GRIN 由正在进行的付款持有"
+
+#. runtime
+msgid "{} GRIN marked “not to be spent”"
+msgstr "{} GRIN 标有 &quot; 不用 &quot;"
+
+#. runtime
+msgid "{} GRIN maturing"
+msgstr "{} GRIN 到期"
+
+#. runtime
+msgid "{} GRIN waits for the recipient's reply"
+msgstr "{} GRIN 等待收件人的回复"
+
+#. runtime
+msgid "{} h ago"
+msgstr "{} 小时前"
+
+#. runtime
+msgid "{} h {} min"
+msgstr "{} 小时 {} 分钟"
+
+#. runtime
+msgid "{} messages"
+msgstr "{} 条消息"
+
+#. runtime
+msgid "{} min ago"
+msgstr "{} 分钟前"
+
+#. runtime
+msgid "{} min {} s"
+msgstr "{} 分 {} 秒"
+
+#. runtime
+msgid "{} of about {}"
+msgstr "{} 约 {}"
+
+#. runtime
+msgid "{} of {} · {} left"
+msgstr "{} 2006年12月31日终了年度的收入和支出及准备金和基金结余变动表 {} 2000年1月1日至12月31日 {} 剩余"
+
+#. runtime
+msgid "{} s"
+msgstr "{} 秒"
+
+#. runtime
+msgid "{} set · they get transactions first; from the next unlock"
+msgstr "{} set · 他们首先获得交易;从下一个解锁"
+
+#. runtime
+msgid "{} · gone"
+msgstr "{} · 已离开"
+
+#. runtime
+msgid "{} · started {} times"
+msgstr "{} · 开始 {}次"
+
+#. runtime
+msgid "{}. A payment signed now may wait until Tor works again. You can sign and wait; sign and let this one payment go directly — the node then sees the address of your device; switch Tor off for all payments; or not sign yet."
+msgstr "{}. 现在签署的付款可能会等到 Tor 重新运行。 你可以签署并等待;签署并让这笔付款直接发送 — — 节点会看到你的设备的地址;关闭 Tor 对所有付款;或者还没有签署。"
+
+#. runtime
+msgid "“Coffee shop”"
+msgstr "“咖啡店”"
+
+msgid "✓ Checked: you compared the check code with this contact"
+msgstr "✓ 已检查:您已将检查代码与此联系人进行比较"
+
+msgid "✓ Not to be spent"
+msgstr "✓ 不用花费"
+
+msgid "✓ Small ones go along with payments"
+msgstr "✓ 小的跟付款一起去"
+
+msgid "✓ Spend it in this payment"
+msgstr "✓ 在此支付中花费"
+
+msgid "✓ checked: the check code was compared"
+msgstr "✓ 检查:检查代码被比较"

@@ -88,7 +88,7 @@ pub(crate) fn journal_dir(profile: &Path, instance: &[u8; 16]) -> PathBuf {
     profile.join(format!("wallet-{}", hex(instance)))
 }
 
-fn chain_dir(profile: &Path, instance: &[u8; 16]) -> PathBuf {
+pub(crate) fn chain_dir(profile: &Path, instance: &[u8; 16]) -> PathBuf {
     profile.join(format!("chain-{}", hex(instance)))
 }
 

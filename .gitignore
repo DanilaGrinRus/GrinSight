@@ -9,3 +9,5 @@ Source/UI/flutter_app/build/
 *.keystore
 key.properties
 local.properties
+
+/build-047A-*/

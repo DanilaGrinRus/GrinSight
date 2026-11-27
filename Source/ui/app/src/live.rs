@@ -20,6 +20,7 @@ use slint::{ComponentHandle, SharedString, Timer, TimerMode};
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::path::Path;
+#[cfg(test)]
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -27,6 +28,9 @@ use zeroize::{Zeroize, Zeroizing};
 
 pub(crate) mod apart;
 mod bridges;
+mod checkpoint;
+#[cfg(test)]
+mod freshness_tests;
 
 const QUICK: Duration = Duration::from_secs(10);
 /// Opening, creating or restoring a profile runs scrypt (128 MB, a second
@@ -207,7 +211,7 @@ enum Wait {
     Sent(String),
     /// A payment prepared before the wallet was restored from an older
     /// copy: it cannot be signed, and its reserve stays until given up.
-    Locked(String),
+    Locked { op: String, amount: u64, session_expired: bool },
     /// An incoming payment through the transport.
     Incoming(Incoming),
     /// A signed payment the network check could not send: Tor did not
@@ -231,6 +235,7 @@ struct SendRow {
     invoice: bool,
     /// Prepared and locked after a detected rollback.
     locked: bool,
+    session_expired: bool,
     /// The contact it was sent to, when it went through the transport.
     to: Option<String>,
     /// The block its kernel was seen in.
@@ -278,6 +283,8 @@ fn to_self(sends: &[SendRow], incoming: &[IncomingRow]) -> std::collections::BTr
 struct IncomingRow {
     value: u64,
     abandoned: bool,
+    session_expired: bool,
+    signature_unknown: bool,
     status: String,
     slate_id: String,
     /// The block its kernel was seen in.
@@ -392,8 +399,14 @@ fn confirmations(kernel: Option<u64>, tip: Option<u64>) -> Option<u64> {
 /// and a payment that is in a block is not said to be unconfirmed (O44):
 /// the line says where it is and that the wallet is catching up.
 fn incoming_words(row: &IncomingRow, tip: Option<u64>, k_conf: u64, catching_up: bool) -> (String, i32) {
+    if row.signature_unknown && row.kernel_height.is_none() {
+        return (tr("Check this invoice. Its signing result is unknown.", "Требуется проверка счёта. Исход подписи неизвестен.").into(), 2);
+    }
     if row.abandoned {
         return (tr("abandoned", "брошен").into(), 0);
+    }
+    if row.session_expired && row.kernel_height.is_none() {
+        return (tr("Invoice session ended. Check the payment before issuing a new invoice.", "Сеанс счёта завершён. Проверьте платёж, прежде чем выставить новый счёт.").into(), 2);
     }
     if catching_up && row.status != "confirmed" && row.kernel_height.is_some() {
         return (tr("in a block · the wallet is catching up with the tip", "в блоке · кошелёк догоняет вершину").into(), 0);
@@ -415,8 +428,8 @@ fn wait_of(row: &SendRow) -> Option<Wait> {
     if row.state != "prepared" {
         return None;
     }
-    Some(if row.locked {
-        Wait::Locked(row.op.clone())
+    Some(if row.locked || row.session_expired {
+        Wait::Locked { op: row.op.clone(), amount: row.amount, session_expired: row.session_expired }
     } else if row.held {
         Wait::Sign(row.op.clone())
     } else if row.to.is_some() {
@@ -480,6 +493,8 @@ struct InvoiceFlow {
 #[derive(Default)]
 struct Flow {
     client: Option<Arc<Client>>,
+    refresh: RefreshState,
+    open_after_refresh: bool,
     lock_unconfirmed: bool,
     testnet: Option<bool>,
     /// The words of a wallet just made, until the user typed three back.
@@ -516,8 +531,6 @@ struct Flow {
     /// The payment that went over Tor from the text window that is still
     /// open: its outcome is shown there, not only in the lists.
     tor_wait: Option<String>,
-    /// What each locked payment is for, by the wallet's last history.
-    locked_amounts: HashMap<String, u64>,
     /// K200: the incoming payments whose sender's text the wallet keeps.
     requests: std::collections::BTreeSet<String>,
     /// K200: the incoming payment whose reply is shown, when its sender's text can be shown too.
@@ -610,6 +623,8 @@ fn end_session() {
         if let Ok(mut f) = flow.try_borrow_mut() {
             f.opened_at = None;
             f.synced_after = None;
+            f.refresh = RefreshState::Idle;
+            f.open_after_refresh = false;
         }
     });
 }
@@ -638,9 +653,29 @@ pub(crate) fn opening_time(good: bool, since_opened: u64, synced_after: Option<u
     }
 }
 
-struct RefreshPermit(Arc<AtomicBool>);
-impl Drop for RefreshPermit {
-    fn drop(&mut self) { self.0.store(false, Ordering::SeqCst); }
+#[derive(Default, PartialEq, Eq)]
+enum RefreshState {
+    #[default]
+    Idle,
+    Reading,
+    ReadAgain,
+}
+
+impl RefreshState {
+    fn begin(&mut self, after_action: bool) -> bool {
+        if *self == Self::Idle {
+            *self = Self::Reading;
+            return true;
+        }
+        if after_action {
+            *self = Self::ReadAgain;
+        }
+        false
+    }
+
+    fn finish(&mut self) -> bool {
+        std::mem::take(self) == Self::Reading
+    }
 }
 
 /// Runs `work` on a thread of its own and `done` on the window's thread.
@@ -701,19 +736,26 @@ fn send_state(state: &str, invoice: bool, locked: bool) -> (&'static str, i32) {
         // prepared before a rollback: the wallet no longer knows whether it
         // was signed afterwards, and says neither "waiting" nor "cancelled"
         "prepared" if locked => (tr("from before the restore — cannot be signed, the money is reserved", "до восстановления — подписать нельзя, деньги в резерве"), 2),
-        "released" => (tr("reserve released after the restore — it may have been signed before", "резерв снят после восстановления — мог быть подписан раньше"), 2),
+        "released" => (tr("reserve released manually; a prior signature is still possible", "резерв снят вручную, платёж мог быть подписан ранее"), 2),
         // the transaction of a paid invoice is with whoever issued it: this
         // wallet does not send it anywhere
         "finalized" if invoice => (tr("signed — whoever issued the invoice sends it to the network", "подписан — в сеть его отправляет тот, кто выставил счёт"), 2),
         "prepared" => (tr("prepared, waiting for the reply", "подготовлен, ждёт ответа"), 2),
         "cancelled" => (tr("cancelled", "отменён"), 0),
-        "unknown" => (tr("outcome unknown — not signed again", "исход неизвестен — повторно не подписывается"), 2),
+        "unknown" => (tr("Check this payment. Signing may have completed.", "Требуется проверка операции. Подпись могла состояться."), 2),
         "finalized" => (tr("signed, going to the network", "подписан, уходит в сеть"), 2),
         "confirmed" => (tr("in a block", "в блоке"), 0),
         "contested" => (tr("contested — check it", "спорный — проверьте"), 2),
         "dead" => (tr("failed", "не прошёл"), 2),
         _ => (tr("state unknown", "состояние неизвестно"), 2),
     }
+}
+
+fn outgoing_words(row: &SendRow) -> (&'static str, i32) {
+    if row.state == "prepared" && row.session_expired {
+        return (tr("Signing session ended. Check this payment before starting a new Slatepack.", "Сеанс подписи завершён. Проверьте платёж перед новым обменом Slatepack."), 2);
+    }
+    send_state(&row.state, row.invoice, row.locked)
 }
 
 /// What a failed call means to a person. The core's names are stable
@@ -802,6 +844,7 @@ fn profile_io_words(step: &str) -> String {
 
 fn refused(reason: &str) -> &'static str {
     match reason {
+        "signing session ended; start a new exchange" => tr("This signing session has ended. Check the original payment before starting a new Slatepack.", "Сеанс подписи завершён. Проверьте исходный платёж перед новым обменом Slatepack."),
         "the search for old outputs is not over" => tr(
             "The wallet is still searching the chain for your old money (see Connection → Search for old money). Sending opens when the search is over: until then the balance is not final.",
             "Кошелёк ещё ищет в цепи ваши давние деньги (см. «Связь» → «Поиск давних денег»). Отправка откроется, когда поиск закончится: до тех пор баланс не окончательный.",
@@ -861,11 +904,12 @@ fn say_tor(err: &CallError) -> String {
 /// [`say`] for an invoice, where the same names mean something narrower.
 fn say_invoice(err: &CallError) -> String {
     match err {
+        CallError::Rpc { name, message, .. } if name == "refused" && message == "signing session ended; start a new exchange" => say(err),
         CallError::Rpc { name, .. } => match name.as_str() {
             "bad_slate" => tr("The invoice failed the check: it is damaged, of a kind this wallet does not pay, or its time has run out", "Счёт не прошёл проверку: он повреждён, такие счета кошелёк не оплачивает или его срок истёк").into(),
-            "conflict" => tr("This wallet has already paid another invoice with the same number", "Этот кошелёк уже оплатил другой счёт с тем же номером").into(),
+            "conflict" => tr("This wallet already prepared a reply to a different invoice with this number", "Кошелёк уже подготовил ответ на другой счёт с тем же номером").into(),
             "refused" => tr("The wallet will not pay now: the chain is not verified yet, a payment is contested, or the fee has changed. Read the invoice again", "Кошелёк сейчас не платит: цепь ещё не проверена, есть спорный платёж или изменилась комиссия. Прочитайте счёт ещё раз").into(),
-            "unknown_outcome" => tr("The signature may have happened, there is no result. Read the invoice again: it is never paid twice", "Подпись могла состояться, результата нет. Прочитайте счёт ещё раз: дважды он не оплачивается").into(),
+            "unknown_outcome" => tr("Check the operation before paying again. A signature may already exist.", "Требуется проверка операции. Подпись могла состояться. Проверьте платёж, прежде чем платить снова.").into(),
             _ => say(err),
         },
         _ => say(err),
@@ -896,8 +940,6 @@ struct View {
     balance: Option<(u64, u64, u64, bool)>,
     address: Option<String>,
     npub: Option<String>,
-    chain: Option<(String, Option<u64>, Option<u64>)>,
-    chain_configured: bool,
     /// What the synchronisation block and the list of troubles are made of.
     sync: crate::sync::Facts,
     transport_line: String,
@@ -998,8 +1040,6 @@ fn gather_from(
         view.sync.onion.configured = status.get("onion").and_then(|o| o.get("configured")).and_then(Value::as_bool).unwrap_or(false);
         view.testnet = network_value(status.get("network").and_then(Value::as_str)).or(known);
         let transport = status.get("transport");
-        let chain = status.get("chain");
-        view.chain_configured = chain.and_then(|c| c.get("configured")).and_then(Value::as_bool).unwrap_or(false);
         let phase = |part: Option<&Value>| part.and_then(|p| p.get("phase")).and_then(Value::as_str).unwrap_or("none").to_string();
         let configured = transport.and_then(|t| t.get("configured")).and_then(Value::as_bool).unwrap_or(false);
         view.transport_line = if !configured {
@@ -1047,16 +1087,18 @@ fn gather_from(
             Some((amount("spendable")?, amount("reserved")?, amount("immature")?, b.get("incomplete")?.as_bool()?))
         });
         view.kept = c.get("balance").and_then(|b| b.get("kept")?.as_str()?.parse::<u64>().ok()).unwrap_or(0);
-        let state = text(&c, "state").unwrap_or_else(|| "unknown".into());
-        view.sync.state = Some(state.clone());
-        view.sync.wallet_height = c.get("tip_height").and_then(Value::as_u64);
-        view.sync.selected_height = c.get("selected_height").and_then(Value::as_u64);
-        view.chain = Some((state, c.get("tip_height").and_then(Value::as_u64), c.get("selected_height").and_then(Value::as_u64)));
-    }
-    if let Ok(c) = call("paycore.chain.status", json!({})) {
-        view.sync.status_answered = true;
+        view.sync.state = text(&c, "state");
+        view.sync.status_answered = view.sync.state.is_some();
         view.sync.confirmed_time = c.get("confirmed_time").and_then(Value::as_u64);
         view.sync.k_conf = c.get("k_conf").and_then(Value::as_u64);
+        view.sync.wallet_height = c.get("tip_height").and_then(Value::as_u64);
+        view.sync.selected_height = c.get("selected_height").and_then(Value::as_u64)
+            .filter(|_| view.sync.confirmed_time.is_some());
+        // Incomplete or older replies cannot authorize a positive badge.
+        if view.sync.state.as_deref() == Some("at_tip") && (view.sync.selected_height.is_none()
+            || view.sync.wallet_height != view.sync.selected_height) {
+            view.sync.state = Some("behind".into());
+        }
     }
     if let Ok(s) = call("paycore.search.status", json!({})) {
         let count = |key: &str| s.get(key).and_then(Value::as_u64);
@@ -1089,6 +1131,7 @@ fn gather_from(
                 held: send.get("reply_held").and_then(Value::as_bool) == Some(true),
                 invoice: send.get("invoice").and_then(Value::as_bool) == Some(true),
                 locked: send.get("locked").and_then(Value::as_bool) == Some(true),
+                session_expired: send.get("session_expired").and_then(Value::as_bool) == Some(true),
                 to: text(send, "deliver_to"),
                 kernel_height: send.get("kernel_height").and_then(Value::as_u64),
                 signed: send.get("signed").and_then(Value::as_bool) == Some(true),
@@ -1108,6 +1151,8 @@ fn gather_from(
             view.incoming.push(IncomingRow {
                 value: nano(field(inc, "amount")),
                 abandoned: inc.get("abandoned").and_then(Value::as_bool).unwrap_or(false),
+                session_expired: inc.get("session_expired").and_then(Value::as_bool) == Some(true),
+                signature_unknown: inc.get("signature_unknown").and_then(Value::as_bool) == Some(true),
                 status: text(inc, "status").unwrap_or_default(),
                 slate_id: text(inc, "slate_id").unwrap_or_default(),
                 kernel_height: inc.get("kernel_height").and_then(Value::as_u64),
@@ -1164,7 +1209,10 @@ pub(crate) fn auto_receive_fixture(app: &App, info: Option<Value>) {
 pub(crate) fn refresh_balance_fixture(app: &App, available: bool) {
     apply(app, View {
         balance: available.then_some((123_000_000_000, 0, 0, false)),
-        chain: Some(("at_tip".into(), Some(10), Some(10))),
+        sync: crate::sync::Facts {
+            state: Some("at_tip".into()), wallet_height: Some(10), selected_height: Some(10),
+            confirmed_time: Some(1_800_000_000), status_answered: true, ..Default::default()
+        },
         ..View::default()
     });
 }
@@ -1186,7 +1234,7 @@ pub(crate) fn chain_chip(chain: Option<(&str, Option<u64>, Option<u64>)>, config
             false,
             fill(tr("the chain is checked to block {} · your old money is still being looked for: the amount can grow, sending opens when the search ends", "цепь проверена до блока {} · ваши давние деньги ещё ищутся: сумма может вырасти, отправка откроется, когда поиск закончится"), &[&block(tip)]),
         ),
-        Some(("at_tip", tip, _)) => (tr("VERIFIED", "ПРОВЕРЕНО"), true, fill(tr("the wallet is at tip {} · chosen by public nodes of different operators", "кошелёк на вершине {} · её выбрали публичные ноды разных операторов"), &[&block(tip)])),
+        Some(("at_tip", tip, _)) => (tr("VERIFIED", "ПРОВЕРЕНО"), true, fill(tr("Your wallet is ready to use. Public nodes verified the tip at block {}.", "Кошельком можно пользоваться. Публичные ноды подтвердили вершину на блоке {}."), &[&block(tip)])),
         // behind, and the tip to catch up with is not chosen yet
         Some(("behind", tip, None)) => (
             tr("CATCHING UP", "ДОГОНЯЕТ"),
@@ -1287,7 +1335,7 @@ fn finish_invoice(app: &App, expected: Option<String>, reply: String) {
             Ok(Ok(_)) => {
                 with(|f| f.issued = None);
                 close_sheet(app);
-                app.set_wait_note(tr("The invoice is paid and signed: the payment goes to the network and has its line in the payments.", "Счёт оплачен и подписан: платёж уходит в сеть, у него своя строка в платежах.").into());
+                app.set_wait_note(tr("Transaction signed. Track its submission and confirmations in Payments.", "Транзакция подписана. Отправку и подтверждения можно проверить в операциях.").into());
                 refresh(app);
             }
             Ok(Err(why)) => sheet_error(app, why),
@@ -1451,7 +1499,7 @@ fn show_auto(app: &App, setting: Option<bool>) {
     app.set_auto_known(setting.is_some());
     app.set_auto_on(setting == Some(true));
     app.set_auto_receive(match setting {
-        Some(true) => tr("payments from contacts are answered by themselves", "платежи от контактов принимаются сами"),
+        Some(true) => tr("Verified Nostr contacts are accepted automatically. Direct Tor payments require your approval.", "Платежи от подтверждённых контактов Nostr принимаются автоматически. Входящие напрямую по Tor требуют вашего согласия."),
         Some(false) => tr("off: you accept each payment", "выключен: каждый платёж принимаете вы"),
         None => tr("auto-receive status unavailable", "состояние автоприёма неизвестно"),
     }.into());
@@ -1501,7 +1549,9 @@ fn apply(app: &App, view: View) {
     app.set_identity_made(view.npub.is_some());
     app.set_phrase(view.npub.map(|n| foreign_line(&n, 80).text).unwrap_or_else(|| tr("not made", "не создан").into()).into());
     let searching = matches!(view.balance, Some((_, _, _, true)));
-    let (chip, good, line) = chain_chip(view.chain.as_ref().map(|(state, tip, selected)| (state.as_str(), *tip, *selected)), view.chain_configured, searching);
+    let chain = view.sync.state.as_deref().map(|state| (state, view.sync.wallet_height, view.sync.selected_height));
+    let chain = chain.filter(|(state, _, _)| *state != "at_tip" || view.balance.is_some());
+    let (chip, good, line) = chain_chip(chain, view.sync.chain.configured, searching);
     let time = with(|f| {
         let opened = *f.opened_at.get_or_insert_with(Instant::now);
         let (time, took) = opening_time(good, opened.elapsed().as_secs(), f.synced_after);
@@ -1561,7 +1611,7 @@ fn apply(app: &App, view: View) {
         let unsent = !view.sync.tor_off && crate::sync::not_sent(&view.sync).is_some();
         let own = to_self(&view.sends, &view.incoming);
         for row in &view.sends {
-            let (sub, tone) = send_state(&row.state, row.invoice, row.locked);
+            let (sub, tone) = outgoing_words(row);
             // in a block: how deep it lies by now (K190)
             let sub = match confirmations(row.kernel_height, view.history_tip).filter(|_| row.state == "confirmed") {
                 Some(have) => fill(tr("in a block · confirmations: {}", "в блоке · подтверждений: {}"), &[&crate::sync::spaced(have)]),
@@ -1575,7 +1625,7 @@ fn apply(app: &App, view: View) {
             } else if own_one {
                 tr("To yourself: outputs collected", "Себе: сбор выходов").into()
             } else if row.invoice {
-                tr("Invoice paid", "Оплата счёта").into()
+                tr("Invoice payment", "Оплата счёта").into()
             } else {
                 payee(f, row)
             };
@@ -1586,7 +1636,7 @@ fn apply(app: &App, view: View) {
             // the text of a payment that still waits for its reply can be shown again
             // O55: every payment that is not signed can be opened from its
             // line and cancelled there - one sent to a contact too
-            refs.push(if row.state == "prepared" && !row.locked && !row.invoice {
+            refs.push(if row.state == "prepared" && !row.locked && !row.session_expired && !row.invoice {
                 OpRef::Send(row.op.clone())
             } else if row.signed {
                 // every signed payment keeps its final text (K191)
@@ -1606,7 +1656,6 @@ fn apply(app: &App, view: View) {
         if let Some(gap) = crate::sync::point_gap(&view.sync).filter(|gap| *gap > crate::sync::POINT_OLD && f.point_made.is_none()) {
             waits.push(Wait::Point(gap));
         }
-        f.locked_amounts = view.sends.iter().filter(|row| row.locked).map(|row| (row.op.clone(), row.amount)).collect();
         f.direct_ops = view.sends.iter().filter(|row| row.direct).map(|row| row.op.clone()).collect();
         f.requests = view.incoming.iter().filter(|row| row.request_kept && !row.abandoned).map(|row| row.slate_id.clone()).collect();
         for row in &view.incoming {
@@ -1703,9 +1752,13 @@ fn apply(app: &App, view: View) {
                     let value = row.map_or(0, |s| s.amount);
                     Waiting { who: who.into(), what: fill(tr("has not replied to the payment of {} GRIN yet — the money is reserved", "ещё не ответил на платёж {} GRIN — деньги в резерве"), &[&amount(value)]).into(), action: tr("Cancel the payment", "Отменить платёж").into(), second: "".into() }
                 }
-                Wait::Locked(op) => {
-                    let value = view.sends.iter().find(|s| &s.op == op).map_or(0, |s| s.amount);
-                    Waiting { who: tr("Payment", "Платёж").into(), what: fill(tr("of {} GRIN was prepared before the wallet was restored from an older copy — it cannot be signed, the money is reserved", "{} GRIN подготовлен до восстановления кошелька из старой копии — подписать его нельзя, деньги в резерве"), &[&amount(value)]).into(), action: tr("What to do", "Что делать").into(), second: "".into() }
+                Wait::Locked { amount: value, session_expired, .. } => {
+                    let what = if *session_expired {
+                        tr("The signing session for {} GRIN ended. Review the payment before starting a new exchange.", "Сеанс подписи платежа на {} GRIN завершён. Проверьте операцию перед новым обменом.")
+                    } else {
+                        tr("of {} GRIN was prepared before the wallet was restored from an older copy — it cannot be signed, the money is reserved", "{} GRIN подготовлен до восстановления кошелька из старой копии — подписать его нельзя, деньги в резерве")
+                    };
+                    Waiting { who: tr("Payment", "Платёж").into(), what: fill(what, &[&amount(*value)]).into(), action: tr("Review payment", "Проверить платёж").into(), second: "".into() }
                 }
                 Wait::Point(gap) => Waiting { who: tr("Starting point", "Стартовая точка").into(), what: fill(tr("is {} blocks below the checked chain — with a new one the wallet opens faster next time", "на {} блоков ниже проверенной цепи — с новой кошелёк в следующий раз откроется быстрее"), &[&crate::sync::spaced(*gap)]).into(), action: tr("Make a new point", "Сделать новую точку").into(), second: "".into() },
                 Wait::Unsent(op) => {
@@ -1869,7 +1922,7 @@ fn plaques(sends: &[SendRow], tip: Option<u64>, now: u64) -> std::collections::B
         let confirmed = row.state == "confirmed";
         let state = match confirmations(row.kernel_height, tip).filter(|_| confirmed) {
             Some(have) => fill(tr("in a block · confirmations: {}", "в блоке · подтверждений: {}"), &[&crate::sync::spaced(have)]),
-            None => send_state(&row.state, row.invoice, row.locked).0.to_string(),
+            None => outgoing_words(row).0.to_string(),
         };
         let text = fill(tr("You sent {} GRIN", "Вы отправили {} GRIN"), &[&amount(row.amount)]);
         out.entry(key.clone()).or_default().push(Plaque { at, text, state, warn: !confirmed });
@@ -2167,8 +2220,15 @@ fn invoice_pay_params(flow: &InvoiceFlow) -> Value {
     json!({ "slate": flow.slate, "max_amount": flow.amount.to_string(), "max_fee": flow.fee.to_string() })
 }
 
-/// Pays the invoice within the numbers shown, and shows the reply to pass
-/// back. `again` is an invoice this wallet has paid before.
+fn invoice_reply_title(again: bool) -> &'static str {
+    if again {
+        tr("Saved reply — send it to the invoice issuer", "Ответ сохранён — передайте его тому, кто выставил счёт")
+    } else {
+        tr("Reply ready — send it to the invoice issuer", "Ответ готов — передайте его тому, кто выставил счёт")
+    }
+}
+
+/// Prepares the payer's reply or returns its previously saved bytes.
 fn pay_invoice(app: &App, flow: InvoiceFlow, again: bool) {
     let Some(client) = client() else { return };
     app.set_sheet_busy(true);
@@ -2186,11 +2246,7 @@ fn pay_invoice(app: &App, flow: InvoiceFlow, again: bool) {
             };
             with(|f| f.invoice = None);
             let note = tr("Send this text to whoever issued the invoice. They complete the payment and send it to the network; until then the money stays reserved. If the text is lost, read the same invoice again: the wallet gives this reply again and pays nothing twice.", "Отправьте этот текст тому, кто выставил счёт. Он завершит платёж и отправит его в сеть; до тех пор деньги остаются в резерве. Если текст потерян, прочитайте тот же счёт ещё раз: кошелёк выдаст этот ответ снова и дважды не заплатит.");
-            if again {
-                show_out(app, tr("This invoice is already paid", "Этот счёт уже оплачен"), note, &reply, false);
-            } else {
-                show_out(app, tr("Invoice paid — pass on the reply", "Счёт оплачен — передайте ответ"), note, &reply, false);
-            }
+            show_out(app, invoice_reply_title(again), note, &reply, false);
         },
     );
 }
@@ -2225,6 +2281,7 @@ fn show_out(app: &App, title: &str, note: &str, out: &str, wants_reply: bool) {
     app.set_out_note(note.into());
     app.set_out_text(out.into());
     app.set_out_wants_reply(wants_reply);
+    app.set_out_needs_session(wants_reply);
     app.set_out_can_tor(false);
     app.set_out_can_resend(false);
     app.set_out_can_direct(false);
@@ -2356,6 +2413,7 @@ fn wire_sheets(app: &App) {
                     if delivered {
                         let who = who.unwrap_or_default();
                         show_out(app, tr("Payment prepared", "Платёж подготовлен"), &fill(tr("The payment goes to “{}” over Tor. When they reply it appears under “Waiting for you”, where you sign it. If Tor fails, this same text can be passed on by hand.", "Платёж уйдёт контакту «{}» через Tor. Когда он ответит, платёж появится в «Ждут вас» — там вы его подпишете. Если Tor не дойдёт, этот же текст можно передать вручную."), &[&who]), &slate, false);
+                        app.set_out_needs_session(true);
                     } else if let Some(posted) = posted {
                         match posted {
                             Ok(()) => {
@@ -2473,7 +2531,7 @@ fn sign_now(app: &App, direct: bool) {
                 close_sheet(app);
             }
             Err(e) => {
-                app.set_sign_can_cancel(!matches!(&e, CallError::Rpc { name, .. } if name == "unknown_outcome"));
+                app.set_sign_can_cancel(!matches!(&e, CallError::Rpc { name, message, .. } if name == "unknown_outcome" || (name == "refused" && message == "signing session ended; start a new exchange")));
                 sheet_error(app, say(&e));
             }
         },
@@ -2648,9 +2706,13 @@ fn install_rest(app: &App) {
             }
             (Wait::Reply(op), true) => reopen_by_hand(&app, op),
             (Wait::Reply(op), false) | (Wait::Sent(op), _) => cancel_op(&app, op, false, true),
-            (Wait::Locked(op), _) => {
-                let value = with(|f| f.locked_amounts.get(&op).copied()).unwrap_or(0);
-                app.set_rel_note(fill(tr("A payment of {} GRIN was prepared before this wallet was restored from an older copy. The wallet no longer knows whether it was signed after that copy was taken, so it will not sign it and keeps the money in reserve.", "Платёж {} GRIN был подготовлен до того, как этот кошелёк восстановили из старой копии. Кошелёк больше не знает, подписывали ли его после снятия копии, поэтому не подписывает его и держит деньги в резерве."), &[&amount(value)]).into());
+            (Wait::Locked { op, amount: value, session_expired }, _) => {
+                let why = if session_expired {
+                    tr("The wallet closed before a signed result for {} GRIN was saved in this profile. This Slatepack can no longer be signed. Check the original payment and its reserve before starting another exchange.", "В этом профиле не сохранился подписанный результат платежа на {} GRIN до закрытия кошелька. Этот Slatepack больше нельзя подписать. Проверьте исходный платёж и его резерв перед новым обменом.")
+                } else {
+                    tr("A payment of {} GRIN was prepared before this wallet was restored from an older copy. The wallet no longer knows whether it was signed after that copy was taken, so it will not sign it and keeps the money in reserve.", "Платёж {} GRIN был подготовлен до того, как этот кошелёк восстановили из старой копии. Кошелёк больше не знает, подписывали ли его после снятия копии, поэтому не подписывает его и держит деньги в резерве.")
+                };
+                app.set_rel_note(fill(why, &[&amount(value)]).into());
                 with(|f| f.release = Some(op));
                 app.set_sheet_busy(false);
                 app.set_sheet(11);
@@ -2799,8 +2861,32 @@ fn chat_work<T>(read: impl FnOnce(Option<String>, Option<bool>) -> T + Send) -> 
 
 /// Asks the host again now, not at the next tick.
 fn refresh(app: &App) {
+    read_wallet(app, true);
+}
+
+fn open_after_refresh(app: &App) {
+    app.set_busy(true);
+    with(|f| f.open_after_refresh = true);
+    refresh(app);
+}
+
+fn read_wallet(app: &App, after_action: bool) {
     let Some(client) = client() else { return };
-    spawn(app, chat_work(move |chat, network| gather(&client, chat, network)), apply);
+    if !with(|f| f.refresh.begin(after_action)) {
+        return;
+    }
+    spawn(app, chat_work(move |chat, network| gather(&client, chat, network)), |app, view| {
+        if !with(|f| f.refresh.finish()) {
+            // An action completed during this read. Read its result before drawing.
+            refresh(app);
+            return;
+        }
+        apply(app, view);
+        if with(|f| std::mem::take(&mut f.open_after_refresh)) {
+            app.set_busy(false);
+            app.set_page(1);
+        }
+    });
 }
 
 /// What went wrong with a Slatepack file, in the window's words.
@@ -3480,8 +3566,7 @@ fn sync_own_files() -> std::io::Result<()> {
 fn sync_own_at(profile: &Path) -> std::io::Result<()> {
     use std::{fs, io::ErrorKind};
     let dir = profile.parent().ok_or(ErrorKind::InvalidInput)?;
-    let options = [(OWN_NODES, read_option(&dir.join(OWN_NODES))?),
-                   (OWN_POINT, read_option(&dir.join(OWN_POINT))?)];
+    let wanted = read_option(&dir.join(OWN_NODES))?;
     let entries = match fs::read_dir(profile) {
         Ok(entries) => entries,
         Err(e) if e.kind() == ErrorKind::NotFound => return Ok(()), // before creation
@@ -3497,7 +3582,7 @@ fn sync_own_at(profile: &Path) -> std::io::Result<()> {
             Ok(m) if !m.file_type().is_dir() => return Err(ErrorKind::InvalidData.into()),
             Ok(_) => {}
             Err(e) if e.kind() == ErrorKind::NotFound => {
-                if options.iter().all(|(_, value)| value.is_none()) { continue; }
+                if wanted.is_none() { continue; }
                 let mut builder = fs::DirBuilder::new();
                 #[cfg(unix)]
                 { use std::os::unix::fs::DirBuilderExt; builder.mode(0o700); }
@@ -3505,11 +3590,11 @@ fn sync_own_at(profile: &Path) -> std::io::Result<()> {
             }
             Err(e) => return Err(e),
         }
-        for (name, wanted) in &options {
-            let path = chain.join(name);
+        {
+            let path = chain.join(OWN_NODES);
             let existing = read_option(&path)?;
-            if existing == *wanted { continue; }
-            match wanted {
+            if existing == wanted { continue; }
+            match &wanted {
                 Some(bytes) => fs::write(&path, bytes)?,
                 None => fs::remove_file(&path)?,
             }
@@ -3542,9 +3627,7 @@ fn own_notes(app: &App) {
     if nodes > 0 {
         app.set_own_nodes(fill(tr("{} set · they get transactions first; from the next unlock", "заданы: {} · получат транзакции первыми; со следующего входа"), &[&nodes.to_string()]).into());
     }
-    if dir.join(OWN_POINT).exists() {
-        app.set_start_point(tr("Own point set · from the next unlock", "Своя точка задана · со следующего входа").into());
-    }
+
 }
 
 /// The user's nodes: one `https://` address a line, at most 4.
@@ -3660,7 +3743,57 @@ fn restart_if_switched(app: &App) -> bool {
     true
 }
 
+fn finish_genesis_choice(app: &App, answer: Option<&Value>) {
+    app.set_bootstrap_submitting(false);
+    if answer.and_then(|v| v.get("scheduled")).and_then(Value::as_bool) == Some(true) {
+        with(|f| f.restart_after_lock = true);
+        app.invoke_leave();
+    } else {
+        app.set_bootstrap_feedback(tr("Could not confirm the startup choice. Try again after the wallet service is ready.", "Не удалось подтвердить выбор. Повторите, когда служба кошелька будет готова.").into());
+    }
+}
+
+fn finish_output_rescan(app: &App, answer: Option<&Value>) {
+    app.set_search_submitting(false);
+    if answer.and_then(|v| v.get("state")).and_then(Value::as_str) == Some("reading") {
+        app.set_search_active(true);
+        app.set_search_feedback(tr("Full output scan requested.", "Полный поиск выходов запрошен.").into());
+    } else {
+        app.set_search_feedback(tr("The wallet service did not confirm the scan request.", "Служба кошелька не подтвердила запрос на поиск.").into());
+    }
+}
+
 fn wire_options(app: &App, notes: Arc<Mutex<VecDeque<Value>>>) {
+    checkpoint::wire(app);
+    let weak = app.as_weak();
+    app.on_rescan_outputs(move || {
+        let Some(app) = weak.upgrade() else { return };
+        if app.get_page() == 0 || app.get_busy() || app.get_search_active() ||
+            app.get_search_submitting() || app.get_bootstrap_submitting() { return; }
+        let Some(client) = client() else {
+            finish_output_rescan(&app, None);
+            return;
+        };
+        app.set_search_submitting(true);
+        app.set_search_feedback(SharedString::new());
+        spawn(&app, move || client.call("paycore.search.start", json!({}), QUICK), |app, out| {
+            finish_output_rescan(app, out.ok().as_ref());
+        });
+    });
+    let weak = app.as_weak();
+    app.on_choose_genesis(move || {
+        let Some(app) = weak.upgrade() else { return };
+        if app.get_bootstrap_submitting() || app.get_busy() || app.get_page() == 0 { return; }
+        let Some(client) = client() else {
+            finish_genesis_choice(&app, None);
+            return;
+        };
+        app.set_bootstrap_submitting(true);
+        app.set_bootstrap_feedback(SharedString::new());
+        spawn(&app, move || client.call("paycore.chain.bootstrap_genesis", json!({}), QUICK), |app, out| {
+            finish_genesis_choice(app, out.ok().as_ref());
+        });
+    });
     // O66: the wallet's processes anew: the same road a switched part takes
     let weak = app.as_weak();
     app.on_restart_wallet(move || {
@@ -3754,13 +3887,12 @@ fn wire_options(app: &App, notes: Arc<Mutex<VecDeque<Value>>>) {
         let dir = own_dir();
         let read = |name: &str| dir.as_ref().and_then(|d| std::fs::read_to_string(d.join(name)).ok()).unwrap_or_default();
         app.set_own_nodes_text(read(OWN_NODES).into());
-        app.set_own_point_text(read(OWN_POINT).into());
         app.set_sheet_error(SharedString::new());
         app.set_security_note(SharedString::new());
         app.set_sheet(9);
     });
     let weak = app.as_weak();
-    app.on_save_own(move |nodes, point| {
+    app.on_save_own(move |nodes| {
         let Some(app) = weak.upgrade() else { return };
         let Some(dir) = own_dir() else {
             return app.set_sheet_error(tr("No profile folder", "Нет папки профиля").into());
@@ -3769,17 +3901,10 @@ fn wire_options(app: &App, notes: Arc<Mutex<VecDeque<Value>>>) {
             Ok(n) => n,
             Err(e) => return app.set_sheet_error(e.into()),
         };
-        let point = if point.trim().is_empty() {
-            String::new()
-        } else {
-            match check_point(&point) {
-                Ok(p) => p,
-                Err(e) => return app.set_sheet_error(e.into()),
-            }
-        };
         let _ = std::fs::create_dir_all(&dir);
-        for (name, body) in [(OWN_NODES, &nodes), (OWN_POINT, &point)] {
-            let at = dir.join(name);
+        {
+            let at = dir.join(OWN_NODES);
+            let body = &nodes;
             let done = if body.is_empty() {
                 if at.exists() { std::fs::remove_file(&at) } else { Ok(()) }
             } else {
@@ -4175,11 +4300,7 @@ impl Live {
             }
             // the wallet stayed open (Android's service kept it): straight in
             Some("unlocked") => {
-                let client = first.clone();
-                spawn(app, move || gather(&client, None, None), |app, view| {
-                    apply(app, view);
-                    app.set_page(1);
-                });
+                open_after_refresh(app);
             }
             _ => {}
         }
@@ -4209,26 +4330,24 @@ impl Live {
                         || client.call("host.lock", json!({}), SLOW).map(|_| ()),
                         || client.call_secret("host.unlock", json!(null), "password", &password, SLOW));
                     password.zeroize();
-                    let view = opened.is_ok().then(|| gather(&client, None, None));
-                    (opened, view)
+                    opened
                 },
-                |app, (opened, view)| {
-                    app.set_busy(false);
-                    match (opened, view) {
-                        (Ok(_), Some(view)) => {
+                |app, opened| {
+                    match opened {
+                        Ok(_) => {
                             with(|f| f.lock_unconfirmed = false);
                             app.set_login_note(SharedString::new());
-                            apply(app, view);
-                            app.set_page(1);
+                            open_after_refresh(app);
                         }
-                        (Err(err), _) => app.set_login_error(say(&err).into()),
-                        (Ok(_), None) => {}
+                        Err(err) => {
+                            app.set_busy(false);
+                            app.set_login_error(say(&err).into());
+                        }
                     }
                 },
             );
         });
 
-        let running = Arc::new(AtomicBool::new(false));
         let weak = app.as_weak();
         let timer = Timer::default();
         timer.start(TimerMode::Repeated, REFRESH, move || {
@@ -4237,18 +4356,7 @@ impl Live {
                 return;
             }
             take_notes(&notes);
-            if running.swap(true, Ordering::SeqCst) {
-                return;
-            }
-            let Some(client) = client() else {
-                running.store(false, Ordering::SeqCst);
-                return;
-            };
-            let permit = RefreshPermit(running.clone());
-            spawn(&app, chat_work(move |chat, network| gather(&client, chat, network)), move |app, view| {
-                apply(app, view);
-                drop(permit);
-            });
+            read_wallet(&app, false);
         });
 
         let weak = app.as_weak();
@@ -4265,7 +4373,6 @@ impl Live {
                 f.incoming.clear();
                 f.waits.clear();
                 f.release = None;
-                f.locked_amounts.clear();
                 f.op_to.clear();
                 f.chat = None;
             });
@@ -4274,6 +4381,11 @@ impl Live {
             // O71: a try of the bridges cut short leaves the owner's choice in the file
             bridges::leave();
             if let Some(app) = weak.upgrade() {
+                app.set_bootstrap_submitting(false);
+                app.set_checkpoint_file_action(0);
+                app.set_bootstrap_feedback(SharedString::new());
+                app.set_search_submitting(false);
+                app.set_search_feedback(SharedString::new());
                 // O74: words copied and still on the clipboard do not outlive the lock; O73: nor an open "?"
                 app.invoke_clear_copied_words();
                 app.set_words_line(SharedString::new());
@@ -4410,25 +4522,27 @@ mod option_tests {
     }
 
     #[test]
-    fn first_unlock_installs_options_and_read_failure_preserves_the_point() -> std::io::Result<()> {
-        let dir = std::env::temp_dir().join(format!("fly-first-unlock-options-{}", std::process::id()));
+    fn node_options_ignore_invalid_legacy_points_and_preserve_old_files() -> std::io::Result<()> {
+        let dir = std::env::temp_dir().join(format!("fly-migration-{}", std::process::id()));
         fs::create_dir(&dir)?;
         let profile = dir.join("profile");
         let id = "0123456789abcdef0123456789abcdef";
         fs::create_dir(&profile)?;
         fs::create_dir(profile.join(format!("wallet-{id}")))?;
         let source = dir.join(OWN_POINT);
-        fs::write(&source, b"fixture")?;
+        fs::create_dir(&source)?;
+        fs::write(dir.join(OWN_NODES), b"configured nodes")?;
         let chain = profile.join(format!("chain-{id}"));
         sync_own_at(&profile)?;
-        assert_eq!(fs::read(chain.join(OWN_POINT))?, b"fixture");
-        fs::remove_file(&source)?;
-        fs::create_dir(&source)?;
-        assert!(sync_own_at(&profile).is_err());
-        assert_eq!(fs::read(chain.join(OWN_POINT))?, b"fixture");
-        fs::remove_dir(&source)?;
-        sync_own_at(&profile)?;
+        assert_eq!(fs::read(chain.join(OWN_NODES))?, b"configured nodes");
         assert!(!chain.join(OWN_POINT).exists());
+        fs::write(chain.join(OWN_POINT), b"legacy data")?;
+        fs::remove_file(dir.join(OWN_NODES))?;
+        sync_own_at(&profile)?;
+        assert!(!chain.join(OWN_NODES).exists());
+        assert_eq!(fs::read(chain.join(OWN_POINT))?, b"legacy data");
+        fs::remove_file(chain.join(OWN_POINT))?;
+        fs::remove_dir(source)?;
         fs::remove_dir(chain)?;
         fs::remove_dir(profile.join(format!("wallet-{id}")))?;
         fs::remove_dir(profile)?;
@@ -4485,6 +4599,20 @@ mod signing_tests {
 #[cfg(test)]
 mod refresh_tests {
     use super::*;
+
+    #[test]
+    fn wallet_action_supersedes_an_inflight_read_without_an_overlapping_read() {
+        let mut refresh = RefreshState::default();
+        assert!(refresh.begin(false));
+        assert!(!refresh.begin(true));
+        assert!(!refresh.begin(false));
+        assert!(!refresh.begin(true));
+        assert!(!refresh.finish(), "discard the pre-action wallet observation");
+        assert!(refresh.begin(true));
+        assert!(!refresh.begin(false));
+        assert!(refresh.finish(), "a timer tick must not discard a current observation");
+        assert!(refresh.begin(false));
+    }
 
     #[test]
     fn periodic_read_keeps_the_chat_open_in_the_window() {
@@ -4653,7 +4781,7 @@ mod chip_tests {
     fn the_mark_under_the_buttons_says_verified_only_when_the_wallet_can_send() {
         let (chip, good, line) = chain_chip(Some(("at_tip", Some(4_120_636), Some(4_120_636))), true, false);
         assert_eq!((chip, good), ("VERIFIED", true));
-        assert!(line.contains("4120636"));
+        assert!(line.contains("4120636") && line.contains("ready to use"));
         let (chip, good, line) = chain_chip(Some(("at_tip", Some(4_120_636), Some(4_120_636))), true, true);
         assert_eq!((chip, good), ("SEARCHING", false));
         assert!(line.contains("4120636") && line.contains("sending opens when the search ends"));
@@ -4856,7 +4984,7 @@ mod snapshot_tests {
         slint::platform::set_platform(Box::new(crate::keys_tests::Plain(window)))?;
         let app = App::new()?;
         let row = |op: &str, state: &str, to: Option<&str>, invoice: bool, locked: bool| SendRow {
-            op: op.into(), state: state.into(), amount: 1_000_000_000, fee: 23_000_000, held: false, invoice, locked, to: to.map(str::to_string), kernel_height: None, signed: false,
+            op: op.into(), state: state.into(), amount: 1_000_000_000, fee: 23_000_000, held: false, invoice, locked, session_expired: false, to: to.map(str::to_string), kernel_height: None, signed: false,
             made: None,
             slate_id: String::new(),
             replaces: None,
@@ -5058,10 +5186,53 @@ mod snapshot_tests {
         assert!(!app.contains("Btn { text: Settings.russian ? \"RU\" : \"EN\""));
     }
 
+    #[test]
+    fn genesis_choice_restarts_only_after_an_explicit_acknowledgement() -> Result<(), Box<dyn std::error::Error>> {
+        let window = slint::platform::software_renderer::MinimalSoftwareWindow::new(
+            slint::platform::software_renderer::RepaintBufferType::NewBuffer,
+        );
+        slint::platform::set_platform(Box::new(crate::keys_tests::Plain(window)))?;
+        let app = App::new()?;
+        let locks = std::rc::Rc::new(std::cell::Cell::new(0));
+        let observed = locks.clone();
+        app.on_leave(move || observed.set(observed.get() + 1));
+        for wrong in [None, Some(json!({})), Some(json!({"scheduled": false})), Some(json!({"scheduled": "true"}))] {
+            app.set_bootstrap_submitting(true);
+            finish_genesis_choice(&app, wrong.as_ref());
+            assert!(!app.get_bootstrap_submitting());
+            assert!(!app.get_bootstrap_feedback().is_empty());
+            assert_eq!(locks.get(), 0);
+        }
+        finish_genesis_choice(&app, Some(&json!({"scheduled":true})));
+        assert_eq!(locks.get(), 1);
+        assert!(with(|f| std::mem::take(&mut f.restart_after_lock)));
+        Ok(())
+    }
+
+    #[test]
+    fn old_outputs_rescan_acknowledgement_keeps_the_wallet_open() -> Result<(), Box<dyn std::error::Error>> {
+        let window = slint::platform::software_renderer::MinimalSoftwareWindow::new(
+            slint::platform::software_renderer::RepaintBufferType::NewBuffer,
+        );
+        slint::platform::set_platform(Box::new(crate::keys_tests::Plain(window)))?;
+        let app = App::new()?;
+        app.on_leave(|| panic!("scanning outputs cannot lock the wallet"));
+        app.set_page(1);
+        finish_output_rescan(&app, Some(&json!({"state":"done"})));
+        assert!(!app.get_search_active());
+        assert!(!app.get_search_feedback().is_empty());
+        app.set_search_submitting(true);
+        finish_output_rescan(&app, Some(&json!({"state":"reading", "next":0})));
+        assert!(app.get_search_active());
+        assert!(!app.get_search_submitting());
+        assert_eq!(app.get_page(), 1);
+        Ok(())
+    }
+
     /// O75: the contacts on the left on a ground of their own, the chosen
     /// one's actions as signs in its line, the rest under "⋯" in the head of
-    /// the conversation; deleting is asked in a window of its own; the
-    /// wallet's own point is made under "Details", not on the main screen.
+    /// the conversation; deleting is asked in a window of its own. Startup
+    /// verification is chosen under "Settings", not on the main screen.
     #[test]
     fn contacts_and_their_conversation_are_laid_out_as_agreed() {
         let app = include_str!("../ui/app.slint");
@@ -5085,7 +5256,13 @@ mod snapshot_tests {
         assert!(!link.contains("make-point"), "the own point is not on the main screen");
         let sync = app.get(app.find("component SyncSheet").unwrap_or(0)..).unwrap_or_default();
         let sync = sync.get(..sync.find("\n}\n").unwrap_or(sync.len())).unwrap_or_default();
-        assert!(sync.contains("root.make-point()"));
+        let settings = app.split("component SettingsSheet inherits Sheet").nth(1).unwrap().split("\n}\n").next().unwrap();
+        for action in ["recheck-history", "rescan-outputs", "import-checkpoint", "save-checkpoint"] {
+            assert!(settings.contains(&format!("root.{action}()")));
+            assert!(!sync.contains(action));
+        }
+        assert_eq!(settings.matches("SettingsAction {").count(), 4);
+        assert_eq!(settings.matches("explanation: @tr(").count(), 4);
     }
 
     /// O75: what is new in a conversation is counted from the first count
@@ -5355,6 +5532,8 @@ mod snapshot_tests {
     /// wallet does not send it. Every other state reads as for a payment.
     #[test]
     fn a_paid_invoice_is_not_said_to_be_on_its_way() {
+        assert_eq!(invoice_reply_title(false), tr("Reply ready — send it to the invoice issuer", "Ответ готов — передайте его тому, кто выставил счёт"));
+        assert_eq!(invoice_reply_title(true), tr("Saved reply — send it to the invoice issuer", "Ответ сохранён — передайте его тому, кто выставил счёт"));
         assert_ne!(send_state("finalized", true, false).0, send_state("finalized", false, false).0);
         for state in ["prepared", "cancelled", "unknown", "confirmed", "contested", "dead", "?"] {
             assert_eq!(send_state(state, true, false), send_state(state, false, false), "{state}");
@@ -5379,6 +5558,7 @@ mod snapshot_tests {
             held,
             invoice: false,
             locked,
+            session_expired: false,
             to: to.map(str::to_string),
             kernel_height: None,
             signed: false,
@@ -5393,7 +5573,7 @@ mod snapshot_tests {
             Some(Wait::Sign(_)) => "sign",
             Some(Wait::Reply(_)) => "reply",
             Some(Wait::Sent(_)) => "sent",
-            Some(Wait::Locked(_)) => "locked",
+            Some(Wait::Locked { .. }) => "locked",
             Some(Wait::Incoming(_)) => "incoming",
             Some(Wait::Unsent(_)) => "unsent",
             Some(Wait::Point(_)) => "point",
@@ -5427,6 +5607,31 @@ mod snapshot_tests {
     }
 
     #[test]
+    fn ended_signing_sessions_are_distinct_from_uncertain_and_saved_results() {
+        let history = json!({
+            "sends": [
+                {"op":"a","state":"prepared","locked":true,"session_expired":true,"reply_held":true},
+                {"op":"b","state":"unknown"},
+                {"op":"c","state":"finalized","signed":true}
+            ],
+            "incoming": [
+                {"slate_id":"i","session_expired":true},
+                {"slate_id":"j","signature_unknown":true},
+                {"slate_id":"k","status":"confirmed","kernel_height":10}
+            ]
+        });
+        let view = gather_from(None, None, |method, _| Ok(if method == "paycore.history" { history.clone() } else { Value::Null }));
+        assert!(matches!(wait_of(&view.sends[0]), Some(Wait::Locked { session_expired: true, .. })));
+        assert!(wait_of(&view.sends[1]).is_none());
+        assert!(wait_of(&view.sends[2]).is_none());
+        assert_ne!(outgoing_words(&view.sends[0]), outgoing_words(&view.sends[1]));
+        assert_ne!(outgoing_words(&view.sends[1]), outgoing_words(&view.sends[2]));
+        let words = |i: usize| incoming_words(&view.incoming[i], Some(12), 2, false);
+        assert_ne!(words(0), words(1));
+        assert_ne!(words(1), words(2));
+    }
+
+    #[test]
     fn balance_and_verified_status_belong_to_one_wallet_state() {
         // During the refresh an ordinary sync completes. Before it the
         // balance was seven and the wallet behind, afterwards zero and at tip.
@@ -5436,7 +5641,7 @@ mod snapshot_tests {
             let balance = json!({"spendable":spendable,"reserved":"0","immature":"0","incomplete":false});
             let status = json!({"state":if synchronized {"at_tip"} else {"behind"},
                                 "tip_height":if synchronized {11} else {10},"selected_height":11,
-                                "balance":balance});
+                                "confirmed_time":1800000000,"balance":balance});
             let reply = match method {
                 "paycore.balance" => balance,
                 "paycore.wallet.chain_status" => status,
@@ -5445,7 +5650,7 @@ mod snapshot_tests {
             synchronized = true;
             Ok(reply)
         });
-        let seen = view.balance.zip(view.chain).map(|(b, c)| (b.0, c.0));
+        let seen = view.balance.zip(view.sync.state).map(|(b, state)| (b.0, state));
         assert!(matches!(seen, Some((7, ref s)) if s == "behind")
              || matches!(seen, Some((0, ref s)) if s == "at_tip"), "{seen:?}");
     }

@@ -45,6 +45,7 @@ impl ChainView for View {
         fly_paycore_bridge::ports::PaymentBasis {
             state: self.chain_state(),
             selected: self.selected_tip(),
+            confirmed_time: Some(1_000),
             k_conf: self.k_conf(),
         }
     }

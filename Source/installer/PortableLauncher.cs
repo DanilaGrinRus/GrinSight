@@ -156,6 +156,23 @@ internal static class PortableLauncher
             bool bundledOnion;
             string runtime = Prepare(out bundledOnion);
             if (args.Length == 1 && args[0] == "--prepare-only") return 0;
+            if (args.Length > 0 && args[0] == "--verify-checkpoint")
+            {
+                if (args.Length != 3) { Console.Error.WriteLine("Usage: --verify-checkpoint main|test FILE_OR_DIRECTORY"); return 2; }
+                var verify = new ProcessStartInfo(Path.Combine(runtime, @"bin\fly-chain.exe"),
+                    "verify-checkpoint " + Quote(args[1]) + " " + Quote(Path.GetFullPath(args[2])));
+                verify.UseShellExecute = false;
+                verify.CreateNoWindow = true;
+                verify.RedirectStandardOutput = true;
+                verify.RedirectStandardError = true;
+                using (var process = Process.Start(verify))
+                {
+                    Console.Out.Write(process.StandardOutput.ReadToEnd());
+                    Console.Error.Write(process.StandardError.ReadToEnd());
+                    process.WaitForExit();
+                    return process.ExitCode;
+                }
+            }
             var start = new ProcessStartInfo(Path.Combine(runtime, "GrinSight.exe"),
                 String.Join(" ", Array.ConvertAll(WindowArgs(args, runtime, bundledOnion), Quote)));
             start.UseShellExecute = false;

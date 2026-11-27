@@ -4,6 +4,7 @@ import { ChatPage, ChatBox, ChatWindow, OpsPage, SecuritySheet, WordsSheet, OwnS
 import { AddressLine, CreatePage, RestorePage, SendSheet, SlateSheet, SignSheet, ReceiveSheet, IncomingSheet, InvoiceSheet, ReleaseSheet, ContactSheet, OutputsSheet, Sheet, TextBox } from "flows.slint";
 
 import "../fonts/Inter-Regular.otf";
+import "../fonts/WalletCJK.otf";
 import "../fonts/Inter-SemiBold.otf";
 import "../fonts/DejaVuSansMono.ttf";
 import "../fonts/DejaVuSansMono-Bold.ttf";
@@ -63,20 +64,26 @@ export struct Problem {
 // The whole path of following the chain, with the wallet's own numbers (О14).
 // O73: the numbers of synchronisation, in a window of their own; what the
 // chain process says of itself in its own words is behind one more press.
+component WalletStatusChip inherits Chip {
+    in property <bool> verified;
+    fg: verified ? Theme.state-ok : Theme.state-alert;
+    fill: verified ? #3DDC971A : #F2B53A1A;
+    height: 24px;
+}
+
 component SyncSheet inherits Sheet {
     in property <[SyncRow]> rows;
-    // O75: the wallet's own starting point, made from the chain it verified
-    // (O38), here and not on the main screen; O67: what a new one would give
-    in property <string> point-note;
-    in property <string> point-hint;
-    in property <bool> point-good;
-    in property <bool> point-busy;
-    callback make-point();
+    in property <string> wallet-status;
+    in property <bool> verified;
     // what the chain process says about itself, a statement to a line
     in property <[string]> words;
     property <bool> raw: false;
     title: @tr("Details");
     card-width: 640px;
+    if root.wallet-status != "": HorizontalLayout {
+        alignment: start;
+        WalletStatusChip { text: root.wallet-status; verified: root.verified; }
+    }
     for r in root.rows: HorizontalLayout {
         spacing: 14px;
         Text { text: r.label; color: Theme.muted; font-size: 14px; width: 200px; vertical-alignment: top; wrap: word-wrap; }
@@ -90,15 +97,6 @@ component SyncSheet inherits Sheet {
             wrap: word-wrap;
         }
     }
-    Rectangle { height: 1px; background: Theme.line; }
-    HorizontalLayout {
-        alignment: start;
-        spacing: 8px;
-        Btn { text: root.point-busy ? @tr("Making the point…") : @tr("Make my own starting point"); font-size: 13px; min-height: 34px; clicked => { if (!root.point-busy) { root.make-point(); } } }
-        VerticalLayout { alignment: center; Ask { title: @tr("Make my own starting point"); text: @tr("The wallet starts from the point built into the program, and the history before that point is proved by sampling its work. The wallet can make a point of its own further up, from the chain it has checked itself since then. From the next unlock it starts from there, so the start is shorter.") + "\n\n" + @tr("Your point carries the proof of the built-in one: up to the built-in point the history stays proved, and from it to your point this wallet vouches. A point is made only from a chain that keeps that proof. Money, keys and history are not touched.") + "\n\n" + @tr("To carry the point to another device of yours: on the login screen there, Options → Own nodes and a point from another device, paste it whole. To go back to the built-in point: clear that field and save."); } }
-    }
-    if root.point-hint != "": Muted { text: root.point-hint; font-size: 13px; }
-    if root.point-note != "": Text { text: root.point-note; color: root.point-good ? Theme.accent : Theme.warn; font-size: 13px; wrap: word-wrap; }
     if root.words.length > 0: Rectangle { height: 1px; background: Theme.line; }
     if root.words.length > 0: HorizontalLayout {
         alignment: start;
@@ -111,10 +109,44 @@ component SyncSheet inherits Sheet {
 }
 
 // O73: what belongs to the program rather than to a payment, in one window.
+component SettingsAction inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> explanation;
+    callback run();
+    spacing: 8px;
+    alignment: start;
+    Btn { text: root.label; font-size: 14px; min-height: 38px; clicked => { root.run(); } }
+    VerticalLayout { alignment: center; Ask { title: root.label; text: root.explanation; } }
+}
+
+component LanguageButton inherits Btn {
+    in property <string> code;
+    font-family: code == "ja" || code == "zh" || code == "ko" ? "Wallet CJK" : "Inter";
+    primary: Settings.language == code;
+    min-height: 38px;
+    font-size: 15px;
+    clicked => { Settings.select-language(code); }
+}
+
 component SettingsSheet inherits Sheet {
     callback open(int);
     callback bridges();
+    in property <bool> live;
+    in property <bool> file-available;
+    in property <int> file-action;
+    in property <bool> submitting;
+    in property <string> feedback;
+    in property <bool> search-active;
+    in property <bool> search-submitting;
+    in property <string> search-feedback;
+    callback import-checkpoint();
+    callback save-checkpoint();
+    callback recheck-history();
+    callback rescan-outputs();
+    property <int> confirmation: 0;
+    property <bool> available: root.file-action == 0 && !root.submitting && !root.search-submitting && root.confirmation == 0;
     title: @tr("Settings");
+    card-width: 640px;
     Heading { text: @tr("Look"); }
     HorizontalLayout {
         spacing: 10px;
@@ -124,8 +156,7 @@ component SettingsSheet inherits Sheet {
     HorizontalLayout {
         spacing: 10px;
         Text { text: @tr("Language"); color: Theme.text; font-size: 14px; vertical-alignment: center; horizontal-stretch: 1; }
-        Btn { text: "Русский"; primary: Settings.russian; font-size: 14px; min-height: 38px; clicked => { Settings.russian = true; Settings.save(); } }
-        Btn { text: "English"; primary: !Settings.russian; font-size: 14px; min-height: 38px; clicked => { Settings.russian = false; Settings.save(); } }
+        Btn { text: Settings.language.to-uppercase(); font-size: 14px; min-height: 38px; clicked => { Settings.choose-language = true; } }
     }
     Rectangle { height: 1px; background: Theme.line; }
     Heading { text: @tr("Safety"); }
@@ -135,6 +166,50 @@ component SettingsSheet inherits Sheet {
         VerticalLayout { alignment: center; Btn { text: @tr("Password and words"); font-size: 14px; min-height: 38px; clicked => { root.open(7); } } }
     }
     Rectangle { height: 1px; background: Theme.line; }
+    if root.live: Heading { text: @tr("Verification and recovery"); }
+    if root.live && root.file-available && root.available: SettingsAction {
+        label: @tr("Import a checkpoint");
+        explanation: @tr("Choose a .gshp file from another wallet, or checkpoint.json with history.proof in the same folder. GSHP1 is checked locally. The next sync downloads blocks after the point. Import locks the wallet and ends unfinished signing sessions.");
+        run => { root.confirmation = 1; }
+    }
+    if root.live && root.file-available && root.available: SettingsAction {
+        label: @tr("Save checkpoint to one file…");
+        explanation: @tr("Save this wallet’s verified checkpoint and GSHP1 proof together. You can send the file to another device. This is a local copy without wallet keys or funds.");
+        run => { root.save-checkpoint(); }
+    }
+    if root.live && root.available: SettingsAction {
+        label: @tr("Verify from the first block myself");
+        explanation: @tr("Check all headers from genesis and build your own checkpoint. On Mainnet the first pass can download about 1.7 GB and take tens of minutes. It locks the wallet; unlock it to begin. Progress is in Details.");
+        run => { root.confirmation = 2; }
+    }
+    if root.live && !root.search-active && root.available: SettingsAction {
+        label: @tr("Rescan old wallet outputs");
+        explanation: @tr("Search the archive for outputs belonging to this wallet, including older proof formats. It keeps the current chain checkpoint. The scan can download hundreds of MB or more. Keep the wallet unlocked and follow progress in Details.");
+        run => { root.confirmation = 3; }
+    }
+    if root.confirmation != 0: VerticalLayout {
+        spacing: 6px;
+        Muted { text: root.confirmation == 1 ? @tr("Import locks the wallet. Any pending Slatepack that still needs your signature will need a new exchange. Unlock after import to sync from the saved point.")
+            : root.confirmation == 2 ? @tr("Start a new check from genesis? The wallet will lock, ending pending signing sessions. Unlock to begin the download.")
+            : @tr("Search the whole archive for this wallet’s outputs? This can download hundreds of MB or more. The wallet stays open."); }
+        HorizontalLayout {
+            alignment: start;
+            spacing: 8px;
+            Btn { text: root.confirmation == 1 ? @tr("Choose checkpoint file…") : root.confirmation == 2 ? @tr("Verify and lock") : @tr("Start full output scan"); primary: true; clicked => {
+                if root.confirmation == 1 { root.import-checkpoint(); }
+                else if root.confirmation == 2 { root.recheck-history(); }
+                else { root.rescan-outputs(); }
+                root.confirmation = 0;
+            } }
+            Btn { text: @tr("Cancel"); clicked => { root.confirmation = 0; } }
+        }
+    }
+    if root.file-action == 1: Muted { text: @tr("Importing checkpoint…"); }
+    if root.file-action == 2: Muted { text: @tr("Saving checkpoint…"); }
+    if root.submitting: Muted { text: @tr("Saving your startup choice…"); }
+    if root.feedback != "": Muted { text: root.feedback; }
+    if root.search-submitting: Muted { text: @tr("Requesting the full output scan…"); }
+    if root.search-feedback != "": Muted { text: root.search-feedback; }
     Heading { text: @tr("Network"); }
     HorizontalLayout {
         spacing: 10px;
@@ -146,6 +221,11 @@ component SettingsSheet inherits Sheet {
         Text { text: @tr("How far the wallet has checked the network, and what its programs say"); color: Theme.muted; font-size: 14px; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; }
         VerticalLayout { alignment: center; Btn { text: @tr("Details"); font-size: 14px; min-height: 38px; clicked => { root.open(15); } } }
     }
+    Btn { text: @tr("Font license"); min-height: 36px; clicked => {
+        Help.title = @tr("Font license");
+        Help.text = Settings.font-license;
+        Help.open = true;
+    } }
 }
 
 // What went wrong in this session, the newest first, and what to try (О15).
@@ -282,9 +362,9 @@ component Login inherits Rectangle {
         y: root.width < 600px ? 8px : 20px;
         width: self.min-width;
         height: 40px;
-        text: Settings.russian ? "RU" : "EN";
+        text: Settings.language.to-uppercase();
         font-size: 13px;
-        clicked => { Settings.russian = !Settings.russian; Settings.save(); }
+        clicked => { Settings.choose-language = true; }
     }
     Flickable {
         // scrolls on a small screen and when the keyboard is up
@@ -377,8 +457,8 @@ component Login inherits Rectangle {
                     }
                     // one row and one window for both: they are set together (О34)
                     OptionRow {
-                        title: @tr("Own nodes and a point from another device");
-                        why: @tr("Usually not needed. Own nodes: servers of yours the wallet also asks. A point from another device: a starting point your wallet made there, so that this one starts shorter.");
+                        title: @tr("Own nodes");
+                        why: @tr("Add a node you run to the sources this wallet asks.");
                         note: root.start-point + "\n" + root.own-nodes;
                         VerticalLayout { alignment: center; Btn { text: @tr("Set"); font-size: 13px; clicked => { root.options(); } } }
                     }
@@ -443,7 +523,7 @@ component BalanceCard inherits Card {
                 spacing: 10px;
                 padding-top: 2px;
                 padding-bottom: 2px;
-                VerticalLayout { alignment: center; Chip { text: root.verified-chip; fg: root.verified-good ? Theme.accent : Theme.warn; fill: root.verified-good ? Theme.soft : Theme.warn-soft; height: 24px; } }
+                VerticalLayout { alignment: center; WalletStatusChip { text: root.verified-chip; verified: root.verified-good; } }
                 Text { text: root.verified; color: Theme.muted; font-size: 13px; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; }
                 Text { text: @tr("Details") + " ›"; color: state-touch.has-hover ? Theme.accent : Theme.muted; font-size: 13px; vertical-alignment: center; }
             }
@@ -452,7 +532,7 @@ component BalanceCard inherits Card {
                 spacing: 6px;
                 HorizontalLayout {
                     spacing: 10px;
-                    VerticalLayout { alignment: center; Chip { text: root.verified-chip; fg: root.verified-good ? Theme.accent : Theme.warn; fill: root.verified-good ? Theme.soft : Theme.warn-soft; height: 24px; } }
+                    VerticalLayout { alignment: center; WalletStatusChip { text: root.verified-chip; verified: root.verified-good; } }
                     Rectangle { horizontal-stretch: 1; }
                     Text { text: @tr("Details") + " ›"; color: Theme.muted; font-size: 13px; vertical-alignment: center; }
                 }
@@ -917,6 +997,8 @@ component ContactsSheet inherits Sheet {
 }
 
 component LinkCard inherits Card {
+    in property <string> readiness;
+    in property <bool> ready;
     in property <string> tor-line;
     in property <bool> link-good;
     in property <string> tx-line;
@@ -953,6 +1035,15 @@ component LinkCard inherits Card {
             VerticalLayout { alignment: center; padding-left: 8px; Ask { title: @tr("Connection and synchronisation"); text: @tr("Through Tor everything goes slower. That is the price of privacy, not a fault.") + "\n\n" + @tr("A faint ring: not begun. A ring: under way. A filled mark: done. The warning colour: needs your attention."); } }
             Rectangle { horizontal-stretch: 1; }
             if root.tor-on: Btn { text: @tr("Tor bridges"); font-size: 13px; min-height: 30px; clicked => { root.bridges(); } }
+        }
+        HorizontalLayout {
+            spacing: 9px;
+            alignment: start;
+            VerticalLayout {
+                alignment: center;
+                Rectangle { width: 10px; height: 10px; border-radius: 5px; background: root.ready ? Theme.state-ok : Theme.state-alert; }
+            }
+            Text { text: root.readiness; color: root.ready ? Theme.state-ok : Theme.state-alert; font-size: 17px; font-weight: 650; wrap: word-wrap; horizontal-stretch: 1; }
         }
         HorizontalLayout {
             spacing: 8px;
@@ -1116,6 +1207,7 @@ component OpsCard inherits Card {
 }
 
 component Dashboard inherits Rectangle {
+    in property <string> sync-readiness;
     in property <string> wallet-name;
     in property <string> network;
     in property <string> balance;
@@ -1259,7 +1351,7 @@ component Dashboard inherits Rectangle {
                 preferred-width: 100px;
                 min-width: 340px;
                 spacing: 14px;
-                LinkCard { vertical-stretch: 0; tor-tone: root.tor-tone; tx-tone: root.tx-tone; addr-tone: root.addr-tone; stages: root.sync-stages; rest: root.sync-rest; tor-on: root.tor-on; nostr-on: root.nostr-on; switch-tor(v) => { root.switch-tor(v); } switch-nostr(v) => { root.switch-nostr(v); } tor-line: root.tor-line; link-good: root.link-good; tx-line: root.tx-line; tx-good: root.tx-good; addr-line: root.addr-line; addr-good: root.addr-good; auto-receive: root.auto-receive; auto-on: root.auto-on; auto-known: root.auto-known; set-auto(v) => { root.set-auto(v); } bridges => { root.tor-options(); } }
+                LinkCard { ready: root.verified-good; readiness: root.sync-readiness; vertical-stretch: 0; tor-tone: root.tor-tone; tx-tone: root.tx-tone; addr-tone: root.addr-tone; stages: root.sync-stages; rest: root.sync-rest; tor-on: root.tor-on; nostr-on: root.nostr-on; switch-tor(v) => { root.switch-tor(v); } switch-nostr(v) => { root.switch-nostr(v); } tor-line: root.tor-line; link-good: root.link-good; tx-line: root.tx-line; tx-good: root.tx-good; addr-line: root.addr-line; addr-good: root.addr-good; auto-receive: root.auto-receive; auto-on: root.auto-on; auto-known: root.auto-known; set-auto(v) => { root.set-auto(v); } bridges => { root.tor-options(); } }
                 OpsCard { vertical-stretch: 1; ops: root.ops; all => { root.all-ops(); } show(i) => { root.op-show(i); } }
             }
           }
@@ -1279,7 +1371,7 @@ component Dashboard inherits Rectangle {
                 OpsCard { ops: root.ops; all => { root.all-ops(); } show(i) => { root.op-show(i); } }
                 RequisitesCard { address-groups: root.address-groups; address-full: root.address-full; phrase: root.phrase; phrase-label: root.phrase-label; identity-made: root.identity-made; open(n) => { root.open(n); } make-identity => { root.make-identity(); } }
                 ContactsCard { contacts: root.contacts; open(n) => { root.open(n); } chat(i) => { root.chat(i); } menu(i) => { root.contact-menu(i); } }
-                LinkCard { tor-tone: root.tor-tone; tx-tone: root.tx-tone; addr-tone: root.addr-tone; stages: root.sync-stages; rest: root.sync-rest; tor-on: root.tor-on; nostr-on: root.nostr-on; switch-tor(v) => { root.switch-tor(v); } switch-nostr(v) => { root.switch-nostr(v); } tor-line: root.tor-line; link-good: root.link-good; tx-line: root.tx-line; tx-good: root.tx-good; addr-line: root.addr-line; addr-good: root.addr-good; auto-receive: root.auto-receive; auto-on: root.auto-on; auto-known: root.auto-known; set-auto(v) => { root.set-auto(v); } bridges => { root.tor-options(); } }
+                LinkCard { ready: root.verified-good; readiness: root.sync-readiness; tor-tone: root.tor-tone; tx-tone: root.tx-tone; addr-tone: root.addr-tone; stages: root.sync-stages; rest: root.sync-rest; tor-on: root.tor-on; nostr-on: root.nostr-on; switch-tor(v) => { root.switch-tor(v); } switch-nostr(v) => { root.switch-nostr(v); } tor-line: root.tor-line; link-good: root.link-good; tx-line: root.tx-line; tx-good: root.tx-good; addr-line: root.addr-line; addr-good: root.addr-good; auto-receive: root.auto-receive; auto-on: root.auto-on; auto-known: root.auto-known; set-auto(v) => { root.set-auto(v); } bridges => { root.tor-options(); } }
                 ProblemsCard { problems: root.problems; more: root.problems-more; restart => { root.restart-wallet(); } }
                 // a phone has no room for it in the top row
                 Muted { text: "GrinSight " + root.app-version; font-size: 12px; horizontal-alignment: center; }
@@ -1295,7 +1387,7 @@ export component App inherits Window {
     preferred-height: 960px;
     min-width: 900px;
     min-height: 640px;
-    default-font-family: "Inter";
+    default-font-family: Settings.font-family;
     background: Theme.bg;
 
     in-out property <int> page: 0;
@@ -1336,6 +1428,7 @@ export component App inherits Window {
     in property <string> out-note;
     in property <string> out-text;
     in property <bool> out-wants-reply;
+    in property <bool> out-needs-session;
     in property <string> sign-amount;
     in property <string> sign-fee;
     in property <string> sign-total;
@@ -1484,10 +1577,9 @@ export component App inherits Window {
         words-timer.running = false;
     }
     in-out property <string> own-nodes-text;
-    in-out property <string> own-point-text;
     callback direct-changed(bool);
     callback open-own();
-    callback save-own(string, string);
+    callback save-own(string);
     in property <string> tor-way;
     in-out property <int> tor-mode;
     in-out property <string> tor-own-text;
@@ -1501,8 +1593,11 @@ export component App inherits Window {
     in property <string> balance-note;
     in property <string> incoming;
     in property <string> verified;
-    in property <string> verified-chip: @tr("VERIFIED");
-    in property <bool> verified-good: true;
+    in property <string> verified-chip: root.live ? @tr("CHECKING") : @tr("VERIFIED");
+    in property <string> tip-status-reason;
+    out property <string> sync-readiness: root.verified-good ? @tr("Ready to use")
+        : root.verified-chip + (root.tip-status-reason != "" ? " · " + root.tip-status-reason : "");
+    in property <bool> verified-good: !root.live;
     in property <[string]> address-groups;
     in property <string> phrase;
     in property <string> phrase-label: @tr("Phrase to find you in Nostr");
@@ -1550,6 +1645,18 @@ export component App inherits Window {
     in property <bool> point-good;
     in property <bool> point-busy;
     callback make-point();
+    callback choose-genesis();
+    callback import-checkpoint();
+    in property <bool> import-available;
+    // 0 idle, 1 importing, 2 exporting
+    in property <int> checkpoint-file-action;
+    callback save-checkpoint();
+    callback rescan-outputs();
+    in property <bool> search-active;
+    in property <bool> search-submitting;
+    in property <string> search-feedback;
+    in property <bool> bootstrap-submitting;
+    in property <string> bootstrap-feedback;
     in property <bool> tor-on: true;
     in property <bool> nostr-on: true;
     callback switch-tor(bool);
@@ -1630,6 +1737,7 @@ export component App inherits Window {
             incoming: root.incoming;
             verified: root.verified;
             verified-chip: root.verified-chip;
+            sync-readiness: root.sync-readiness;
             verified-good: root.verified-good;
             address-groups: root.address-groups;
             phrase: root.phrase;
@@ -1756,6 +1864,7 @@ export component App inherits Window {
             note: root.out-note;
             out: root.out-text;
             wants-reply: root.out-wants-reply;
+            needs-session: root.out-needs-session;
             can-tor: root.out-can-tor;
             can-resend: root.out-can-resend;
             can-direct: root.out-can-direct;
@@ -1858,28 +1967,36 @@ export component App inherits Window {
             close => { root.words-closed(); root.sheet = 0; }
         }
         if (root.page == 1 || root.page == 4 || root.page == 5) && root.sheet == 15: SyncSheet {
+            wallet-status: root.verified-chip;
+            verified: root.verified-good;
             rows: root.sync-rows;
             words: root.sync-words;
-            point-note: root.point-note;
-            point-hint: root.point-hint;
-            point-good: root.point-good;
-            point-busy: root.point-busy;
-            make-point => { root.make-point(); }
             close => { root.sheet = 0; }
         }
         if (root.page == 1 || root.page == 4 || root.page == 5) && root.sheet == 16: SettingsSheet {
+            live: root.live;
+            submitting: root.bootstrap-submitting;
+            feedback: root.bootstrap-feedback;
+            recheck-history => { root.choose-genesis(); }
+            file-available: root.import-available;
+            file-action: root.checkpoint-file-action;
+            import-checkpoint => { root.import-checkpoint(); }
+            save-checkpoint => { root.save-checkpoint(); }
+            search-active: root.search-active;
+            search-submitting: root.search-submitting;
+            search-feedback: root.search-feedback;
+            rescan-outputs => { root.rescan-outputs(); }
             open(n) => { root.sheet-error = ""; root.security-note = ""; root.sheet = n; }
             bridges => { root.open-tor(); }
             close => { root.sheet = 0; }
         }
         if root.page == 0 && root.sheet == 9: OwnSheet {
             nodes <=> root.own-nodes-text;
-            point <=> root.own-point-text;
             error: root.sheet-error;
             done-note: root.security-note;
             card-width: 640px;
             close => { root.sheet = 0; }
-            save(n, p) => { root.save-own(n, p); }
+            save(n) => { root.save-own(n); }
         }
         if (root.page == 0 || root.page == 1) && root.sheet == 12: TorSheet {
             mode <=> root.tor-mode;
@@ -1964,6 +2081,42 @@ export component App inherits Window {
                                 root.remove-asking = -1;
                             }
                         }
+                    }
+                }
+            }
+        }
+        if Settings.choose-language: Rectangle {
+            background: #000000b0;
+            TouchArea { }
+            Card {
+                width: min(352px, parent.width - 24px);
+                height: min(choices.preferred-height, parent.height - 24px);
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                TouchArea { }
+                Flickable {
+                    content-height: choices.preferred-height;
+                    choices := VerticalLayout {
+                        width: parent.width;
+                        padding: 16px;
+                        spacing: 6px;
+                        Heading { text: @tr("Language"); }
+                        HorizontalLayout {
+                            spacing: 6px;
+                            LanguageButton { code: "en"; text: "English"; }
+                            LanguageButton { code: "ru"; text: "Русский"; }
+                        }
+                        HorizontalLayout {
+                            spacing: 6px;
+                            LanguageButton { code: "zh"; text: "简体中文"; }
+                            LanguageButton { code: "ko"; text: "한국어"; }
+                        }
+                        HorizontalLayout {
+                            spacing: 6px;
+                            LanguageButton { code: "ja"; text: "日本語"; }
+                            LanguageButton { code: "de"; text: "Deutsch"; }
+                        }
+                        LanguageButton { code: "fr"; text: "Français"; }
                     }
                 }
             }

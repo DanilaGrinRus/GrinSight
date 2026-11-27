@@ -1,0 +1,156 @@
+GrinSight 0.4.7A | cargo test --locked --offline --features test-net
+Original log SHA-256: 6c14d2a3fd0341186004f17d8dae243beb3dfad58f87539f7a58e0a95d5e3fab
+
+test adapter::tests::segments_do_not_pile_up ... ok
+test bootstrap::tests::a_wrong_genesis_journal_never_overwrites_the_other_network ... ok
+test bootstrap::tests::each_generation_metadata_record_survives_a_damaged_primary_and_fails_closed_if_both_are_bad ... ok
+test feed::tests::a_header_without_its_block_is_never_the_wallets_selected_tip ... ok
+test bootstrap::tests::an_earlier_clock_retains_the_entire_valid_journal ... ok
+test feed::tests::autonomous_status_names_the_checked_work_and_working_point ... ok
+test feed::tests::the_history_before_the_start_is_said_last ... ok
+test feed::tests::wallet_selection_requires_a_current_confirmed_clock ... ok
+test follow::tests::blocks_are_asked_for_a_window_ahead ... ok
+test follow::tests::the_block_whose_turn_it_is_is_asked_twice ... ok
+test net::tests::a_name_and_its_port_are_taken_apart ... ok
+test net::tests::an_address_written_out_is_itself ... ok
+test node::tests::a_published_views_clock_expires_even_if_the_worker_has_not_republished ... ok
+test node::tests::an_answer_is_over_when_it_is_full_or_has_stopped ... ok
+test old::tests::only_stretches_that_were_full_come_bare ... ok
+test old::tests::pieces_are_asked_for_a_window_ahead ... ok
+test old::tests::the_piece_waited_for_is_asked_twice ... ok
+test post::tests::the_trail_finds_where_the_branches_part ... ok
+test probe::tests::a_sample_is_drawn_in_runs_of_three ... ok
+test probe::tests::heights_are_spread_over_the_stretch ... ok
+test probe::tests::heights_come_with_their_predecessors ... ok
+test schedule::tests::a_node_is_asked_slowly_and_little_at_a_time ... ok
+test schedule::tests::nodes_share_the_work ... ok
+test schedule::tests::requests_are_taken_back ... ok
+test schedule::tests::silence_is_noticed ... ok
+test schedule::tests::what_everything_waits_on_is_asked_twice ... ok
+test send::tests::a_second_try_starts_elsewhere ... ok
+test send::tests::the_answers_of_a_node ... ok
+test state::tests::outputs_are_asked_for_a_window_ahead ... ok
+test feed::tests::a_starting_point_is_made_only_of_a_selected_tip_that_is_vouched_for ... ok
+test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.19s
+
+test diagnostic_tests::tor_peer_summary_is_one_bounded_line ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+test a_claim_nobody_settles_expires_into_a_caveat ... ok
+test a_later_answer_takes_the_confirmation_away ... ok
+test a_claim_of_more_stands_until_its_block_is_verified ... ok
+test a_quorum_counts_only_for_the_tip_it_was_asked_about ... ok
+test a_time_before_one_confirmed_earlier ... ok
+test a_tip_built_on_a_confirmed_one_needs_no_asking_while_no_sign_is_up ... ok
+test a_tip_that_left_the_confirmed_chain ... ok
+test an_asking_that_could_not_start_is_not_waited_for ... ok
+test choosing_a_listed_node_as_preferred_keeps_one_survey_seat ... ok
+test nothing_is_selected_before_public_nodes_are_asked ... ok
+test own_node_address_is_accepted_only_as_a_complete_line ... ok
+test no_time_no_tip ... ok
+test restarting_keeps_both_claim_windows_paused_until_time_returns ... ok
+test rounds_without_a_quorum_come_further_and_further_apart ... ok
+test the_time_runs_out_after_six_hours ... ok
+test the_users_own_nodes ... ok
+test time_floor_storage_error_is_visible_to_the_caller ... ok
+test the_history_follows_the_chain ... ok
+test what_keeps_the_program_from_asking_at_all ... ok
+test while_a_sign_is_up_every_tip_needs_its_own_quorum ... ok
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+test genesis_to_restoration_inputs_keeps_tip_freshness_separate ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.37s
+
+test forced_process_exit_during_bootstrap_resumes_to_the_nodes_pmmr_root ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.44s
+
+test a_silent_node_holds_nothing_up ... ok
+test a_node_that_sends_another_block_is_left ... ok
+test autonomous_genesis_pibd_and_restart_on_an_ordinary_node ... ok
+test autonomous_genesis_recovers_an_orphaned_pre_hf4_cursor ... ok
+test autonomous_genesis_switches_a_heavier_branch_below_the_archive ... ok
+test blocks_out_of_turn ... ok
+test more_nodes_are_asked_while_there_is_much_to_fetch ... ok
+test blocks_are_applied_to_the_tip ... ok
+test the_wallet_is_given_the_blocks ... ok
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 65.92s
+
+test a_node_is_asked_one_piece_until_it_has_answered ... ok
+test a_piece_is_what_is_unspent_now ... ok
+test a_wallet_that_names_its_block_is_spared_the_range_proofs ... ok
+test more_nodes_are_asked_while_a_wallet_reads ... ok
+test only_a_block_of_the_followed_chain_says_what_a_wallet_knew ... ok
+test a_node_that_sends_other_range_proofs_is_left ... ok
+test pieces_are_fetched_again_when_the_chain_moves ... ok
+test the_program_reads_the_old_outputs_by_itself ... ok
+test what_a_wallet_knew_comes_without_range_proofs ... ok
+test what_is_held_is_true_or_it_is_let_go ... ok
+test the_wallet_is_given_the_old_outputs ... ok
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 49.02s
+
+test an_own_point_is_made_only_of_a_chain_that_keeps_the_proof ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.96s
+
+test a_sent_transaction_is_followed ... ok
+test a_payment_goes_out_as_a_stem_and_is_known_when_the_network_has_it ... ok
+test a_transaction_handed_over_again_after_a_restart ... ok
+test a_transaction_is_checked_before_it_is_sent ... ok
+test a_stem_that_does_not_come_back_is_sent_again ... ok
+test an_observed_aggregate_waits_for_verification ... ok
+test a_transaction_that_falls_out_of_the_chain_is_sent_again ... ok
+test room_is_made_by_what_is_in_a_block ... ok
+test the_agreement_to_the_direct_way_for_one ... ok
+test public_nodes_take_it_by_their_api ... ok
+test the_tor_switch_turned_while_transactions_wait ... ok
+test the_users_own_node_comes_first ... ok
+test the_direct_way_agreed_to_for_one_transaction ... ok
+test tor_switched_off_before_a_transaction ... ok
+test when_tor_fails ... ok
+test tor_switched_off_and_on_while_the_program_runs ... ok
+test with_tor_switched_off ... ok
+test without_tor ... ok
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 71.82s
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+test a_proof_is_not_believed_beyond_what_it_shows ... ok
+test a_sample_over_the_history_is_asked_for_and_checked ... ok
+test a_node_with_bent_proofs_is_caught ... ok
+test header_proofs_are_asked_for_and_checked ... ok
+test segments_of_other_heights_are_asked_for_and_checked ... ok
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 23.65s
+
+test a_point_against_public_nodes ... ok
+test a_point_the_user_gives ... ok
+test a_release_point_is_made ... ok
+test autonomous_wallet::old_phrase_genesis_restore_and_payment ... ignored, cross-workspace test: set FLY_AUTOMATED_HOST to the local fly-paycore-host-test executable
+test a_public_node_that_names_more ... ok
+test public_nodes_that_disagree_about_the_time ... ok
+test the_program_run_by_hand_says_when_the_tip_is_selected ... ok
+test the_tip_is_selected_when_public_nodes_name_it ... ok
+test the_users_own_node_is_asked_but_is_no_voice ... ok
+test the_wallet_is_given_a_point_made_from_the_chain_it_follows ... ok
+test without_public_nodes_nothing_is_selected ... ok
+test result: ok. 10 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 81.94s
+
+test a_node_that_gives_only_small_segments_is_asked_for_those ... ok
+test a_node_that_sends_what_is_not_the_state_is_left ... ok
+test an_existing_archive_resumes_after_a_local_lock_is_released ... ok
+test a_node_that_does_not_answer_is_not_waited_for ... ok
+test collecting_goes_on_after_a_restart ... ok
+test collecting_begins_again_when_the_network_moves_on ... ok
+test segments_out_of_turn ... ok
+test the_large_segments_are_asked_for_first ... ok
+test the_state_is_collected_and_kept ... ok
+test what_stands_in_the_way_is_said ... ok
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 46.62s
+
+test the_diagnostic_deadline_includes_bootstrapping_from_genesis ... ok
+test the_headers_of_a_node_are_followed ... ok
+test a_node_that_lies_is_left ... ok
+test the_wallet_is_told_only_what_is_known ... ok
+test without_a_usable_node_nothing_is_claimed ... ok
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 52.96s
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

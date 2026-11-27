@@ -37,7 +37,9 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+#[cfg(test)]
+use tokio::io::AsyncReadExt;
+use tokio::io::AsyncWriteExt;
 use tokio::sync::oneshot;
 use tor_rtcompat::PreferredRuntime;
 
@@ -267,18 +269,12 @@ async fn post(client: Client, to: [u8; 32], body: String) -> Result<String, Stri
         let lost = |_| "the connection to the wallet was lost".to_string();
         stream.write_all(&http::request(&host, &body)).await.map_err(lost)?;
         stream.flush().await.map_err(lost)?;
-        let mut data = Vec::new();
-        let mut piece = vec![0u8; 16 * 1024];
-        loop {
-            let n = stream.read(&mut piece).await.map_err(lost)?;
-            data.extend_from_slice(piece.get(..n).unwrap_or_default());
-            match http::answer_body(&data, pipe::MAX_BODY, n == 0) {
-                Ok(answer) => return Ok(answer),
-                Err(http::Bad::Short) => {}
-                Err(http::Bad::Other) => return Err("the wallet at this address refused the request".to_string()),
-                Err(http::Bad::Large | http::Bad::Form) => return Err("the answer is not a wallet's answer".to_string()),
-            }
-        }
+        let mut reader = tokio::io::BufReader::new(stream);
+        http::read(&mut reader, http::Message::Response, pipe::MAX_BODY, &mut Vec::new()).await.map_err(|bad| match bad {
+            http::Bad::Other => "the wallet at this address refused the request".to_string(),
+            http::Bad::Short => "the connection to the wallet was lost".to_string(),
+            http::Bad::Large | http::Bad::Form => "the answer is not a wallet's answer".to_string(),
+        })
     };
     match tokio::time::timeout(POST_WITHIN, work).await {
         Ok(outcome) => outcome,
@@ -309,7 +305,7 @@ async fn serve_one(shared: Arc<Shared>, request: tor_hsservice::StreamRequest) {
 
 /// One connection to the wallet's port: requests read and answered one
 /// after another, a bounded number of them.
-async fn talk<S>(shared: &Shared, mut stream: S)
+async fn talk<S>(shared: &Shared, stream: S)
 where
     S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
 {
@@ -319,22 +315,14 @@ where
         *n = n.saturating_add(1);
     };
     // a wallet may ask for the version and send the payment over one connection
+    let mut stream = tokio::io::BufReader::new(stream);
     for turn in 0..MAX_TURNS {
+        let mut head = Vec::new();
         let read = async {
-            let mut data = Vec::new();
-            let mut piece = vec![0u8; 16 * 1024];
-            loop {
-                match http::request_body(&data, pipe::MAX_BODY) {
-                    Ok(body) => return Ok(body),
-                    Err(http::Bad::Short) => {}
-                    Err(bad) => return Err((Some(bad), http::first_line(&data))),
-                }
-                match stream.read(&mut piece).await {
-                    // the other side is done
-                    Ok(0) | Err(_) => return Err((if data.is_empty() { None } else { Some(http::Bad::Short) }, String::new())),
-                    Ok(n) => data.extend_from_slice(piece.get(..n).unwrap_or_default()),
-                }
-            }
+            http::read(&mut stream, http::Message::Request, pipe::MAX_BODY, &mut head).await.map_err(|bad| {
+                if bad == http::Bad::Short && head.is_empty() { (None, String::new()) }
+                else { (Some(bad), http::first_line(&head)) }
+            })
         };
         let body = match tokio::time::timeout(REQUEST_WITHIN, read).await {
             Ok(Ok(body)) => body,

@@ -51,6 +51,7 @@ use serde_json::{json, Value};
 use session::{Fail, Opened, Places};
 use std::io::{BufRead, Write};
 use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc::{self, SyncSender, TrySendError};
 use std::sync::{Arc, Mutex};
@@ -178,6 +179,9 @@ struct HostParams {
     /// `host.tor`: Tor off (`true`) or on.
     #[serde(default)]
     off: Option<bool>,
+    checkpoint_path: Option<PathBuf>,
+    proof_path: Option<PathBuf>,
+    file_path: Option<PathBuf>,
     #[serde(default)]
     test: Option<Value>,
 }
@@ -204,6 +208,19 @@ fn fail(code: i32, kind: &'static str, reason: &str) -> HostFail {
 
 fn bad_params(reason: &str) -> HostFail {
     fail(-32602, "invalid_params", reason)
+}
+
+#[derive(Deserialize)]
+struct CheckpointReceipt {
+    height: u64,
+    hash: String,
+    samples: u64,
+}
+
+fn checkpoint_receipt(bytes: &[u8]) -> Option<CheckpointReceipt> {
+    let result: CheckpointReceipt = serde_json::from_slice(bytes).ok()?;
+    (result.samples > 0 && result.hash.len() == 64 &&
+        result.hash.bytes().all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())).then_some(result)
 }
 
 impl From<ProfileError> for HostFail {
@@ -797,6 +814,69 @@ impl Host {
         }
     }
 
+    fn checkpoint_command(&self, operation: &str, unavailable: &'static str) -> Result<Command, HostFail> {
+        let wallet = self.runner.as_ref().ok_or_else(|| fail(-32040, "locked", ""))?;
+        // Only this unlocked instance chooses the destination and network.
+        let directory = session::chain_dir(&self.places.profile, &wallet.instance);
+        let program = self.places.chain.as_ref()
+            .filter(|c| c.inside.is_none())
+            .ok_or_else(|| fail(-32033, unavailable, ""))?;
+        let mut command = Command::new(&program.program);
+        command.arg(operation).arg(wallet.network.name()).arg(directory)
+            .stdin(Stdio::null()).stderr(Stdio::null());
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            command.creation_flags(0x08000000); // CREATE_NO_WINDOW
+        }
+        Ok(command)
+    }
+
+    fn import_checkpoint(&mut self, p: &HostParams) -> Result<Value, HostFail> {
+        let operation = if p.file_path.is_some() { "import-checkpoint-file" } else { "import-checkpoint" };
+        let mut command = self.checkpoint_command(operation, "checkpoint_import_unavailable")?;
+        match (&p.file_path, &p.checkpoint_path, &p.proof_path) {
+            (Some(file), None, None) if file.is_absolute() && file.is_file() => {
+                command.arg(file);
+            }
+            (None, Some(point), Some(proof)) if point.is_absolute() && proof.is_absolute() &&
+                point != proof && point.is_file() && proof.is_file() => {
+                command.arg(point).arg(proof);
+            }
+            _ => return Err(bad_params("select a checkpoint file or the separate checkpoint and proof files")),
+        }
+
+        // Drop the live signing session and wait for its chain worker before
+        // publishing the new starting point. Each later error leaves us locked.
+        self.lock();
+        let refused = || fail(-32033, "checkpoint_import_refused_locked", "");
+        let output = command.output().map_err(|_| refused())?;
+        if !output.status.success() {
+            return Err(refused());
+        }
+        let result = checkpoint_receipt(&output.stdout).ok_or_else(refused)?;
+        Ok(json!({"imported": true, "locked": true, "height": result.height,
+                  "hash": result.hash, "samples": result.samples}))
+    }
+
+    fn export_checkpoint(&self, p: &HostParams) -> Result<Value, HostFail> {
+        let mut command = self.checkpoint_command("pack-profile-checkpoint", "checkpoint_export_unavailable")?;
+        let file = p.file_path.as_ref().ok_or_else(|| bad_params("select a destination"))?;
+        if !file.is_absolute() || file.file_name().is_none() || p.checkpoint_path.is_some() || p.proof_path.is_some() {
+            return Err(bad_params("select a destination"));
+        }
+        let refused = || fail(-32033, "checkpoint_export_refused", "");
+        let output = command.arg(file).output().map_err(|_| refused())?;
+        if output.status.code() == Some(3) {
+            return Err(fail(-32033, "checkpoint_export_unavailable", ""));
+        }
+        if !output.status.success() {
+            return Err(refused());
+        }
+        let result = checkpoint_receipt(&output.stdout).ok_or_else(refused)?;
+        Ok(json!({"exported": true, "height": result.height, "hash": result.hash, "samples": result.samples}))
+    }
+
     fn host_call(&mut self, method: &str, id: &Value, line: &str) -> Zeroizing<String> {
         let request: HostRequest = match serde_json::from_str(line) {
             Ok(r) => r,
@@ -828,6 +908,8 @@ impl Host {
             "host.profile.change_password" => self.change_password(&p).map(|()| json!({})),
             "host.profile.delete" => self.delete(&p).map(|()| json!({})),
             "host.unlock" => self.unlock(&p),
+            "host.import_checkpoint" => self.import_checkpoint(&p),
+            "host.export_checkpoint" => self.export_checkpoint(&p),
             "host.lock" => {
                 self.lock();
                 Ok(json!({}))

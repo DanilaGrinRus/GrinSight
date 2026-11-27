@@ -558,11 +558,28 @@ fn auto_sign_needs_the_selected_tip() {
         mut chain,
     } = world(true);
     a.b().set_auto_sign(true);
+    a.sel.set(Some(chain.tip()));
+    let before = a.rpc("paycore.chain.status", json!({})).unwrap();
+    assert_eq!(before["selected_height"], chain.height);
+    assert_eq!(before["tip_height"], chain.height);
+    assert_eq!(before["confirmed_time"], 1_000);
     let p = prepare(&mut a, 2, GRIN);
+    let reserved = a.rpc("paycore.balance", json!({})).unwrap()["reserved"].clone();
+    assert_ne!(reserved, "0");
     a.rpc("paycore.delivery.pump", json!({})).unwrap();
     b.kinds();
-    // the chain layer vouches for nothing
+    // A previously used wallet loses its selected tip and confirmed time
+    // between S1 and the arrival of S2.
+    a.sel.set(None);
+    a.clock.set(None);
     assert_eq!(a.kinds(), vec!["reply_held"]);
+    assert_eq!(a.signatures(), 0);
+    assert_eq!(a.rpc("paycore.balance", json!({})).unwrap()["reserved"], reserved);
+    assert!(a.rpc("paycore.chain.status", json!({})).unwrap()["confirmed_time"].is_null());
+    // A recovered clock alone does not permit automatic signing.
+    a.clock.set(Some(1_100));
+    assert!(a.kinds().is_empty());
+    assert_eq!(a.signatures(), 0);
     // it vouches for a tip the wallet does not stand on
     a.sel.set(Some((chain.height + 1, [9; 32])));
     assert!(a.kinds().is_empty());
@@ -571,6 +588,7 @@ fn auto_sign_needs_the_selected_tip() {
     a.sel.set(Some(fork));
     assert!(a.kinds().is_empty());
     assert_eq!(a.signatures(), 0);
+    assert_eq!(a.rpc("paycore.balance", json!({})).unwrap()["reserved"], reserved);
     assert_eq!(status(&mut a, &p["op"])["reply_held"], true);
     // and now for the right one
     a.sel.set(Some(chain.tip()));
@@ -578,6 +596,7 @@ fn auto_sign_needs_the_selected_tip() {
     assert_eq!(ev["events"][0]["kind"], "reply_signed");
     assert_eq!(ev["events"][0]["op"], p["op"]);
     assert_eq!(a.signatures(), 1);
+    assert_eq!(a.rpc("paycore.balance", json!({})).unwrap()["reserved"], reserved);
     let op: [u8; 16] = unhex(p["op"].as_str().unwrap()).try_into().unwrap();
     assert_eq!(
         a.b().core().armed_at(&op),
@@ -633,10 +652,6 @@ fn relay_troubles_never_duplicate_or_change_the_message() {
     let op: [u8; 16] = unhex(p["op"].as_str().unwrap()).try_into().unwrap();
     let sealed = a.b().core().delivery_envelope(&op).unwrap();
 
-    // the wallet is closed before anything was published
-    a.restart();
-    assert_eq!(a.b().core().delivery_envelope(&op).unwrap(), sealed);
-
     relay.borrow_mut().mode = Mode::Down;
     let r = a.rpc("paycore.delivery.pump", json!({})).unwrap();
     assert_eq!(r["published"][0]["delivery"], "waiting_relay");
@@ -658,7 +673,6 @@ fn relay_troubles_never_duplicate_or_change_the_message() {
     let r = a.rpc("paycore.delivery.pump", json!({})).unwrap();
     assert_eq!(r["published"][0]["delivery"], "waiting_relay");
     assert_eq!(relay.borrow().held_for(contact(2)), 1);
-    a.restart();
     relay.borrow_mut().mode = Mode::Up;
     let r = a.rpc("paycore.delivery.pump", json!({})).unwrap();
     assert_eq!(r["published"][0]["delivery"], "relay_accepted");
@@ -671,6 +685,31 @@ fn relay_troubles_never_duplicate_or_change_the_message() {
     assert_eq!(a.post.0.borrow().seals, 1, "the envelope was sealed again");
     assert_eq!(b.kinds(), vec!["payment_answered"]);
     assert_eq!(a.kinds(), vec!["reply_held"]);
+    assert_eq!(a.signatures(), 0);
+}
+
+#[test]
+fn reopened_wallet_reports_expired_exchanges_and_does_not_deliver_the_old_request() {
+    let World { relay, mut a, .. } = world(true);
+    let send = prepare(&mut a, 2, GRIN);
+    a.rpc("paycore.invoice.issue", json!({"amount": GRIN.to_string()})).unwrap();
+    let before = a.rpc("paycore.history", json!({})).unwrap();
+    assert_eq!(before["sends"][0]["session_expired"], false);
+    assert_eq!(before["incoming"][0]["session_expired"], false);
+
+    a.restart();
+    let after = a.rpc("paycore.history", json!({})).unwrap();
+    assert_eq!(after["sends"][0]["locked"], true);
+    assert_eq!(after["sends"][0]["session_expired"], true);
+    assert_eq!(after["incoming"][0]["session_expired"], true);
+    assert_eq!(after["incoming"][0]["signature_unknown"], false);
+    let state = status(&mut a, &send["op"]);
+    assert_eq!(state["session_expired"], true);
+    assert_eq!(state["reserve"], true);
+    a.b().set_auto_sign(true);
+    let result = a.rpc("paycore.delivery.pump", json!({})).unwrap();
+    assert_eq!(result["published"], json!([]));
+    assert_eq!(relay.borrow().publishes, 0);
     assert_eq!(a.signatures(), 0);
 }
 
